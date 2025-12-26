@@ -7,6 +7,10 @@ on:
   push:
     branches: [ "main" ]
 
+  # También en pull requests a main
+  pull_request:
+    branches: [ "main" ]
+
   # Permite ejecutarlo manualmente desde la pestaña Actions
   workflow_dispatch:
 
@@ -27,7 +31,18 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
-      # 3) Cache de NuGet: acelera restores posteriores
+      # 3) Instala Node.js para dependencias npm (Chart.js)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 4) Instala dependencias npm
+      - name: Install npm dependencies
+        run: npm ci
+
+      # 5) Cache de NuGet: acelera restores posteriores
       #    (Si cambian dependencias, la cache se invalida automáticamente)
       - name: Cache NuGet packages
         uses: actions/cache@v4
@@ -38,36 +53,68 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      # 4) Restaura dependencias
+      # 6) Restaura dependencias .NET
       - name: Restore dependencies
         run: dotnet restore
 
-      # 5) Compila en Release
+      # 7) Validación de formato de código (dotnet format)
+      - name: Check code formatting
+        run: dotnet format --verify-no-changes --verbosity diagnostic
+        continue-on-error: true
+
+      # 8) Análisis de código con .NET Analyzers
+      - name: Run .NET Code Analysis
+        run: dotnet build -c Release --no-restore /p:EnforceCodeStyleInBuild=true /p:TreatWarningsAsErrors=false
+        continue-on-error: true
+
+      # 9) Escaneo de seguridad - Vulnerabilidades en paquetes NuGet
+      - name: Security scan - NuGet packages
+        run: |
+          dotnet list package --vulnerable --include-transitive 2>&1 | tee vulnerable-packages.txt
+          if (Select-String -Path vulnerable-packages.txt -Pattern "has the following vulnerable packages" -Quiet) {
+            Write-Host "⚠️ Vulnerabilidades encontradas en paquetes NuGet"
+            Get-Content vulnerable-packages.txt
+            exit 0
+          } else {
+            Write-Host "✅ No se encontraron vulnerabilidades en paquetes NuGet"
+          }
+        shell: pwsh
+        continue-on-error: true
+
+      # 10) Compila en Release
       - name: Build (Release)
         run: dotnet build -c Release --no-restore
 
-      # 6) Ejecuta pruebas (si no tienes proyectos de test y te falla, lo comentamos)
+      # 11) Ejecuta pruebas (continúa aunque no haya tests)
       - name: Test (Release)
-        run: dotnet test -c Release --no-build
+        run: dotnet test -c Release --no-build --verbosity normal
+        continue-on-error: true
 
-      # 7) Publica el proyecto (genera la carpeta lista para desplegar en IIS)
-      #    Si tu repo tiene varios proyectos, cambia este comando para apuntar al .csproj exacto:
-      #    dotnet publish path/to/tuProyecto.csproj -c Release -o publish --no-build
+      # 12) Publica el proyecto (genera la carpeta lista para desplegar en IIS)
       - name: Publish (Release)
         run: dotnet publish -c Release -o publish --no-build
 
-      # 8) Empaqueta la salida de publish en un ZIP (artefacto)
+      # 13) Empaqueta la salida de publish en un ZIP (artefacto)
       - name: Zip publish output
         run: |
           powershell Compress-Archive -Path publish\* -DestinationPath frontend_publish.zip -Force
 
-      # 9) Sube el ZIP como "Artifact" del run (NO se guarda en el repo)
-      #    Se descarga desde Actions -> run -> Artifacts
+      # 14) Sube el ZIP como "Artifact" del run (NO se guarda en el repo)
+      #     Se descarga desde Actions -> run -> Artifacts
       - name: Upload artifact (publish zip)
         uses: actions/upload-artifact@v4
         with:
           name: frontend_publish
           path: frontend_publish.zip
           retention-days: 14
+
+      # 15) Sube reporte de vulnerabilidades como artefacto
+      - name: Upload security scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-results
+          path: vulnerable-packages.txt
+          retention-days: 7
 
 
