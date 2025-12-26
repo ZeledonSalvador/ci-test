@@ -81,7 +81,7 @@ namespace FrontendQuickpass.Controllers
                         if (item.dateTimePrecheckeo.HasValue && item.dateTimePrecheckeo.Value != DateTime.MinValue)
                         {
                             item.dateTimePrecheckeo = TimeZoneInfo.ConvertTimeFromUtc(
-                                DateTime.SpecifyKind(item.dateTimePrecheckeo.Value, DateTimeKind.Utc), 
+                                DateTime.SpecifyKind(item.dateTimePrecheckeo.Value, DateTimeKind.Utc),
                                 gmtMinus6
                             );
                         }
@@ -91,7 +91,7 @@ namespace FrontendQuickpass.Controllers
                     posts = posts.OrderBy(p => p.dateTimePrecheckeo ?? DateTime.MaxValue).ToList();
                     model.TruckTypeP = posts.Where(p => p.vehicle?.truckType == "P").ToList();
                     model.CountPipa = model.TruckTypeP.Count;
-                    
+
                     foreach (var post in posts)
                     {
                         var code = post.ingenio?.ingenioNavCode;
@@ -133,7 +133,7 @@ namespace FrontendQuickpass.Controllers
         public async Task<IActionResult> ChangeTransactionStatus([FromBody] ChangeTransactionRequest request)
         {
             var codeGen = request.CodeGen?.Trim();
-            
+
             if (string.IsNullOrWhiteSpace(request.CodeGen))
             {
                 _logService.LogActivityAsync("", request, Usuario, 0);
@@ -150,7 +150,7 @@ namespace FrontendQuickpass.Controllers
                 var requestBody = new
                 {
                     //leveransUsernameChangeStatus = UsuarioName, 
-                    observationsChangeStatus = "Autorizacion ingreso MELAZA" 
+                    observationsChangeStatus = "Autorizacion ingreso MELAZA"
                 };
 
                 var jsonContent = JsonConvert.SerializeObject(requestBody);
@@ -158,7 +158,7 @@ namespace FrontendQuickpass.Controllers
 
                 var response = await client.PostAsync(url, content);
                 var responseContent = await response.Content.ReadAsStringAsync();
-                _logger.LogInformation("Respuesta del API - Status: {statusCode}, Content: {content}", 
+                _logger.LogInformation("Respuesta del API - Status: {statusCode}, Content: {content}",
                                     response.StatusCode, responseContent);
                 if (response.IsSuccessStatusCode)
                 {

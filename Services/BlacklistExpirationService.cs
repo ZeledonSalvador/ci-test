@@ -162,7 +162,7 @@ namespace FrontendQuickpass.Services
                 else
                 {
                     var responseContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("Error al actualizar registro ID {Id}: {StatusCode} - {Content}", 
+                    _logger.LogError("Error al actualizar registro ID {Id}: {StatusCode} - {Content}",
                         expiredReport.Id, response.StatusCode, responseContent);
                 }
             }

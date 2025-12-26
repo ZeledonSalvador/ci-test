@@ -9,25 +9,25 @@ namespace FrontendQuickpass.Models
         public int Tarjeta { get; set; }
         public int Buzzer { get; set; }
     }
-    
+
     public class AsignarTarjetaRequest
     {
         public string CodigoGeneracion { get; set; } = string.Empty;
         public int Tarjeta { get; set; }
     }
-    
+
     public class AsignarBuzzerRequest
     {
         public string CodigoGeneracion { get; set; } = string.Empty;
         public int Buzzer { get; set; }
     }
-    
+
     public class ChangeStatusRequest
     {
         public string CodeGen { get; set; } = string.Empty;
         public int PredefinedStatusId { get; set; }
     }
-    
+
     public class ReporteInconsistenciaRequest
     {
         public string CodigoGeneracion { get; set; } = string.Empty;
@@ -36,7 +36,7 @@ namespace FrontendQuickpass.Models
         public string TipoReporte { get; set; } = string.Empty;
         public string NombreIngenio { get; set; } = string.Empty;
     }
-    
+
     public class InconsistencyField
     {
         public string Campo { get; set; } = string.Empty;

@@ -35,7 +35,7 @@ namespace FrontendQuickpass.Models
         public DateTime? CreatedAt { get; set; }
         public ShipmentDto? Shipment { get; set; }
         public List<BlacklistStatusHistory>? StatusHistory { get; set; }
-        
+
         // Propiedades procesadas por el controlador
         public List<string>? ProcessedUrls { get; set; }
         public string? DriverPhotoUrl { get; set; }
@@ -53,10 +53,10 @@ namespace FrontendQuickpass.Models
         public string? ChangeReason { get; set; }
     }
 
-    public class DriverDto 
-    { 
-        public string? License { get; set; } 
-        public string? Name { get; set; } 
+    public class DriverDto
+    {
+        public string? License { get; set; }
+        public string? Name { get; set; }
     }
 
     public class ShipmentDto

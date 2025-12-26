@@ -35,18 +35,18 @@ builder.Services.AddDbContext<PiletasDbContext>(options =>
 {
     // Obtener la ruta del proyecto (donde está el .dll)
     var contentRoot = builder.Environment.ContentRootPath;
-    
+
     // Crear directorio App_Data si no existe
     var appDataPath = Path.Combine(contentRoot, "App_Data");
     Directory.CreateDirectory(appDataPath);
-    
+
     // Ruta completa de la base de datos
     var dbPath = Path.Combine(appDataPath, "piletas.db");
-    
+
     var connectionString = $"Data Source={dbPath}";
-    
+
     Console.WriteLine($"📁 Base de datos SQLite: {dbPath}");
-    
+
     options.UseSqlite(connectionString);
 });
 

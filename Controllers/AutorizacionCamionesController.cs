@@ -57,24 +57,24 @@ namespace FrontendQuickpass.Controllers
             try
             {
                 dynamic? errorData = JsonConvert.DeserializeObject(errorContent);
-                
+
                 // Intentar extraer el mensaje del error
                 if (errorData?.message != null)
                 {
                     return errorData.message.ToString();
                 }
-                
+
                 // Si no hay mensaje, buscar en otros campos comunes
                 if (errorData?.error != null)
                 {
                     return errorData.error.ToString();
                 }
-                
+
                 if (errorData?.details != null)
                 {
                     return errorData.details.ToString();
                 }
-                
+
                 return defaultMessage;
             }
             catch
@@ -87,10 +87,10 @@ namespace FrontendQuickpass.Controllers
                     {
                         return defaultMessage;
                     }
-                    
+
                     return errorContent;
                 }
-                
+
                 return defaultMessage;
             }
         }
@@ -297,7 +297,7 @@ namespace FrontendQuickpass.Controllers
         public async Task<IActionResult> AsignarTarjeta([FromBody] AsignarTarjetaRequest request)
         {
             var codeGen = request.CodigoGeneracion?.Trim();
-            
+
             try
             {
                 using var client = CreateApiClient();
@@ -311,11 +311,11 @@ namespace FrontendQuickpass.Controllers
 
                 if (response.IsSuccessStatusCode)
                 {
-                    return Json(new 
-                    { 
-                        success = true, 
+                    return Json(new
+                    {
+                        success = true,
                         message = "Tarjeta asignada correctamente.",
-                        data = responseContent 
+                        data = responseContent
                     });
                 }
                 else
@@ -323,11 +323,11 @@ namespace FrontendQuickpass.Controllers
                     var errorMessage = ParseApiError(responseContent, "Error al asignar tarjeta");
                     _logger.LogWarning($"AsignarTarjeta Error: {response.StatusCode} - {errorMessage}");
                     _logService.LogActivityAsync(codeGen ?? "", request, Usuario, (int)response.StatusCode);
-                    
-                    return Json(new 
-                    { 
-                        success = false, 
-                        message = errorMessage 
+
+                    return Json(new
+                    {
+                        success = false,
+                        message = errorMessage
                     });
                 }
             }
@@ -335,11 +335,11 @@ namespace FrontendQuickpass.Controllers
             {
                 _logger.LogError(ex, "Error inesperado en AsignarTarjeta");
                 _logService.LogActivityAsync(codeGen ?? "", request, Usuario, 0);
-                
-                return Json(new 
-                { 
-                    success = false, 
-                    message = ex.Message 
+
+                return Json(new
+                {
+                    success = false,
+                    message = ex.Message
                 });
             }
         }
@@ -348,13 +348,13 @@ namespace FrontendQuickpass.Controllers
         public async Task<IActionResult> AsignarBuzzer([FromBody] AsignarBuzzerRequest request)
         {
             var codeGen = request.CodigoGeneracion?.Trim();
-            
+
             try
             {
                 using var client = CreateApiClient();
 
                 var url = $"{_apiSettings.BaseUrl}shipping/buzzers/asignar/{request.CodigoGeneracion}";
-                
+
                 var requestBody = new { buzzer = request.Buzzer };
                 var json = JsonConvert.SerializeObject(requestBody);
                 var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
@@ -380,7 +380,7 @@ namespace FrontendQuickpass.Controllers
                     var errorMessage = ParseApiError(errorContent, "Error al asignar buzzer");
                     _logger.LogWarning($"AsignarBuzzer Error: {response.StatusCode} - {errorMessage}");
                     _logService.LogActivityAsync(codeGen ?? "", request, Usuario, (int)response.StatusCode);
-                    
+
                     return Json(new
                     {
                         success = false,
@@ -393,7 +393,7 @@ namespace FrontendQuickpass.Controllers
             {
                 _logger.LogError(ex, "Error de conexión al asignar buzzer");
                 _logService.LogActivityAsync(codeGen ?? "", request, Usuario, 0);
-                
+
                 return Json(new
                 {
                     success = false,
@@ -405,7 +405,7 @@ namespace FrontendQuickpass.Controllers
             {
                 _logger.LogError(ex, "Error inesperado al asignar buzzer");
                 _logService.LogActivityAsync(codeGen ?? "", request, Usuario, 0);
-                
+
                 return Json(new
                 {
                     success = false,
@@ -419,7 +419,7 @@ namespace FrontendQuickpass.Controllers
         public async Task<IActionResult> ChangeTransactionStatus([FromBody] ChangeStatusRequest request)
         {
             var codeGen = request.CodeGen?.Trim();
-            
+
             try
             {
                 using var client = CreateApiClient();
@@ -444,10 +444,10 @@ namespace FrontendQuickpass.Controllers
                 if (response.IsSuccessStatusCode)
                 {
                     _logService.LogActivityAsync(codeGen ?? "", request, Usuario, request.PredefinedStatusId);
-                    
-                    return Json(new 
-                    { 
-                        success = true, 
+
+                    return Json(new
+                    {
+                        success = true,
                         message = "Estado actualizado correctamente.",
                         data = responseContent,
                         username = username
@@ -458,11 +458,11 @@ namespace FrontendQuickpass.Controllers
                     var errorMessage = ParseApiError(responseContent, "Error al cambiar el estado");
                     _logger.LogWarning($"ChangeTransactionStatus Error: {response.StatusCode} - {errorMessage}");
                     _logService.LogActivityAsync(codeGen ?? "", request, Usuario, (int)response.StatusCode);
-                    
-                    return Json(new 
-                    { 
-                        success = false, 
-                        message = errorMessage 
+
+                    return Json(new
+                    {
+                        success = false,
+                        message = errorMessage
                     });
                 }
             }
@@ -470,15 +470,15 @@ namespace FrontendQuickpass.Controllers
             {
                 _logger.LogError(ex, "Error inesperado en ChangeTransactionStatus");
                 _logService.LogActivityAsync(codeGen ?? "", request, Usuario, 0);
-                
-                return Json(new 
-                { 
-                    success = false, 
-                    message = ex.Message 
+
+                return Json(new
+                {
+                    success = false,
+                    message = ex.Message
                 });
             }
         }
-        
+
         [HttpPost]
         public async Task<IActionResult> GuardarReporteInconsistencia([FromBody] ReporteInconsistenciaRequest request)
         {
@@ -533,7 +533,7 @@ namespace FrontendQuickpass.Controllers
                 if (response.IsSuccessStatusCode)
                 {
                     _logService.LogActivityAsync(codeGen ?? "", request, Usuario, 13);
-                    
+
                     return Json(new
                     {
                         success = true,
@@ -546,7 +546,7 @@ namespace FrontendQuickpass.Controllers
                     var errorMessage = ParseApiError(responseContent, "Error al enviar reporte");
                     _logger.LogWarning($"GuardarReporteInconsistencia Error: {response.StatusCode} - {errorMessage}");
                     _logService.LogActivityAsync(codeGen ?? "", request, Usuario, (int)response.StatusCode);
-                    
+
                     return Json(new
                     {
                         success = false,
@@ -573,7 +573,7 @@ namespace FrontendQuickpass.Controllers
             try
             {
                 var logDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Logs");
-                
+
                 if (!Directory.Exists(logDirectory))
                 {
                     Directory.CreateDirectory(logDirectory);
@@ -581,7 +581,7 @@ namespace FrontendQuickpass.Controllers
 
                 var logFilePath = Path.Combine(logDirectory, "MyAppLog.txt");
                 var formattedLog = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - {message}{Environment.NewLine}";
-                
+
                 System.IO.File.AppendAllText(logFilePath, formattedLog);
                 _logger.LogInformation(message);
             }

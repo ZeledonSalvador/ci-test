@@ -6,10 +6,10 @@ namespace FrontendQuickpass.Models
         public Dictionary<int, PostTiemposMelaza> UnidadesPorPileta { get; set; } = new Dictionary<int, PostTiemposMelaza>();
         public List<PostTiemposMelaza> UnidadesPipaProceso { get; set; } = new();
         public List<PostTiemposMelaza> UnidadesPipaEnfriamiento { get; set; } = new();
-        
+
         // NUEVA PROPIEDAD para las unidades de descarga ordenadas
         public List<PostTiemposMelaza> UnidadesDescarga { get; set; } = new();
-        
+
         public int TotalRegistrosPipa { get; set; }
         public int NumberInputPipa { get; set; }
     }

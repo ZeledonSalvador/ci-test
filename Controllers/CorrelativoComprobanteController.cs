@@ -14,7 +14,7 @@ using Microsoft.Extensions.Options;
 namespace FrontendQuickpass.Controllers
 {
 
-    [Route ("CorrelativoComprobante")]
+    [Route("CorrelativoComprobante")]
     public class CorrelativoComprobanteController : Controller
     {
         private readonly IHttpClientFactory _httpClientFactory;
@@ -418,7 +418,7 @@ namespace FrontendQuickpass.Controllers
             }
         }
 
-[HttpPost]
+        [HttpPost]
         [Route("Anular")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Anular(int comprobanteNumber, string motivo)
@@ -522,7 +522,7 @@ namespace FrontendQuickpass.Controllers
                 });
             }
         }
-    
+
 
 
         [HttpPost]

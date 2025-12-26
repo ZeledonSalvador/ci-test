@@ -80,7 +80,7 @@ namespace FrontendQuickpass.Controllers
                         if (item.dateTimePrecheckeo.HasValue && item.dateTimePrecheckeo.Value != DateTime.MinValue)
                         {
                             item.dateTimePrecheckeo = TimeZoneInfo.ConvertTimeFromUtc(
-                                DateTime.SpecifyKind(item.dateTimePrecheckeo.Value, DateTimeKind.Utc), 
+                                DateTime.SpecifyKind(item.dateTimePrecheckeo.Value, DateTimeKind.Utc),
                                 gmtMinus6
                             );
                         }
@@ -88,7 +88,7 @@ namespace FrontendQuickpass.Controllers
 
                     // CORECCIÓN: Ordenar solo los elementos que tienen fecha válida
                     posts = posts.OrderBy(p => p.dateTimePrecheckeo ?? DateTime.MaxValue).ToList();
-                    
+
                     model.TruckTypeR = posts.Where(p => p.vehicle?.truckType == "R").ToList();
                     model.TruckTypeV = posts.Where(p => p.vehicle?.truckType == "V").ToList();
                     model.CountPlanas = model.TruckTypeR.Count;
@@ -136,7 +136,7 @@ namespace FrontendQuickpass.Controllers
         public async Task<IActionResult> ChangeTransactionStatus([FromBody] ChangeTransactionRequest request)
         {
             var codeGen = request.CodeGen?.Trim();
-            
+
             if (string.IsNullOrWhiteSpace(request.CodeGen))
             {
                 _logService.LogActivityAsync("", request, Usuario, 0);
@@ -155,13 +155,13 @@ namespace FrontendQuickpass.Controllers
                     //leveransUsernameChangeStatus = UsuarioName,
                     observationsChangeStatus = "Autorizacion ingreso AZUCAR"
                 };
-                
+
                 var jsonContent = JsonConvert.SerializeObject(requestBody);
                 var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
                 var response = await client.PostAsync(url, content);
                 var responseContent = await response.Content.ReadAsStringAsync();
-                _logger.LogInformation("Respuesta del API - Status: {statusCode}, Content: {content}", 
+                _logger.LogInformation("Respuesta del API - Status: {statusCode}, Content: {content}",
                                     response.StatusCode, responseContent);
                 if (response.IsSuccessStatusCode)
                 {

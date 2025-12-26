@@ -208,7 +208,7 @@ namespace FrontendQuickpass.Controllers
             http.DefaultRequestHeaders.ConnectionClose = true;
             http.DefaultRequestHeaders.Accept.Clear();
             http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            
+
             if (!http.DefaultRequestHeaders.Contains("Accept-Encoding"))
                 http.DefaultRequestHeaders.TryAddWithoutValidation("Accept-Encoding", "identity");
 
@@ -258,9 +258,9 @@ namespace FrontendQuickpass.Controllers
                 if (res.IsSuccessStatusCode)
                 {
                     res.Headers.TryGetValues("Request-Id", out var reqIds);
-                    _logger.LogInformation("Reporte creado exitosamente. Status: {Status}, RequestId: {RequestId}", 
+                    _logger.LogInformation("Reporte creado exitosamente. Status: {Status}, RequestId: {RequestId}",
                         res.StatusCode, reqIds?.FirstOrDefault());
-                    
+
                     return Json(new
                     {
                         success = true,
@@ -274,7 +274,7 @@ namespace FrontendQuickpass.Controllers
                 }
 
                 string responseText = await SafeReadResponseContent(res);
-                _logger.LogWarning("Error al crear reporte. Status: {Status}, Response: {Response}", 
+                _logger.LogWarning("Error al crear reporte. Status: {Status}, Response: {Response}",
                     res.StatusCode, responseText);
 
                 return Json(new
@@ -343,7 +343,7 @@ namespace FrontendQuickpass.Controllers
                     return (false, $"El archivo {file.FileName} excede el tamaño máximo de 20MB");
                 }
 
-                var isValidType = ALLOWED_IMAGE_TYPES.Contains(file.ContentType) || 
+                var isValidType = ALLOWED_IMAGE_TYPES.Contains(file.ContentType) ||
                                 ALLOWED_VIDEO_TYPES.Contains(file.ContentType);
 
                 if (!isValidType)
@@ -359,14 +359,14 @@ namespace FrontendQuickpass.Controllers
         {
             if (bytes.Length < 12) return providedMime ?? "application/octet-stream";
 
-            bool StartsWithBytes(params byte[] pattern) => 
+            bool StartsWithBytes(params byte[] pattern) =>
                 bytes.Length >= pattern.Length && bytes.AsSpan(0, pattern.Length).SequenceEqual(pattern);
 
             // Imágenes
             if (StartsWithBytes(0xFF, 0xD8, 0xFF)) return "image/jpeg";
             if (StartsWithBytes(0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)) return "image/png";
             if (StartsWithBytes(0x47, 0x49, 0x46, 0x38)) return "image/gif";
-            
+
             // WEBP
             if (bytes.Length >= 12 &&
                 StartsWithBytes(0x52, 0x49, 0x46, 0x46) && // "RIFF"
@@ -389,7 +389,7 @@ namespace FrontendQuickpass.Controllers
             }
 
             // Videos AVI
-            if (StartsWithBytes(0x52, 0x49, 0x46, 0x46) && 
+            if (StartsWithBytes(0x52, 0x49, 0x46, 0x46) &&
                 bytes.Length >= 12 && bytes[8] == 0x41 && bytes[9] == 0x56 && bytes[10] == 0x49 && bytes[11] == 0x20)
             {
                 return "video/x-msvideo";
@@ -414,7 +414,7 @@ namespace FrontendQuickpass.Controllers
 
             var invalidChars = Path.GetInvalidFileNameChars();
             var cleaned = new string(fileName.Select(ch => invalidChars.Contains(ch) ? '_' : ch).ToArray());
-            
+
             // Limitar longitud
             const int maxLength = 120;
             if (cleaned.Length > maxLength)

@@ -219,8 +219,8 @@ namespace FrontendQuickpass.Middleware
             else
             {
                 var paginaPermitida = permisosDelToken?.FirstOrDefault();
-                var redirectTo = !string.IsNullOrEmpty(paginaPermitida) 
-                    ? $"/{paginaPermitida}" 
+                var redirectTo = !string.IsNullOrEmpty(paginaPermitida)
+                    ? $"/{paginaPermitida}"
                     : "/Login";
 
                 Console.WriteLine($"Redirigiendo a: {redirectTo}");

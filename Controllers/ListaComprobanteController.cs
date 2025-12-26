@@ -39,11 +39,11 @@ namespace FrontendQuickpass.Controllers
             string returnSearch = "")
         {
 
-              if (correlativoId <= 0)
-                {
-                    return RedirectToAction("Index", "CorrelativoComprobante");
-                }
-                        // Valores mínimos razonables
+            if (correlativoId <= 0)
+            {
+                return RedirectToAction("Index", "CorrelativoComprobante");
+            }
+            // Valores mínimos razonables
             if (page < 1) page = 1;
             if (size < 1) size = 10;
 
@@ -112,7 +112,7 @@ namespace FrontendQuickpass.Controllers
                 {
                     _logger.LogError("Error al obtener lista de comprobantes. StatusCode: {StatusCode}", response.StatusCode);
                     ViewBag.Error = "No se pudo obtener la lista de comprobantes desde el servicio.";
-                    
+
                     var vmError = new ListaComprobanteViewModel
                     {
                         Items = new List<ListaComprobanteItem>(),
@@ -160,7 +160,7 @@ namespace FrontendQuickpass.Controllers
                 var items = apiResponse?.Comprobantes ?? new List<ListaComprobanteItem>();
                 var pagination = apiResponse?.Pagination ?? new PaginationInfoModel();
 
-            
+
 
                 // Usar paginación del backend si viene
                 if (pagination.CurrentPage > 0) page = pagination.CurrentPage;

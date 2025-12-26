@@ -50,7 +50,7 @@ namespace FrontendQuickpass.Controllers
             client.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json")
             );
-            
+
             if (!string.IsNullOrWhiteSpace(_apiSettings.Token))
             {
                 client.DefaultRequestHeaders.Authorization =
@@ -116,7 +116,7 @@ namespace FrontendQuickpass.Controllers
                 }
 
                 ViewBag.ApiToken = _apiSettings.Token;
-                ViewBag.BaseUrl  = baseUrl;
+                ViewBag.BaseUrl = baseUrl;
 
                 SetViewBags(pager, search);
                 return View("Index", model);
@@ -135,17 +135,17 @@ namespace FrontendQuickpass.Controllers
 
             var evidenceUrls = new List<string>();
             var attachmentUrls = new List<string>();
-            
+
             // Procesar evidencias
             if (report.EvidenceUrls != null)
             {
                 foreach (var url in report.EvidenceUrls)
                 {
                     if (string.IsNullOrWhiteSpace(url)) continue;
-                    
+
                     var processedUrl = ProcessUrl(url, baseUrl);
                     processedUrl = EnsureDataUrl(processedUrl);
-                    
+
                     if (!string.IsNullOrEmpty(processedUrl))
                     {
                         evidenceUrls.Add(AddMediaTypeMarker(processedUrl));
@@ -159,10 +159,10 @@ namespace FrontendQuickpass.Controllers
                 foreach (var attachment in report.Shipment.Attachments)
                 {
                     if (string.IsNullOrWhiteSpace(attachment.FileUrl)) continue;
-                    
+
                     var processedUrl = ProcessUrl(attachment.FileUrl, baseUrl);
                     processedUrl = EnsureDataUrl(processedUrl);
-                    
+
                     if (!string.IsNullOrEmpty(processedUrl))
                     {
                         attachmentUrls.Add(AddMediaTypeMarker(processedUrl));
@@ -172,10 +172,10 @@ namespace FrontendQuickpass.Controllers
 
             // Asignar foto del conductor (primera imagen de attachments)
             report.DriverPhotoUrl = attachmentUrls.FirstOrDefault(IsImageUrl);
-            
+
             // Asignar evidencias del incidente
             report.EvidenceUrlsProcessed = evidenceUrls;
-            
+
             // Todas las URLs procesadas (foto + evidencias)
             report.ProcessedUrls = new List<string>();
             if (!string.IsNullOrEmpty(report.DriverPhotoUrl))
@@ -212,7 +212,7 @@ namespace FrontendQuickpass.Controllers
             // 2. Query parameter &k=v|i (viene del backend API)
             if (url.Contains("&k=v", StringComparison.OrdinalIgnoreCase)) return "video";
             if (url.Contains("&k=i", StringComparison.OrdinalIgnoreCase)) return "image";
-            
+
             // 3. Fallback: detectar por extensión
             if (IsVideoUrl(url)) return "video";
             if (IsImageUrl(url)) return "image";
@@ -223,17 +223,17 @@ namespace FrontendQuickpass.Controllers
         private bool IsImageUrl(string url)
         {
             if (string.IsNullOrEmpty(url)) return false;
-            
+
             // Data URL de imagen
             if (url.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase)) return true;
-            
+
             // Base64 crudo (heurística)
             if (IsProbablyBase64(url)) return true;
 
             // Extensiones de imagen
             return System.Text.RegularExpressions.Regex.IsMatch(
-                url, 
-                @"\.(jpg|jpeg|png|gif|webp|heic|heif|bmp|svg)(\?.*)?($|#)", 
+                url,
+                @"\.(jpg|jpeg|png|gif|webp|heic|heif|bmp|svg)(\?.*)?($|#)",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase
             );
         }
@@ -241,10 +241,10 @@ namespace FrontendQuickpass.Controllers
         private bool IsVideoUrl(string url)
         {
             if (string.IsNullOrEmpty(url)) return false;
-            
+
             // Data URL de video
             if (url.StartsWith("data:video/", StringComparison.OrdinalIgnoreCase)) return true;
-            
+
             // Extensiones de video
             return System.Text.RegularExpressions.Regex.IsMatch(
                 url,
@@ -260,18 +260,18 @@ namespace FrontendQuickpass.Controllers
             if (s.StartsWith("data:", StringComparison.OrdinalIgnoreCase)) return false;
             if (s.StartsWith("/")) return false;
             if (s.Length < 100) return false;
-            
+
             return System.Text.RegularExpressions.Regex.IsMatch(s, "^[A-Za-z0-9+/=\\r\\n]+$");
         }
 
         private string EnsureDataUrl(string url)
         {
             if (string.IsNullOrWhiteSpace(url)) return string.Empty;
-            
+
             // Ya es una URL válida
-            if (url.StartsWith("data:", StringComparison.OrdinalIgnoreCase) || 
-                url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || 
-                url.StartsWith("https://", StringComparison.OrdinalIgnoreCase) || 
+            if (url.StartsWith("data:", StringComparison.OrdinalIgnoreCase) ||
+                url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                url.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
                 url.StartsWith("/"))
             {
                 return url;
@@ -298,7 +298,7 @@ namespace FrontendQuickpass.Controllers
             }
 
             // URL absoluta (retornar sin modificar)
-            if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || 
+            if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
                 url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             {
                 return url;
@@ -330,7 +330,7 @@ namespace FrontendQuickpass.Controllers
             client.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json")
             );
-            
+
             if (!string.IsNullOrWhiteSpace(_apiSettings.Token))
             {
                 client.DefaultRequestHeaders.Authorization =
@@ -344,9 +344,9 @@ namespace FrontendQuickpass.Controllers
             {
                 request.AppliedBy = UsuarioName;
 
-                var jsonContent = JsonSerializer.Serialize(request, new JsonSerializerOptions 
-                { 
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase 
+                var jsonContent = JsonSerializer.Serialize(request, new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
                 });
                 var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
@@ -362,16 +362,16 @@ namespace FrontendQuickpass.Controllers
                     var errorResponse = new Dictionary<string, object>();
                     try
                     {
-                        errorResponse = JsonSerializer.Deserialize<Dictionary<string, object>>(responseContent, 
+                        errorResponse = JsonSerializer.Deserialize<Dictionary<string, object>>(responseContent,
                             new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new Dictionary<string, object>();
                     }
                     catch
                     {
                         errorResponse["message"] = "Error al aplicar la amonestación";
                     }
-                    
-                    var errorMessage = errorResponse.ContainsKey("message") 
-                        ? errorResponse["message"].ToString() 
+
+                    var errorMessage = errorResponse.ContainsKey("message")
+                        ? errorResponse["message"].ToString()
                         : "Error al aplicar la amonestación";
 
                     return BadRequest(new { success = false, message = errorMessage });

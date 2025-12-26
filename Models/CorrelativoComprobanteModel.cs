@@ -11,7 +11,7 @@ namespace FrontendQuickpass.Models
         [JsonPropertyName("id")]
         public int Id { get; set; }
 
-          // bascula -> texto que mostramos en la tabla
+        // bascula -> texto que mostramos en la tabla
         [JsonPropertyName("bascula")]
         public string Bascula { get; set; } = string.Empty;
 
@@ -20,7 +20,7 @@ namespace FrontendQuickpass.Models
         [JsonPropertyName("basculaId")]
         public int IdBascula { get; set; }
 
-    
+
         // inicio -> Inicio de correlativo
         [JsonPropertyName("inicio")]
         public int Inicio { get; set; }

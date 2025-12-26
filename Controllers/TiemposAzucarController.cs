@@ -170,7 +170,7 @@ namespace FrontendQuickpass.Controllers
                 {
                     var content = await responseSolicitudes.Content.ReadAsStringAsync();
                     var queueData = JsonConvert.DeserializeObject<dynamic>(content);
-                    
+
                     // El API retorna: { data: { R: number, V: number, P: number } }
                     model.NumberInputPlano = (int)(queueData?.data?.R ?? 0);
                     model.NumberInputVolteo = (int)(queueData?.data?.V ?? 0);
@@ -380,7 +380,7 @@ namespace FrontendQuickpass.Controllers
         public async Task<IActionResult> sweepinglog([FromBody] SweepingLogRequest request)
         {
             var codeGen = request?.CodeGen?.Trim();
-            
+
             if (request == null)
             {
                 _logService.LogActivityAsync("", request, Usuario, 0);
@@ -392,7 +392,7 @@ namespace FrontendQuickpass.Controllers
                 using var client = CreateApiClient();
                 // POST /shipping/sweepinglog
                 var url = $"{_apiSettings.BaseUrl}shipping/sweepinglog";
-                
+
                 // El API espera string "true"/"false"
                 var json = JsonConvert.SerializeObject(new
                 {
@@ -403,7 +403,7 @@ namespace FrontendQuickpass.Controllers
                 var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
 
                 var response = await client.PostAsync(url, httpContent);
-                
+
                 if (response.IsSuccessStatusCode)
                 {
                     _logService.LogActivityAsync(codeGen, request, Usuario, 8);
@@ -412,7 +412,7 @@ namespace FrontendQuickpass.Controllers
                 {
                     _logService.LogActivityAsync(codeGen, request, Usuario, (int)response.StatusCode);
                 }
-                
+
                 return await HandleApiResponseAsync(response, "Error al registrar sweepinglog");
             }
             catch (Exception ex)
@@ -428,7 +428,7 @@ namespace FrontendQuickpass.Controllers
         public async Task<IActionResult> TiempoAzucar([FromBody] TiempoAzucarRequest request)
         {
             var codeGen = request?.CodigoGeneracion?.Trim();
-            
+
             if (request == null)
             {
                 _logService.LogActivityAsync("", request, Usuario, 0);
@@ -459,15 +459,15 @@ namespace FrontendQuickpass.Controllers
 
                 // POST /operation-times - usando los datos de la request directamente
                 var url = $"{_apiSettings.BaseUrl}operation-times";
-                
+
                 // Crear objeto anónimo con propiedades en camelCase
                 var operationTimeRequest = new
                 {
-                    shipmentId = request.ShipmentId,    
-                    operationType = "AZ-001",               
-                    duration = request.Tiempo,             
-                    comment = !string.IsNullOrEmpty(request.Comentario) ? request.Comentario : "",  
-                    truckType = request.TruckType     
+                    shipmentId = request.ShipmentId,
+                    operationType = "AZ-001",
+                    duration = request.Tiempo,
+                    comment = !string.IsNullOrEmpty(request.Comentario) ? request.Comentario : "",
+                    truckType = request.TruckType
                 };
 
                 // Configurar JsonSerializerSettings para camelCase
@@ -479,13 +479,13 @@ namespace FrontendQuickpass.Controllers
                 var json = JsonConvert.SerializeObject(operationTimeRequest, jsonSettings);
                 var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
 
-                _logger.LogInformation("Enviando tiempo de operación: shipmentId={ShipmentId}, duration={Duration}, truckType={TruckType}", 
+                _logger.LogInformation("Enviando tiempo de operación: shipmentId={ShipmentId}, duration={Duration}, truckType={TruckType}",
                     operationTimeRequest.shipmentId, operationTimeRequest.duration, operationTimeRequest.truckType);
 
                 _logger.LogDebug("JSON enviado: {Json}", json);
 
                 var response = await client.PostAsync(url, httpContent);
-                
+
                 if (response.IsSuccessStatusCode)
                 {
                     _logService.LogActivityAsync(codeGen, request, Usuario, 8);
@@ -494,7 +494,7 @@ namespace FrontendQuickpass.Controllers
                 {
                     _logService.LogActivityAsync(codeGen, request, Usuario, (int)response.StatusCode);
                 }
-                
+
                 return await HandleApiResponseAsync(response, "Error al registrar tiempo de operación");
             }
             catch (Exception ex)
@@ -509,7 +509,7 @@ namespace FrontendQuickpass.Controllers
         public async Task<IActionResult> ChangeTransactionStatus([FromBody] ChangeStatusRequest request)
         {
             var codeGen = request?.CodeGen?.Trim();
-            
+
             if (request == null)
             {
                 _logService.LogActivityAsync("", request, Usuario, 0);
@@ -534,7 +534,7 @@ namespace FrontendQuickpass.Controllers
                 var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
 
                 var response = await client.PostAsync(url, httpContent);
-                
+
                 if (response.IsSuccessStatusCode)
                 {
                     _logService.LogActivityAsync(codeGen, request, Usuario, request.PredefinedStatusId);
@@ -543,7 +543,7 @@ namespace FrontendQuickpass.Controllers
                 {
                     _logService.LogActivityAsync(codeGen, request, Usuario, (int)response.StatusCode);
                 }
-                
+
                 return await HandleApiResponseAsync(
                     response,
                     "Error al cambiar el estado",

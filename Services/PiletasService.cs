@@ -113,7 +113,7 @@ namespace FrontendQuickpass.Services
                     }
                 }
 
-                _logger.LogInformation("Unidades organizadas: {Total} - Activas: {Activas}, Iniciar: {Iniciar}, Temperatura: {Temperatura}", 
+                _logger.LogInformation("Unidades organizadas: {Total} - Activas: {Activas}, Iniciar: {Iniciar}, Temperatura: {Temperatura}",
                     unidadesOrdenadas.Count,
                     unidadesOrdenadas.Count(u => u.PiletaAsignada == 1),
                     unidadesOrdenadas.Count(u => u.PiletaAsignada == 2),
@@ -128,7 +128,7 @@ namespace FrontendQuickpass.Services
             }
         }
 
-        private async Task ProcessUnitsInSingleConnection(PiletasDbContext context, 
+        private async Task ProcessUnitsInSingleConnection(PiletasDbContext context,
             List<PostTiemposMelaza> unidades, List<int> activeShipmentIds)
         {
             // Todo en una transacción para optimizar rendimiento
@@ -137,22 +137,22 @@ namespace FrontendQuickpass.Services
             {
                 // 1. Cleanup en la misma conexión
                 await CleanupInSameConnection(context, activeShipmentIds);
-                
+
                 // 2. Obtener timers activos
                 var activeTimers = await context.TimerStates
                     .Where(t => t.TipoTimer == "melaza" && t.ShipmentId.HasValue)
                     .Select(t => t.ShipmentId!.Value)
                     .ToHashSetAsync();
 
-                _logger.LogDebug("Timers activos encontrados: {Count} - IDs: {ActiveIds}", 
+                _logger.LogDebug("Timers activos encontrados: {Count} - IDs: {ActiveIds}",
                     activeTimers.Count, string.Join(", ", activeTimers));
-                
+
                 // 3. Batch update en la misma conexión
                 await UpdateDisplayOrdersInSameConnection(context, unidades, activeTimers);
-                
+
                 // CRÍTICO: Guardar cambios ANTES del commit
                 await context.SaveChangesAsync();
-                
+
                 await transaction.CommitAsync();
             }
             catch (Exception ex)
@@ -178,7 +178,7 @@ namespace FrontendQuickpass.Services
                 .ToHashSetAsync();
 
             var idsToRemove = currentStoredIds.Except(activeShipmentIds).ToList();
-            
+
             if (!idsToRemove.Any())
             {
                 _logger.LogDebug("No hay registros obsoletos para limpiar");
@@ -191,31 +191,31 @@ namespace FrontendQuickpass.Services
                 .ToListAsync();
 
             var timersToRemove = await context.TimerStates
-                .Where(t => t.TipoTimer == "melaza" && 
-                        t.ShipmentId.HasValue && 
+                .Where(t => t.TipoTimer == "melaza" &&
+                        t.ShipmentId.HasValue &&
                         idsToRemove.Contains(t.ShipmentId.Value))
                 .ToListAsync();
 
             if (ordersToRemove.Any())
             {
                 context.UnitDisplayOrders.RemoveRange(ordersToRemove);
-                _logger.LogInformation("Eliminando {Count} UnitDisplayOrders obsoletos: {Ids}", 
+                _logger.LogInformation("Eliminando {Count} UnitDisplayOrders obsoletos: {Ids}",
                     ordersToRemove.Count, string.Join(", ", ordersToRemove.Select(o => o.ShipmentId)));
             }
 
             if (timersToRemove.Any())
             {
                 context.TimerStates.RemoveRange(timersToRemove);
-                _logger.LogInformation("Eliminando {Count} TimerStates huérfanos: {Ids}", 
+                _logger.LogInformation("Eliminando {Count} TimerStates huérfanos: {Ids}",
                     timersToRemove.Count, string.Join(", ", timersToRemove.Select(t => t.ShipmentId)));
             }
 
             // Deduplicar en la misma conexión
             await DeduplicateInSameConnection(context);
-            
+
             // NO hacer SaveChangesAsync aquí - se hará en la transacción padre
         }
-        
+
         private async Task UpdateDisplayOrdersInSameConnection(PiletasDbContext context,
             List<PostTiemposMelaza> unidades, HashSet<int> activeTimers)
         {
@@ -343,7 +343,7 @@ namespace FrontendQuickpass.Services
             {
                 return await CalculateDisplayOrderForActiveTimer(context, shipmentId);
             }
-            
+
             var timeComponent = (int)(now.ToUnixTimeSeconds() % 1000);
             return currentStatus switch
             {
@@ -465,7 +465,7 @@ namespace FrontendQuickpass.Services
                     }
                 }
 
-                _logger.LogDebug("Orden de visualización actualizado: ShipmentId {ShipmentId} -> Orden {Order} (Timer activo: {ActiveTimer})", 
+                _logger.LogDebug("Orden de visualización actualizado: ShipmentId {ShipmentId} -> Orden {Order} (Timer activo: {ActiveTimer})",
                     shipmentId, baseOrder, activeTimer);
             }
             catch (Exception ex)
@@ -509,7 +509,7 @@ namespace FrontendQuickpass.Services
                 if (allOrders.Any())
                 {
                     context.UnitDisplayOrders.RemoveRange(allOrders);
-                    _logger.LogInformation("Limpieza UnitDisplayOrders: Eliminados {Count} registros de {TipoTimer}", 
+                    _logger.LogInformation("Limpieza UnitDisplayOrders: Eliminados {Count} registros de {TipoTimer}",
                         allOrders.Count, tipoTimer);
                 }
 
@@ -521,13 +521,13 @@ namespace FrontendQuickpass.Services
                 if (allTimers.Any())
                 {
                     context.TimerStates.RemoveRange(allTimers);
-                    _logger.LogInformation("Limpieza TimerStates: Eliminados {Count} timers de {TipoTimer}", 
+                    _logger.LogInformation("Limpieza TimerStates: Eliminados {Count} timers de {TipoTimer}",
                         allTimers.Count, tipoTimer);
                 }
 
                 await context.SaveChangesAsync();
-                
-                _logger.LogInformation("Limpieza completa finalizada para {TipoTimer}: {OrdersCount} órdenes y {TimersCount} timers eliminados", 
+
+                _logger.LogInformation("Limpieza completa finalizada para {TipoTimer}: {OrdersCount} órdenes y {TimersCount} timers eliminados",
                     tipoTimer, allOrders.Count, allTimers.Count);
             }
             catch (Exception ex)
@@ -543,22 +543,22 @@ namespace FrontendQuickpass.Services
             {
                 using var scope = _serviceProvider.CreateScope();
                 var context = scope.ServiceProvider.GetRequiredService<PiletasDbContext>();
-                
+
                 var timer = await context.TimerStates
                     .FirstOrDefaultAsync(t => t.ShipmentId == shipmentId);
-                    
+
                 if (timer != null)
                 {
                     var timerId = timer.TimerId;
                     var codeGen = timer.CodeGen;
-                    
+
                     // 1. Eliminar el timer
                     context.TimerStates.Remove(timer);
-                    
+
                     // 2. Eliminar también el registro de UnitDisplayOrder
                     var displayOrder = await context.UnitDisplayOrders
                         .FirstOrDefaultAsync(udo => udo.ShipmentId == shipmentId && udo.TipoTimer == "melaza");
-                        
+
                     if (displayOrder != null)
                     {
                         context.UnitDisplayOrders.Remove(displayOrder);
@@ -568,14 +568,14 @@ namespace FrontendQuickpass.Services
                     {
                         _logger.LogInformation("Timer eliminado para shipment {ShipmentId} (sin UnitDisplayOrder)", shipmentId);
                     }
-                    
+
                     await context.SaveChangesAsync();
-                    
-                    _logger.LogInformation("Limpieza completa: Timer {TimerId} y registros asociados eliminados para {ShipmentId} - {CodeGen}", 
+
+                    _logger.LogInformation("Limpieza completa: Timer {TimerId} y registros asociados eliminados para {ShipmentId} - {CodeGen}",
                         timerId, shipmentId, codeGen);
                     return true;
                 }
-                
+
                 _logger.LogDebug("No se encontró timer para shipment {ShipmentId}", shipmentId);
                 return false;
             }

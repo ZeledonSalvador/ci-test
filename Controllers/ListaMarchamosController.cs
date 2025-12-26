@@ -243,7 +243,7 @@ namespace FrontendQuickpass.Controllers
                 Search = search ?? string.Empty
             };
 
-           
+
             ViewBag.ReturnPage = returnPage;
             ViewBag.ReturnSize = returnSize;
             ViewBag.ReturnSearch = returnSearch ?? string.Empty;

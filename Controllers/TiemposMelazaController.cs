@@ -134,16 +134,16 @@ namespace FrontendQuickpass.Controllers
 
                 // Cargar unidades para descarga (status 7 y 8)
                 var unidadesDescarga = await CargarUnidadesDescargaAsync(client);
-                
+
                 // FILTRAR SOLO UNIDADES VÁLIDAS
                 var unidadesValidas = unidadesDescarga
                     .Where(u => u != null && u.id > 0)
                     .ToList();
 
-                model.UnidadesPorPileta = unidadesValidas.Any() 
-                    ? unidadesValidas.ToDictionary(u => u.id, u => u) 
+                model.UnidadesPorPileta = unidadesValidas.Any()
+                    ? unidadesValidas.ToDictionary(u => u.id, u => u)
                     : new Dictionary<int, PostTiemposMelaza>();
-                
+
                 // IMPORTANTE: Asignar lista vacía explícitamente si no hay unidades
                 model.UnidadesDescarga = unidadesValidas.Any() ? unidadesValidas : new List<PostTiemposMelaza>();
 
@@ -166,7 +166,7 @@ namespace FrontendQuickpass.Controllers
                 }
 
                 // Serializar solo si hay unidades válidas
-                var jsonData = unidadesValidas.Any() 
+                var jsonData = unidadesValidas.Any()
                     ? JsonConvert.SerializeObject(unidadesValidas, new JsonSerializerSettings
                     {
                         ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver()
@@ -360,10 +360,10 @@ namespace FrontendQuickpass.Controllers
             try
             {
                 using var client = CreateApiClient();
-                
+
                 // Solo consultar status 15 (enfriamiento)
                 var response = await client.GetAsync($"{_apiSettings.BaseUrl}shipping/status/15?page=1&size=10000");
-                
+
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
@@ -376,7 +376,7 @@ namespace FrontendQuickpass.Controllers
                         .ToList();
 
                     _logger.LogInformation("Datos de enfriamiento obtenidos - Total: {Count}", unidadesPipaEnfriamiento.Count);
-                    
+
                     return JsonSuccess("Datos de enfriamiento obtenidos correctamente.", unidadesPipaEnfriamiento);
                 }
                 else
@@ -643,7 +643,7 @@ namespace FrontendQuickpass.Controllers
             try
             {
                 using var client = CreateApiClient();
-                
+
                 // Construir URL con parámetros
                 var url = $"{_apiSettings.BaseUrl}shipping/brix/view";
 
@@ -664,9 +664,9 @@ namespace FrontendQuickpass.Controllers
                 {
                     var content = await response.Content.ReadAsStringAsync();
                     var data = JsonConvert.DeserializeObject<BrixDataResponse>(content);
-                    
+
                     _logger.LogInformation("Datos de Brix obtenidos - Página: {Page}, Total: {Total}", page, data?.total ?? 0);
-                    
+
                     return JsonSuccess("Datos de Brix obtenidos correctamente.", data);
                 }
                 else
@@ -688,7 +688,7 @@ namespace FrontendQuickpass.Controllers
         public async Task<IActionResult> RegistrarBrix([FromBody] RegistrarBrixRequest request)
         {
             // Enhanced debugging logs
-            _logger.LogInformation("RegistrarBrix called - Request: {Request}", 
+            _logger.LogInformation("RegistrarBrix called - Request: {Request}",
                 JsonConvert.SerializeObject(request ?? new RegistrarBrixRequest()));
 
             if (request == null)
@@ -699,7 +699,7 @@ namespace FrontendQuickpass.Controllers
             }
 
             _logger.LogInformation("Request details - Brix: {Brix}, Shipments Count: {Count}, Shipments: {Shipments}",
-                request.Brix, request.Shipments?.Count ?? 0, 
+                request.Brix, request.Shipments?.Count ?? 0,
                 request.Shipments != null ? string.Join(",", request.Shipments) : "null");
 
             if (request.Brix <= 0)
@@ -711,7 +711,7 @@ namespace FrontendQuickpass.Controllers
 
             if (request.Shipments == null || !request.Shipments.Any())
             {
-                _logger.LogWarning("Shipments invalid - Null: {IsNull}, Count: {Count}", 
+                _logger.LogWarning("Shipments invalid - Null: {IsNull}, Count: {Count}",
                     request.Shipments == null, request.Shipments?.Count ?? 0);
                 _logService.LogActivityAsync("", request, Usuario, 0);
                 return JsonError("Debe incluir al menos un shipment");
@@ -735,20 +735,20 @@ namespace FrontendQuickpass.Controllers
 
                 var json = JsonConvert.SerializeObject(payload);
                 _logger.LogInformation("Sending payload to API: {Payload}", json);
-                
+
                 var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
                 var response = await client.PostAsync($"{_apiSettings.BaseUrl}shipping/brix", httpContent);
 
                 if (response.IsSuccessStatusCode)
                 {
                     _logService.LogActivityAsync("", request, Usuario, 200);
-                    _logger.LogInformation("Brix registrado exitosamente - Valor: {Brix}, Shipments: {Count}", 
+                    _logger.LogInformation("Brix registrado exitosamente - Valor: {Brix}, Shipments: {Count}",
                         request.Brix, request.Shipments.Count);
                 }
                 else
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("API Error - Status: {Status}, Content: {Content}", 
+                    _logger.LogError("API Error - Status: {Status}, Content: {Content}",
                         response.StatusCode, errorContent);
                     _logService.LogActivityAsync("", request, Usuario, (int)response.StatusCode);
                 }

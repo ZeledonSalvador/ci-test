@@ -10,7 +10,7 @@ namespace FrontendQuickpass.Models
         public List<PostAutorizacion> UnidadesPlanas { get; set; } = new();
         public List<PostAutorizacion> UnidadesVolteo { get; set; } = new();
         public List<PostAutorizacion> UnidadesPipa { get; set; } = new();
-        
+
         public int CountPlanas { get; set; }
         public int CountVolteo { get; set; }
         public int CountPipa { get; set; }

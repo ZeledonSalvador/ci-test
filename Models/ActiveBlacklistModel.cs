@@ -19,7 +19,7 @@ namespace FrontendQuickpass.Models
         public ShipmentDto? Shipment { get; set; }
         public PenaltyAppliedDto? PenaltyApplied { get; set; }
         public List<BlacklistStatusHistory>? StatusHistory { get; set; }
-        
+
         // Propiedades procesadas por el controlador
         public List<string>? ProcessedUrls { get; set; }
         public string? DriverPhotoUrl { get; set; }

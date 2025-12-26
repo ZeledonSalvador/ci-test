@@ -23,18 +23,18 @@ namespace FrontendQuickpass.Services
             {
                 using var scope = _serviceProvider.CreateScope();
                 var context = scope.ServiceProvider.GetRequiredService<PiletasDbContext>();
-                
+
                 // Asegurar que la base de datos esté creada
                 await context.Database.EnsureCreatedAsync(cancellationToken);
-                
+
                 // Obtener la ruta real donde se creó la BD para logging
                 var connection = context.Database.GetDbConnection();
                 _logger.LogInformation("📁 Base de datos SQLite ubicada en: {DatabasePath}", connection.DataSource);
-                
+
                 // Verificar que las tablas principales existan
                 await VerifyDatabaseTablesAsync(context);
-                
-                
+
+
                 _logger.LogInformation("✅ Sistema de piletas inicializado correctamente");
             }
             catch (Exception ex)
@@ -51,7 +51,7 @@ namespace FrontendQuickpass.Services
                 // Verificar que TimerStates existe
                 var timersCount = await context.TimerStates.CountAsync();
                 _logger.LogInformation("📊 Tabla TimerStates verificada - Registros: {Count}", timersCount);
-                
+
                 _logger.LogInformation("✅ Todas las tablas verificadas correctamente");
             }
             catch (Exception ex)

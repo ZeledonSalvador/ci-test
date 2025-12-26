@@ -72,7 +72,7 @@ namespace FrontendQuickpass.Controllers
             };
         }
 
-      
+
         [HttpGet]
         public async Task<IActionResult> Index(int page = 1, int size = 10, string? search = null)
         {
@@ -95,14 +95,14 @@ namespace FrontendQuickpass.Controllers
 
                 var baseUrl = _apiSettings.BaseUrl ?? string.Empty;
 
-              // URL con paginación (y opcionalmente búsqueda), incluyendo rangos inactivos
-            var urlBuilder = new StringBuilder($"{baseUrl}correlatives/seal-ranges?page={page}&limit={size}&includeInactive=true");
+                // URL con paginación (y opcionalmente búsqueda), incluyendo rangos inactivos
+                var urlBuilder = new StringBuilder($"{baseUrl}correlatives/seal-ranges?page={page}&limit={size}&includeInactive=true");
 
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                // Si el backend soporta búsqueda, se envía como querystring
-                urlBuilder.Append("&search=").Append(Uri.EscapeDataString(search));
-            }
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    // Si el backend soporta búsqueda, se envía como querystring
+                    urlBuilder.Append("&search=").Append(Uri.EscapeDataString(search));
+                }
 
                 var url = urlBuilder.ToString();
 

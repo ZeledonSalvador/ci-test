@@ -40,7 +40,7 @@ namespace FrontendQuickpass.Models
         public List<ShipmentAttachmentTiemposAzucar> shipmentAttachments { get; set; } = new();
         public List<ShipmentSealTiemposAzucar> shipmentSeals { get; set; } = new();
         public NavRecordTiemposAzucar navRecord { get; set; } = new();
-        
+
         // Propiedades adicionales
         public string TimeForId2 { get; set; } = string.Empty;
         public bool IsFirst { get; set; }

@@ -20,7 +20,7 @@ namespace FrontendQuickpass.Services
         private readonly ILogger<TransactionLogService> _logger;
 
         public TransactionLogService(
-            IHttpClientFactory httpClientFactory, 
+            IHttpClientFactory httpClientFactory,
             IOptions<ApiSettings> apiSettings,
             ILogger<TransactionLogService> logger)
         {
@@ -40,7 +40,7 @@ namespace FrontendQuickpass.Services
             };
 
             // Fire-and-Forget: No bloquea al usuario
-            _ = Task.Run(async () => 
+            _ = Task.Run(async () =>
             {
                 try
                 {
@@ -64,7 +64,7 @@ namespace FrontendQuickpass.Services
             };
 
             // Fire-and-Forget: No bloquea al usuario
-            _ = Task.Run(async () => 
+            _ = Task.Run(async () =>
             {
                 try
                 {
@@ -82,7 +82,7 @@ namespace FrontendQuickpass.Services
             try
             {
                 var url = $"{_apiSettings.BaseUrl}logs/transaction-logs";
-                
+
                 var client = _httpClientFactory.CreateClient();
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiSettings.Token);
 
@@ -113,14 +113,14 @@ namespace FrontendQuickpass.Services
             try
             {
                 var logDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Logs");
-                
+
                 if (!Directory.Exists(logDirectory))
                 {
                     Directory.CreateDirectory(logDirectory);
                 }
 
                 var logFilePath = Path.Combine(logDirectory, "TransactionLogs.log");
-                
+
                 var logEntry = new
                 {
                     timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"),
@@ -130,9 +130,9 @@ namespace FrontendQuickpass.Services
                 };
 
                 var logLine = JsonConvert.SerializeObject(logEntry) + Environment.NewLine;
-                
+
                 await File.AppendAllTextAsync(logFilePath, logLine);
-                
+
                 _logger.LogInformation("Log guardado en archivo .log: {LogType} - {Reason}", logType, reason);
             }
             catch (Exception ex)

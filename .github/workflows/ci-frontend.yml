@@ -1,127 +1,112 @@
-# Nombre que verás en la pestaña Actions de GitHub
 name: CI - FrontEnd (.NET 8)
 
-# Cuándo se ejecuta este workflow
 on:
-  # Cada push a la rama main (para la prueba)
   push:
     branches: [ "main" ]
-
-  # También en pull requests a main
   pull_request:
     branches: [ "main" ]
-
-  # Permite ejecutarlo manualmente desde la pestaña Actions
   workflow_dispatch:
 
 jobs:
-  # Job principal: compila, prueba, publica y genera artefacto
   build:
-    # Runner donde se ejecuta (Windows porque usaremos PowerShell para zip fácilmente)
     runs-on: windows-latest
 
-    # Estrategia de matriz para probar en múltiples configuraciones
     strategy:
       matrix:
         dotnet-version: ['8.0.x']
-        # Puedes descomentar la siguiente línea para probar en múltiples versiones:
-        # dotnet-version: ['8.0.x', '9.0.x']
-      fail-fast: false  # Continúa con otras versiones aunque una falle
+      fail-fast: false
 
-    # Variables de entorno para el job
     env:
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
       DOTNET_CLI_TELEMETRY_OPTOUT: true
       BUILD_CONFIGURATION: Release
 
     steps:
-      # 0) Registrar inicio del build
       - name: Build Start Time
         id: build_start
+        shell: pwsh
         run: |
           $startTime = Get-Date
           Write-Host "🚀 Inicio del build: $($startTime.ToString('yyyy-MM-dd HH:mm:ss'))" -ForegroundColor Cyan
           echo "START_TIME=$($startTime.ToString('o'))" >> $env:GITHUB_OUTPUT
-        shell: pwsh
-      # 1) Descarga el código del repo al runner
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2) Instala/configura el SDK de .NET (usa la versión de la matriz)
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
 
-      # 3) Instala Node.js para dependencias npm (Chart.js)
-      - name: Setup Node.js
+      #####################################################################
+      # Node/NPM condicional (solo si existe package-lock.json)
+      #####################################################################
+      - name: Setup Node.js (only if package-lock.json exists)
+        if: hashFiles('**/package-lock.json') != ''
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: package-lock.json
 
-      # 4) Instala dependencias npm
-      - name: Install npm dependencies
-        run: npm ci
+      - name: Install npm dependencies (only if package-lock.json exists)
+        if: hashFiles('**/package-lock.json') != ''
+        run: npm ci --no-audit --no-fund
 
-      # 4.5) Validación de archivos JSON de configuración
       - name: Validate JSON configuration files
+        shell: pwsh
+        continue-on-error: true
         run: |
           Write-Host "Validando archivos de configuración JSON..."
           $jsonFiles = Get-ChildItem -Path . -Filter "appsettings*.json" -Recurse
           $errors = 0
+
           foreach ($file in $jsonFiles) {
             Write-Host "Validando: $($file.FullName)"
             try {
-              $content = Get-Content $file.FullName -Raw | ConvertFrom-Json
+              $null = Get-Content $file.FullName -Raw | ConvertFrom-Json
               Write-Host "✅ $($file.Name) - Válido" -ForegroundColor Green
             } catch {
-              Write-Host "❌ $($file.Name) - Error: $_" -ForegroundColor Red
+              Write-Host "❌ $($file.Name) - Error JSON inválido" -ForegroundColor Red
               $errors++
             }
           }
+
           if ($errors -gt 0) {
-            Write-Host "⚠️ Se encontraron $errors archivo(s) JSON inválido(s)" -ForegroundColor Yellow
+            Write-Host "⚠️ Se encontraron $errors archivo(s) JSON inválido(s). (Piloto: no bloquea)" -ForegroundColor Yellow
             exit 0
           } else {
             Write-Host "✅ Todos los archivos JSON son válidos" -ForegroundColor Green
           }
+
+      #####################################################################
+      # Lint JS (safe) + genera reporte eslint-report.txt
+      #####################################################################
+      - name: JavaScript Linting (safe + report)
+        if: hashFiles('**/package-lock.json') != ''
         shell: pwsh
         continue-on-error: true
-
-      # 4.6) Linting de JavaScript con ESLint (instalación básica)
-      - name: JavaScript Linting
         run: |
-          Write-Host "Instalando ESLint..."
-          npm install --save-dev eslint@latest
+          if (Test-Path "package.json") {
+            $pkg = Get-Content "package.json" -Raw | ConvertFrom-Json
+            if ($pkg.scripts -and $pkg.scripts.lint) {
+              Write-Host "✅ Ejecutando npm run lint..." -ForegroundColor Green
 
-          Write-Host "Inicializando configuración básica de ESLint..."
-          $eslintConfig = @"
-          {
-            "env": {
-              "browser": true,
-              "es2021": true
-            },
-            "extends": "eslint:recommended",
-            "parserOptions": {
-              "ecmaVersion": "latest",
-              "sourceType": "script"
-            },
-            "rules": {
-              "no-unused-vars": "warn",
-              "no-console": "off"
+              # Guardar output en archivo para subirlo como artefacto
+              npm run lint 2>&1 | Tee-Object -FilePath eslint-report.txt
+
+              # En piloto no bloqueamos aunque eslint devuelva exit code != 0
+              if ($LASTEXITCODE -ne 0) {
+                Write-Host "⚠️ ESLint terminó con warnings/errores. (Piloto: no bloquea)" -ForegroundColor Yellow
+                exit 0
+              }
+            } else {
+              "No hay script 'lint' en package.json. Se omite lint JS." | Tee-Object -FilePath eslint-report.txt
             }
+          } else {
+            "No existe package.json. Se omite lint JS." | Tee-Object -FilePath eslint-report.txt
           }
-          "@
-          Set-Content -Path ".eslintrc.json" -Value $eslintConfig
 
-          Write-Host "Ejecutando ESLint en archivos JavaScript..."
-          npx eslint "wwwroot/js/**/*.js" --max-warnings=50 || Write-Host "⚠️ Se encontraron advertencias de ESLint" -ForegroundColor Yellow
-        shell: pwsh
-        continue-on-error: true
-
-      # 5) Cache de NuGet: acelera restores posteriores
-      #    (Si cambian dependencias, la cache se invalida automáticamente)
       - name: Cache NuGet packages
         uses: actions/cache@v4
         with:
@@ -131,53 +116,50 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      # 6) Restaura dependencias .NET
       - name: Restore dependencies
         run: dotnet restore
 
-      # 7) Validación de formato de código (dotnet format)
       - name: Check code formatting
-        run: dotnet format --verify-no-changes --verbosity diagnostic
+        run: dotnet format FrontendQuickpass.sln --verify-no-changes --verbosity diagnostic
         continue-on-error: true
 
-      # 8) Análisis de código con .NET Analyzers
       - name: Run .NET Code Analysis
-        run: dotnet build -c Release --no-restore /p:EnforceCodeStyleInBuild=true /p:TreatWarningsAsErrors=false
+        run: dotnet build -c ${{ env.BUILD_CONFIGURATION }} --no-restore /p:EnforceCodeStyleInBuild=true /p:TreatWarningsAsErrors=false
         continue-on-error: true
 
-      # 9) Escaneo de seguridad - Vulnerabilidades en paquetes NuGet
       - name: Security scan - NuGet packages
-        run: |
-          dotnet list package --vulnerable --include-transitive 2>&1 | tee vulnerable-packages.txt
-          if (Select-String -Path vulnerable-packages.txt -Pattern "has the following vulnerable packages" -Quiet) {
-            Write-Host "⚠️ Vulnerabilidades encontradas en paquetes NuGet"
-            Get-Content vulnerable-packages.txt
-            exit 0
-          } else {
-            Write-Host "✅ No se encontraron vulnerabilidades en paquetes NuGet"
-          }
         shell: pwsh
         continue-on-error: true
-
-      # 10) Compila en Release
-      - name: Build (Release)
-        run: dotnet build -c Release --no-restore
-
-      # 11) Ejecuta pruebas con code coverage (continúa aunque no haya tests)
-      - name: Test with Code Coverage (Release)
         run: |
-          dotnet test -c Release --no-build --verbosity normal `
+          dotnet list package --vulnerable --include-transitive |
+            Tee-Object -FilePath vulnerable-packages.txt
+
+          if (Select-String -Path vulnerable-packages.txt -Pattern "vulnerable" -Quiet) {
+            Write-Host "⚠️ Se detectaron posibles vulnerabilidades (Piloto: no bloquea)." -ForegroundColor Yellow
+          } else {
+            Write-Host "✅ No se encontraron vulnerabilidades reportadas" -ForegroundColor Green
+          }
+
+      - name: Build (Release)
+        run: dotnet build -c ${{ env.BUILD_CONFIGURATION }} --no-restore
+
+      - name: Test with Code Coverage (Release)
+        continue-on-error: true
+        run: |
+          dotnet test -c ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal `
             --collect:"XPlat Code Coverage" `
             --results-directory ./coverage
-        continue-on-error: true
 
-      # 11.5) Genera reporte de code coverage
       - name: Generate Code Coverage Report
         if: always()
+        shell: pwsh
+        continue-on-error: true
         run: |
-          dotnet tool install -g dotnet-reportgenerator-globaltool
           if (Test-Path "./coverage") {
-            reportgenerator `
+            New-Item -ItemType Directory -Force -Path ".tools" | Out-Null
+            dotnet tool install --tool-path ./.tools dotnet-reportgenerator-globaltool
+
+            ./.tools/reportgenerator `
               "-reports:./coverage/**/coverage.cobertura.xml" `
               "-targetdir:./coverage-report" `
               "-reporttypes:Html;TextSummary"
@@ -187,66 +169,62 @@ jobs:
               Get-Content "./coverage-report/Summary.txt"
             }
           } else {
-            Write-Host "⚠️ No se generó cobertura de código (sin tests)" -ForegroundColor Yellow
+            Write-Host "⚠️ No se generó cobertura (sin tests o sin collector)" -ForegroundColor Yellow
           }
+
+      - name: Analyze Static Assets Size
         shell: pwsh
         continue-on-error: true
-
-      # 11.6) Análisis de tamaño de assets estáticos
-      - name: Analyze Static Assets Size
         run: |
           Write-Host "`n📦 Análisis de tamaño de assets estáticos:" -ForegroundColor Cyan
 
-          # Analizar archivos JavaScript
-          Write-Host "`nArchivos JavaScript (wwwroot/js):" -ForegroundColor Yellow
-          $jsFiles = Get-ChildItem -Path "wwwroot/js" -Filter "*.js" -Recurse |
-            Where-Object { $_.Length -gt 50KB } |
-            Sort-Object Length -Descending |
-            Select-Object -First 10
+          if (Test-Path "wwwroot/js") {
+            Write-Host "`nArchivos JavaScript (wwwroot/js):" -ForegroundColor Yellow
+            $jsFiles = Get-ChildItem -Path "wwwroot/js" -Filter "*.js" -Recurse |
+              Where-Object { $_.Length -gt 50KB } |
+              Sort-Object Length -Descending |
+              Select-Object -First 10
 
-          if ($jsFiles) {
-            $jsFiles | ForEach-Object {
-              $sizeKB = [math]::Round($_.Length / 1KB, 2)
-              Write-Host "  - $($_.Name): $sizeKB KB" -ForegroundColor $(if($sizeKB -gt 100){"Red"}else{"White"})
+            if ($jsFiles) {
+              $jsFiles | ForEach-Object {
+                $sizeKB = [math]::Round($_.Length / 1KB, 2)
+                Write-Host "  - $($_.Name): $sizeKB KB"
+              }
+            } else {
+              Write-Host "  ✅ Todos los archivos JS son menores a 50KB" -ForegroundColor Green
             }
-          } else {
-            Write-Host "  ✅ Todos los archivos JS son menores a 50KB" -ForegroundColor Green
           }
 
-          # Analizar archivos CSS
-          Write-Host "`nArchivos CSS (wwwroot/css):" -ForegroundColor Yellow
-          $cssFiles = Get-ChildItem -Path "wwwroot/css" -Filter "*.css" -Recurse |
-            Where-Object { $_.Length -gt 50KB } |
-            Sort-Object Length -Descending |
-            Select-Object -First 10
+          if (Test-Path "wwwroot/css") {
+            Write-Host "`nArchivos CSS (wwwroot/css):" -ForegroundColor Yellow
+            $cssFiles = Get-ChildItem -Path "wwwroot/css" -Filter "*.css" -Recurse |
+              Where-Object { $_.Length -gt 50KB } |
+              Sort-Object Length -Descending |
+              Select-Object -First 10
 
-          if ($cssFiles) {
-            $cssFiles | ForEach-Object {
-              $sizeKB = [math]::Round($_.Length / 1KB, 2)
-              Write-Host "  - $($_.Name): $sizeKB KB" -ForegroundColor $(if($sizeKB -gt 100){"Red"}else{"White"})
+            if ($cssFiles) {
+              $cssFiles | ForEach-Object {
+                $sizeKB = [math]::Round($_.Length / 1KB, 2)
+                Write-Host "  - $($_.Name): $sizeKB KB"
+              }
+            } else {
+              Write-Host "  ✅ Todos los archivos CSS son menores a 50KB" -ForegroundColor Green
             }
-          } else {
-            Write-Host "  ✅ Todos los archivos CSS son menores a 50KB" -ForegroundColor Green
           }
 
-          # Tamaño total de wwwroot
-          $wwwrootSize = (Get-ChildItem -Path "wwwroot" -Recurse | Measure-Object -Property Length -Sum).Sum
-          $wwwrootSizeMB = [math]::Round($wwwrootSize / 1MB, 2)
-          Write-Host "`nTamaño total de wwwroot: $wwwrootSizeMB MB" -ForegroundColor $(if($wwwrootSizeMB -gt 50){"Red"}elseif($wwwrootSizeMB -gt 20){"Yellow"}else{"Green"})
-        shell: pwsh
-        continue-on-error: true
+          if (Test-Path "wwwroot") {
+            $wwwrootSize = (Get-ChildItem -Path "wwwroot" -Recurse | Measure-Object -Property Length -Sum).Sum
+            $wwwrootSizeMB = [math]::Round($wwwrootSize / 1MB, 2)
+            Write-Host "`nTamaño total de wwwroot: $wwwrootSizeMB MB"
+          }
 
-      # 12) Publica el proyecto (genera la carpeta lista para desplegar en IIS)
       - name: Publish (Release)
-        run: dotnet publish -c Release -o publish --no-build
+        run: dotnet publish -c ${{ env.BUILD_CONFIGURATION }} -o publish --no-build
 
-      # 13) Empaqueta la salida de publish en un ZIP (artefacto)
       - name: Zip publish output
         run: |
           powershell Compress-Archive -Path publish\* -DestinationPath frontend_publish.zip -Force
 
-      # 14) Sube el ZIP como "Artifact" del run (NO se guarda en el repo)
-      #     Se descarga desde Actions -> run -> Artifacts
       - name: Upload artifact (publish zip)
         uses: actions/upload-artifact@v4
         with:
@@ -254,7 +232,6 @@ jobs:
           path: frontend_publish.zip
           retention-days: 14
 
-      # 15) Sube reporte de vulnerabilidades como artefacto
       - name: Upload security scan results
         if: always()
         uses: actions/upload-artifact@v4
@@ -263,19 +240,27 @@ jobs:
           path: vulnerable-packages.txt
           retention-days: 7
 
-      # 16) Sube reporte de code coverage como artefacto
       - name: Upload code coverage report
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: code-coverage-report
           path: coverage-report/
           retention-days: 14
-        continue-on-error: true
 
-      # 17) Análisis de rendimiento del build
+      - name: Upload ESLint report
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: eslint-report
+          path: eslint-report.txt
+          retention-days: 14
+
       - name: Build Performance Analysis
         if: always()
+        shell: pwsh
         run: |
           $endTime = Get-Date
           $startTime = [DateTime]::Parse("${{ steps.build_start.outputs.START_TIME }}")
@@ -287,11 +272,10 @@ jobs:
           Write-Host "Fin:      $($endTime.ToString('HH:mm:ss'))" -ForegroundColor White
           Write-Host "Duración: $([int]$duration.TotalMinutes) min $($duration.Seconds) seg" -ForegroundColor $(if($duration.TotalMinutes -gt 10){"Red"}elseif($duration.TotalMinutes -gt 5){"Yellow"}else{"Green"})
           Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
-        shell: pwsh
 
-      # 18) Resumen final del pipeline en consola
       - name: Pipeline Summary (Console)
         if: always()
+        shell: pwsh
         run: |
           Write-Host "`n📋 RESUMEN DEL PIPELINE CI/CD" -ForegroundColor Cyan
           Write-Host "═══════════════════════════════════════════════════════" -ForegroundColor Cyan
@@ -306,12 +290,13 @@ jobs:
           Write-Host "  • frontend_publish.zip (14 días de retención)"
           Write-Host "  • security-scan-results (7 días de retención)"
           Write-Host "  • code-coverage-report (14 días de retención)"
+          Write-Host "  • eslint-report.txt (14 días de retención)"
 
           Write-Host "`n✅ VALIDACIONES EJECUTADAS:" -ForegroundColor Yellow
           Write-Host "  ✓ Validación de formato de código (dotnet format)"
           Write-Host "  ✓ Análisis estático de código (.NET Analyzers)"
           Write-Host "  ✓ Escaneo de seguridad (NuGet vulnerabilities)"
-          Write-Host "  ✓ Validación de archivos JSON"
+          Write-Host "  ✓ Validación de archivos JSON (appsettings)"
           Write-Host "  ✓ Linting de JavaScript (ESLint)"
           Write-Host "  ✓ Análisis de tamaño de assets"
           Write-Host "  ✓ Code coverage report"
@@ -331,11 +316,10 @@ jobs:
           Write-Host "`n═══════════════════════════════════════════════════════" -ForegroundColor Cyan
           Write-Host "🎉 Pipeline completado exitosamente!" -ForegroundColor Green
           Write-Host "═══════════════════════════════════════════════════════" -ForegroundColor Cyan
-        shell: pwsh
 
-      # 19) Generar resumen en GitHub Summary (visible en la pestaña Summary)
       - name: Generate GitHub Job Summary
         if: always()
+        shell: pwsh
         run: |
           $summary = @"
           # 🎯 Pipeline CI/CD - FrontEnd (.NET 8)
@@ -352,10 +336,11 @@ jobs:
 
           ### 📦 Artefactos Generados
           - ✅ **frontend_publish.zip** - Aplicación lista para deploy (14 días)
-          - ✅ **security-scan-results** - Reporte de seguridad (7 días)
-          - ✅ **code-coverage-report** - Reporte de cobertura (14 días)
+          - ✅ **security-scan-results** - Reporte de seguridad NuGet (7 días)
+          - ✅ **code-coverage-report** - Reporte de cobertura de código (14 días)
+          - ✅ **eslint-report.txt** - Reporte de linting JavaScript (14 días)
 
-          ### 🔍 Validaciones Ejecutadas
+          ### 🔍 Validaciones Ejecutadas (Modo Piloto)
           - ✅ Validación de formato de código (dotnet format)
           - ✅ Análisis estático de código (.NET Analyzers)
           - ✅ Escaneo de seguridad (NuGet vulnerabilities)
@@ -364,23 +349,24 @@ jobs:
           - ✅ Análisis de tamaño de assets estáticos
           - ✅ Code Coverage Report
 
+          > **Nota:** Todas las validaciones están en modo "piloto" (no bloquean el build).
+          > Revisa los reportes para identificar áreas de mejora.
+
           ### 🔗 Información del Build
           - **Branch:** ${{ github.ref_name }}
-          - **Commit:** [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+          - **Commit:** [\`${{ github.sha }}\`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
           - **Autor:** ${{ github.actor }}
-          - **Workflow Run:** [${{ github.run_number }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          - **Workflow Run:** [#${{ github.run_number }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
           ### 📊 Próximos Pasos
-          1. Descarga los artefactos desde la pestaña "Summary" arriba
-          2. Revisa el reporte de seguridad para vulnerabilidades
-          3. Verifica el reporte de code coverage cuando agregues tests
-          4. Deploy del archivo **frontend_publish.zip** a tu servidor IIS
+          1. **Descarga los artefactos** desde la pestaña "Summary" arriba
+          2. **Revisa eslint-report.txt** para ver warnings de JavaScript
+          3. **Verifica security-scan-results** para vulnerabilidades en paquetes NuGet
+          4. **Revisa code-coverage-report** cuando agregues tests unitarios
+          5. **Deploy frontend_publish.zip** a tu servidor IIS
 
           ---
-          **🎉 Pipeline ejecutado exitosamente!**
+          **🎉 Pipeline ejecutado exitosamente!** | Tiempo total: Ver "Build Performance Analysis" arriba
           "@
 
           $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
-        shell: pwsh
-
-

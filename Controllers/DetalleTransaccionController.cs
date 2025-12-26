@@ -601,7 +601,8 @@ namespace FrontendQuickpass.Controllers
                     return Json(new { success = false, message = errorMessage });
                 }
 
-                return Json(new {
+                return Json(new
+                {
                     success = true,
                     message = "Transacción guardada correctamente",
                     comprobante = numeroComprobante

@@ -19,11 +19,11 @@ namespace FrontendQuickpass.Controllers
         {
             // Verificar si ya está logueado con token JWT válido
             var tokenSesion = Request.Cookies[CookieHelper.AUTH_COOKIE_NAME];
-            
+
             if (!string.IsNullOrEmpty(tokenSesion))
             {
                 var tokenInfo = _loginService.ValidarToken(tokenSesion);
-                
+
                 if (tokenInfo.EsValido)
                 {
                     Console.WriteLine($"Usuario ya logueado con token válido (Rol: {tokenInfo.CodRol}, Usuario: {tokenInfo.Username})");
@@ -47,14 +47,14 @@ namespace FrontendQuickpass.Controllers
                     // Token inválido o expirado, limpiar cookie
                     Response.Cookies.Delete(CookieHelper.AUTH_COOKIE_NAME);
                     Console.WriteLine($"Token inválido encontrado y eliminado: {tokenInfo.MensajeError}");
-                    
+
                     if (!string.IsNullOrEmpty(tokenInfo.MensajeError))
                     {
                         TempData["MensajeWarning"] = $"Su sesión ha expirado: {tokenInfo.MensajeError}. Por favor, inicie sesión nuevamente.";
                     }
                 }
             }
-            
+
             Console.WriteLine("Mostrando página de login");
             return View("Login");
         }
