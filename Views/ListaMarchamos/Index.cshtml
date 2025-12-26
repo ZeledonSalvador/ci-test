@@ -1,0 +1,211 @@
+@model FrontendQuickpass.Models.ListaMarchamosViewModel
+
+@{
+    ViewData["Title"] = "Correlativo de marchamos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var pager = ViewBag.Pager as FrontendQuickpass.Models.Pager
+        ?? new FrontendQuickpass.Models.Pager();
+
+    var filters = ViewBag.Filters ?? new { Page = 1, Size = 10, search = "" };
+
+    int currentPage = (int)(filters.GetType().GetProperty("Page")?.GetValue(filters) ?? pager.Page);
+    if (currentPage <= 0) currentPage = 1;
+
+    int sizeVal = (int)(filters.GetType().GetProperty("Size")?.GetValue(filters) ?? pager.Size);
+    if (sizeVal <= 0) sizeVal = 10;
+
+    string search = (string)(filters.GetType().GetProperty("search")?.GetValue(filters) ?? "");
+
+    var totalPages = pager.TotalPages > 0 ? pager.TotalPages : 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+
+    var pagesToShow = new List<int>();
+    void AddP(int p) { if (p >= 1 && p <= totalPages && !pagesToShow.Contains(p)) pagesToShow.Add(p); }
+    AddP(1); AddP(2);
+    for (int p = currentPage - 1; p <= currentPage + 1; p++) AddP(p);
+    AddP(totalPages - 1); AddP(totalPages);
+    pagesToShow.Sort();
+}
+
+
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/lista-marchamos.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/dropzone.min.css" />
+}
+
+<section class="ln-banner">
+    <h1>Lista de Marchamos</h1>
+</section>
+
+<!-- Contenedor principal con flex para paginación pegada al footer -->
+<div class="conteiner cc-content-wrapper">
+
+   <div class="search-container">
+        <div class="search position-relative">
+            <input type="text"
+                   class="form-control rounded-xl pr-5"
+                   id="search"
+                   name="search"
+                   value="@search"
+                   placeholder="número de marchamo o código de envío">
+
+            <button type="button"
+                    id="btnSearch"
+                    class="search-icon-btn">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+
+        <!-- BOTÓN VOLVER -->
+    <div class="d-flex justify-content-end mb-2">
+        <a id="btnVolver" class="btn-Volver">
+            <i class="fas fa-arrow-left mr-1"></i>
+            Volver
+        </a>
+    </div>
+    
+    <!-- TABLA -->
+    <div class="card lista-marchamos-card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table tabla-marchamos mb-0"
+                data-current-page="@currentPage"
+                    data-size="@sizeVal"
+                    data-search="@search"
+                    data-correlativo-id="@Model.CorrelativoId"
+                    data-return-page="@(ViewBag.ReturnPage ?? 1)"
+                    data-return-size="@(ViewBag.ReturnSize ?? 10)"
+                    data-return-search="@(ViewBag.ReturnSearch ?? "")">
+                    <thead>
+                        <tr>
+                            <th>Fecha registro</th>
+                            <th>Marchamo</th>
+                            <th>Estado</th>
+                            <th>N° Envío</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Items != null && Model.Items.Count > 0)
+                        {
+                            foreach (var item in Model.Items)
+                            {
+                                var isVoided = string.Equals(item.EstadoCode, "VOIDED", StringComparison.OrdinalIgnoreCase);
+                                <tr class="@(isVoided ? "row-voided" : "")" title="@(isVoided ? "Anulado" : "")">
+                                    <td>@item.FechaRegistro.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>@item.Marchamo</td>
+                                    <td>@item.Estado</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.NumeroEnvio) ? "—" : item.NumeroEnvio)</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">
+                                    No hay marchamos para mostrar.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paginación -->
+    <div class="conteiner-paginacion">
+        <div class="lc-pagination-controls conteiner-paginacion">
+            @if (totalPages > 1)
+            {
+                <div class="lc-pagination-row d-flex justify-content-between align-items-center flex-wrap">
+                    <div class="lc-pagination-spacer"></div>
+
+                    <div class="lc-pagination lc-pagination-nav d-flex justify-content-center align-items-center">
+                        <!-- Anterior -->
+                        <a class="page-nav @(currentPage <= 1 ? "disabled" : "")"
+                           href="@(currentPage <= 1 ? "javascript:void(0)" : BuildPageUrl(currentPage - 1, sizeVal, search, Model.CorrelativoId))"
+                           title="Anterior" aria-label="Página anterior">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+
+                        <!-- Números de página -->
+                        @for (int i = 0; i < pagesToShow.Count; i++)
+                        {
+                            var p = pagesToShow[i];
+                            var prev = i > 0 ? pagesToShow[i - 1] : (int?)null;
+                            if (prev.HasValue && p - prev.Value > 1)
+                            {
+                                <span class="ellipsis">…</span>
+                            }
+
+                            var isCurrent = (p == currentPage);
+                            <a class="page-num @(isCurrent ? "current" : "")"
+                               href="@(isCurrent ? "javascript:void(0)" : BuildPageUrl(p, sizeVal, search, Model.CorrelativoId))"
+                               aria-current="@(isCurrent ? "page" : null)">
+                                @p
+                            </a>
+                        }
+
+                        <!-- Siguiente -->
+                        <a class="page-nav @(currentPage >= totalPages ? "disabled" : "")"
+                           href="@(currentPage >= totalPages ? "javascript:void(0)" : BuildPageUrl(currentPage + 1, sizeVal, search, Model.CorrelativoId))"
+                           title="Siguiente" aria-label="Página siguiente">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </div>
+
+                    <!-- Select de registros -->
+                    <div class="lc-page-size-selector d-flex align-items-center">
+                        <label for="pageSizeSelect" class="mb-0 mr-2 text-muted small">Registros:</label>
+                        <select id="pageSizeSelect" class="form-control form-control-sm" onchange="location.href = '@BuildPageUrl(1, 0, search, Model.CorrelativoId)'.replace('size=0', 'size=' + this.value);">
+                            @{
+                                var sizes = new[] { 10, 20, 30, 50 };
+                                foreach (var s in sizes)
+                                {
+                                    <option value="@s" selected="@(sizeVal == s)">@s</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+            }
+        </div>
+    </div> <!-- Cierre de .conteiner-paginacion -->  
+
+</div> <!-- Cierre de .conteiner cc-content-wrapper -->
+
+@section Scripts {
+    <script src="~/js/lista-marchamos.js" asp-append-version="true"></script>
+}
+
+@functions {
+    public string BuildPageUrl(int page, int size, string search, int correlativoId)
+    {
+        var q = System.Web.HttpUtility.ParseQueryString(string.Empty);
+        q["correlativoId"] = correlativoId.ToString();
+        q["page"] = page.ToString();
+        q["size"] = size.ToString();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            q["search"] = search;
+        }
+
+        // NUEVO: Incluir parámetros de retorno para preservar la página de origen
+        var returnPage = ViewBag.ReturnPage ?? 1;
+        var returnSize = ViewBag.ReturnSize ?? 10;
+        var returnSearch = ViewBag.ReturnSearch ?? "";
+
+        q["returnPage"] = returnPage.ToString();
+        q["returnSize"] = returnSize.ToString();
+        if (!string.IsNullOrWhiteSpace(returnSearch))
+        {
+            q["returnSearch"] = returnSearch;
+        }
+
+        // Ajusta el nombre del controlador si es diferente
+        return Url.Action("Index", "ListaMarchamos") + "?" + q.ToString();
+    }
+}

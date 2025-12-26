@@ -1,0 +1,173 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard.css" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.2/css/all.css"
+        integrity="sha384-/rXc/GQVaYpyDdyxK+ecHPVYJSN9bmVFBvjA/9eOB+pb3F2w2N6fc5qB9Ew5yIns" crossorigin="anonymous" />
+}
+
+@await Html.PartialAsync("_DashSwitcher")
+
+<div class="dash-wrapper">
+    <!-- Lado izquierdo: KPIs -->
+    <aside class="kpi-panel">
+        <div class="kpi">
+            <div class="kpi-value" id="kpi-en-transito" style="font-family: 'Gilroy-Bold', sans-serif;">0</div>
+            <div class="kpi-label" style="font-family: 'Gilroy-Bold', sans-serif;">Camiones En Tránsito</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-value" id="kpi-en-parqueo" style="font-family: 'Gilroy-Bold', sans-serif;">0</div>
+            <div class="kpi-label">Camiones en Parqueo</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-value" id="kpi-autorizados" style="font-family: 'Gilroy-Bold', sans-serif;">0</div>
+            <div class="kpi-label" style="font-family: 'Gilroy-Bold', sans-serif;">Camiones Autorizados</div>
+        </div>
+
+        <div class="kpi">
+            <div class="kpi-value" id="kpi-tiempo-espera" style="font-family: 'Gilroy-Bold', sans-serif;">00 h 00 min
+            </div>
+            <div class="kpi-label" style="font-family: 'Gilroy-Bold', sans-serif;">Tiempo Promedio de Espera</div>
+        </div>
+
+        <div class="kpi">
+            <div class="kpi-value" id="kpi-tiempo-atencion" style="font-family: 'Gilroy-Bold', sans-serif;">00 h 00 min
+            </div>
+            <div class="kpi-label" style="font-family: 'Gilroy-Bold', sans-serif;">Tiempo Promedio de Atención</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-value" id="kpi-flujo-dia" style="font-family: 'Gilroy-Bold', sans-serif;">0 Ton</div>
+            <div class="kpi-label" style="font-family: 'Gilroy-Bold', sans-serif;">Flujo Por Día</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-value" id="kpi-prom-planas" style="font-family: 'Gilroy-Bold', sans-serif;">0 min 00 seg
+            </div>
+            <div class="kpi-label" style="font-family: 'Gilroy-Bold', sans-serif; font-size:12px;">Promedio de Descarga
+                (Planas)</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-value" id="kpi-prom-volteo" style="font-family: 'Gilroy-Bold', sans-serif;">0 min 00 seg
+            </div>
+            <div class="kpi-label" style="font-family: 'Gilroy-Bold', sans-serif; font-size:12px;">Promedio de Descarga
+                (Volteo)</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-value" id="kpi-prom-pipa" style="font-family: 'Gilroy-Bold', sans-serif;">0 min 00 seg</div>
+            <div class="kpi-label" style="font-family: 'Gilroy-Bold', sans-serif;">Promedio de Descarga (Pipa)</div>
+        </div>
+    </aside>
+
+    <!-- Lado derecho: filtros + charts -->
+    <main class="main-panel">
+        <!-- Filtros -->
+        <div class="filters">
+            <div class="filter">
+                <label for="f-date-start">Fecha</label>
+                <div class="date-range">
+                    <input type="date" id="f-desde" />
+                    <span>–</span>
+                    <input type="date" id="f-hasta" />
+                </div>
+            </div>
+
+            <div class="filter">
+                <label>Ingenio</label>
+                <select id="f-ingenio">
+                    <option value="">Todos</option>
+                    <option value="JB">Ingenio Central Azucarero Jiboa</option>
+                    <option value="ILC">Ingenio La Cabaña</option>
+                    <option value="IEA">Ingenio El Angel</option>
+                    <option value="ILM">Ingenio La Magdalena</option>
+                    <option value="ICHP">Ingenio Chaparrastique</option>
+                    <option value="CASSA">Compañía Azucarera Salvadoreña</option>
+                </select>
+            </div>
+
+            <div class="filter">
+                <label>Producto</label>
+                <select id="f-producto">
+                    <option value="" selected>Todos</option>
+                    <option value="AZ-001">Azúcar</option>
+                    <option value="MEL-001">Melaza</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Charts 2×2 -->
+        <div class="charts-grid">
+            <section class="chart-card" style="font-family: 'Gilroy-Bold', sans-serif;">
+                <header>Camiones Finalizados</header>
+                <div class="chart-scroll">
+                    <div class="chart-inner">
+                        <canvas id="chart-finalizados"></canvas>
+                    </div>
+                </div>
+                <div class="legend">Tipo Camión:
+                    <p class="dot dot-blue"></p> Volteo
+                    <p class="dot dot-orange"></p> Plana
+                    <p class="dot dot-black"></p> Pipa
+                </div>
+            </section>
+
+            <section class="chart-card" style="font-family: 'Gilroy-Bold', sans-serif;">
+                <header>Camiones Recibidos</span>
+                </header>
+                <div class="chart-scroll">
+                    <div class="chart-inner">
+                        <canvas id="chart-recibidos"></canvas>
+                    </div>
+                </div>
+                <div class="legend">Tipo Camión:
+                    <b class="dot dot-blue"></b> Volteo
+                    <b class="dot dot-orange"></b> Plana
+                    <b class="dot dot-black"></b> Pipa
+                </div>
+            </section>
+
+            <section class="chart-card" style="font-family: 'Gilroy-Bold', sans-serif;">
+                <header>Cantidad Recibida</header>
+                <div class="chart-scroll">
+                    <div class="chart-inner">
+                        <canvas id="chart-azucar"></canvas>
+                    </div>
+                </div>
+                <div class="legend">Producto:
+                    <b class="dot dot-blue"></b> Azúcar
+                    <b class="dot dot-orange"></b> Melaza
+                </div>
+            </section>
+
+            <section class="chart-card" style="font-family: 'Gilroy-Bold', sans-serif;">
+                <header>Promedio de Descarga</header>
+                <div class="chart-scroll">
+                    <div class="chart-inner">
+                        <canvas id="chart-promedio"></canvas>
+                    </div>
+                </div>
+                <div class="legend">Tipo Camión:
+                    <b class="dot dot-blue"></b> Volteo
+                    <b class="dot dot-orange"></b> Plana
+                    <b class="dot dot-black"></b> Pipa
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2"></script>
+    <script>
+        // Registrar el plugin de zoom/pan cuando se carga por CDN
+        (function () {
+            const zoomPlugin = window['chartjs-plugin-zoom'] || window.ChartZoom;
+            if (zoomPlugin) Chart.register(zoomPlugin);
+        })();
+    </script>
+    <script src="~/js/dash-core.js?v=20250828"></script>
+    <script src="~/js/dash-historico.js?v=20250828"></script> <!-- cache-busting opcional -->
+
+}

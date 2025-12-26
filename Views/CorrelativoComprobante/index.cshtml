@@ -1,0 +1,478 @@
+@model FrontendQuickpass.Models.CorrelativoComprobanteViewModel
+
+@using FrontendQuickpass.Models
+
+@{
+    ViewData["Title"] = "Correlativo de comprobante";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var pager = ViewBag.Pager as Pager ?? new Pager();
+    var filters = ViewBag.Filters ?? new { Page = pager.Page, Size = pager.Size, Search = "" };
+
+    int currentPage = (int)(filters.GetType().GetProperty("Page")?.GetValue(filters) ?? pager.Page);
+    if (currentPage <= 0) currentPage = 1;
+
+    int sizeVal = (int)(filters.GetType().GetProperty("Size")?.GetValue(filters) ?? pager.Size);
+    if (sizeVal <= 0) sizeVal = 10;
+
+    string search = Model.Search ?? "";
+
+    int totalPages = pager.TotalPages > 0 ? pager.TotalPages : 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+
+    var pagesToShow = new List<int>();
+    void AddP(int p)
+    {
+        if (p >= 1 && p <= totalPages && !pagesToShow.Contains(p))
+            pagesToShow.Add(p);
+    }
+    AddP(1); AddP(2);
+    for (int p = currentPage - 1; p <= currentPage + 1; p++) AddP(p);
+    AddP(totalPages - 1); AddP(totalPages);
+    pagesToShow.Sort();
+}
+
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/correlativo-comprobante.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/dropzone.min.css" />
+
+    <style>
+    
+        .cc-content-wrapper {
+            min-height: calc(100vh - 160px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cc-content-wrapper .lista-card {
+            /* nada especial */
+        }
+
+        .cc-content-wrapper > .conteiner-paginacion {
+            margin-top: auto;
+        }
+    </style>
+}
+
+<section class="ln-banner">
+    <h1>Correlativo de comprobante</h1>
+</section>
+
+<!-- CONTENEDOR FLEX PRINCIPAL DE LA VISTA -->
+<div class="cc-content-wrapper">
+
+    <!-- Filtros -->
+    <div class="search-container">
+        <div class="search position-relative">
+            <input type="text"
+                   class="form-control rounded-xl pr-5"
+                   id="search"
+                   name="search"
+                   value="@Model.Search"
+                   placeholder="Báscula, numero de comprobante, números de inicio o fin del rango.">
+
+            <button type="button"
+                    id="btnSearch"
+                    class="search-icon-btn">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(ViewBag.Error as string))
+    {
+        <div class="alert alert-danger mt-3">@ViewBag.Error</div>
+    }
+
+    <!-- Botón Agregar -->
+    <div class="d-flex justify-content-end mb-2">
+        <button type="button" id="btnAgregar" class="btn-agregar">
+            <i class="fas fa-plus mr-1"></i>
+            Agregar
+        </button>
+    </div>
+
+    <!-- Tabla -->
+    <div class="card lista-card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table id="tablaCorrelativos"
+                        data-list-url='@Url.Action("ListaComprobante","CorrelativoComprobante")'
+                        data-current-page="@currentPage"
+                        class="tabla-correlativos" data-size="@sizeVal"
+                        data-search="@Model.Search">
+                    <thead>
+                        <tr>
+                            <th class="col-bascula">Báscula</th>
+                            <th class="col-inicio">Inicio</th>
+                            <th class="col-fin">Fin</th>
+                            <th class="col-total">Total</th>
+                            <th class="col-disponibles">Disponibles</th>
+                            <th class="col-anulados">Anulados</th>
+                            <th class="col-caja">N° Caja</th>
+                            <th class="col-fecha">Fecha de creación</th>
+                            <th class="col-opciones text-center sticky-actions">
+                                <span class="opc-full">Opciones</span>
+                                <span class="opc-short">OPC</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            var lowDisponibles = item.Disponibles < 300;
+                            <tr class="fila-comprobante"
+                                data-id="@item.Id"
+                                data-idbascula="@item.IdBascula"
+                                data-bascula="@item.Bascula"
+                                data-inicio="@item.Inicio"
+                                data-fin="@item.Fin"
+                                data-disponibles="@item.Disponibles"
+                                data-anulados="@item.Anulados"
+                                data-numerocaja="@(item.NumeroCaja > 0 ? item.NumeroCaja.ToString() : "")"
+                                data-fecha="@item.FechaCreacion.ToString("yyyy-MM-dd HH:mm")"
+                                data-is-active="@item.IsActive.ToString().ToLowerInvariant()"
+                                data-can-edit="@item.CanEdit.ToString().ToLowerInvariant()">
+                                <td class="col-bascula" >@item.Bascula</td>
+                                <td class="col-inicio">@item.Inicio.ToString("D4")</td>
+                                <td class="col-fin">@item.Fin.ToString("D4")</td>
+                                <td class="col-total">@item.Total.ToString()</td>
+                                <td class="col-disponibles">@item.Disponibles</td>
+                                <td class="col-anulados">@item.Anulados</td>
+                                <td class="col-caja">@(item.NumeroCaja > 0 ? item.NumeroCaja.ToString() : "")</td>
+                                <td class="col-fecha js-utc-date" data-utc="@item.FechaCreacion.ToString("o")">@item.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td class="col-opciones opciones-cell sticky-actions">
+                                    <!-- Botones para escritorio -->
+                                    <div class="solo-desktop">
+                                        <button type="button"
+                                                class="btn-icon btn-edit @(item.CanEdit ? "" : "btn-icon-disabled")"
+                                                aria-disabled="@(!item.CanEdit).ToString().ToLowerInvariant()"
+                                                title="@(item.CanEdit ? "Editar" : "No tiene permisos para editar")">
+                                            <i class="fas fa-pen"></i>
+                                        </button>
+                                        <button type="button"
+                                                class="btn-icon btn-annul"
+                                                title="Anular">
+                                            <i class="fas fa-times-circle"></i>
+                                        </button>
+                                        <button type="button"
+                                                class="btn-icon btn-toggle-active"
+                                                title="@(item.IsActive ? "Deshabilitar" : "Habilitar")">
+                                            <i class="fas @(item.IsActive ? "fa-ban" : "fa-redo")"></i>
+                                        </button>
+                                        <button type="button"
+                                                class="btn-icon btn-detail"
+                                                title="Ver detalle">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+
+                                    </div>
+
+                                    <!-- Botón kebab para móvil -->
+                                    <div class="solo-mobile">
+                                        <button type="button" class="btn-icon btn-actions" title="Opciones">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paginación -->
+    <div class="conteiner-paginacion">
+        <div class="lc-pagination-controls conteiner-paginacion">
+            @if (totalPages > 1)
+            {
+                <div class="lc-pagination-row d-flex justify-content-between align-items-center flex-wrap">
+                    <div class="lc-pagination-spacer"></div>
+
+                    <div class="lc-pagination lc-pagination-nav d-flex justify-content-center align-items-center">
+                        <!-- Anterior -->
+                        <a class="page-nav @(currentPage <= 1 ? "disabled" : "")"
+                           href="@(currentPage <= 1 ? "javascript:void(0)" : BuildPageUrl(currentPage - 1, sizeVal, search))"
+                           title="Anterior" aria-label="Página anterior">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+
+                        <!-- Números de página -->
+                        @for (int i = 0; i < pagesToShow.Count; i++)
+                        {
+                            var p = pagesToShow[i];
+                            var prev = i > 0 ? pagesToShow[i - 1] : (int?)null;
+                            if (prev.HasValue && p - prev.Value > 1)
+                            {
+                                <span class="ellipsis">…</span>
+                            }
+
+                            var isCurrent = (p == currentPage);
+                            <a class="page-num @(isCurrent ? "current" : "")"
+                               href="@(isCurrent ? "javascript:void(0)" : BuildPageUrl(p, sizeVal, search))"
+                               aria-current="@(isCurrent ? "page" : null)">
+                                @p
+                            </a>
+                        }
+
+                        <!-- Siguiente -->
+                        <a class="page-nav @(currentPage >= totalPages ? "disabled" : "")"
+                           href="@(currentPage >= totalPages ? "javascript:void(0)" : BuildPageUrl(currentPage + 1, sizeVal, search))"
+                           title="Siguiente" aria-label="Página siguiente">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </div>
+
+                    <!-- Select de registros -->
+                    <div class="lc-page-size-selector d-flex align-items-center">
+                        <label for="pageSizeSelect" class="mb-0 mr-2 text-muted small">Registros:</label>
+                        <select id="pageSizeSelect" class="form-control form-control-sm">
+                            @{
+                                int[] sizes = new[] { 10, 20, 30, 50 };
+                                foreach (var s in sizes)
+                                {
+                                    <option value="@s" selected="@(sizeVal == s)">@s</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="d-flex justify-content-end">
+                    <div class="lc-page-size-selector d-flex align-items-center">
+                        <label for="pageSizeSelect" class="mb-0 mr-2 text-muted small">Registros:</label>
+                        <select id="pageSizeSelect" class="form-control form-control-sm">
+                            @{
+                                int[] sizes = new[] { 10, 20, 30, 50 };
+                                foreach (var s in sizes)
+                                {
+                                    <option value="@s" selected="@(sizeVal == s)">@s</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+            }
+        </div>
+    </div> <!-- Cierre de .conteiner-paginacion -->
+
+</div> <!-- Cierre de .cc-content-wrapper -->
+
+<div class="modal fade" id="modalComprobante" tabindex="-1" role="dialog" aria-labelledby="modalComprobanteTitulo" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+
+            <!-- Encabezado -->
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalComprobanteTitulo">Registro de correlativos</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <!-- Cuerpo -->
+            <div class="modal-body">
+                <!-- Formulario para el comprobante -->
+                <form id="formComprobante"
+                      method="post">
+                    @Html.AntiForgeryToken()
+
+                    <!-- Hidden para usar en edición en el futuro -->
+                    <input type="hidden" id="comprobanteId" name="comprobanteId" />
+
+                    <div class="row modal-columns">
+                        <!-- Columna izquierda -->
+                        <div class="col-md-6">
+
+                            <div class="form-group">
+                                <label for="inicioInput">Inicio de correlativo</label>
+                                <input type="number"
+                                       id="inicioInput"
+                                       name="inicio"
+                                       class="form-control"
+                                       placeholder="0000"
+                                       min="0"
+                                       step="1"
+                                       inputmode="numeric"
+                                       pattern="[0-9]*"
+                                       tabindex="1"
+                                       required />
+                            </div>
+
+                            <!-- NUEVO CAMPO N° DE CAJA -->
+                            <div class="form-group">
+                                <label for="numeroCajaInput">N° Caja</label>
+                                <input type="number"
+                                        id="numeroCajaInput"
+                                        name="numeroCaja"
+                                        class="form-control"
+                                        min="1"
+                                        step="1"
+                                        inputmode="numeric"
+                                        pattern="[0-9]*"
+                                        tabindex="3"
+                                       required />
+                            </div>
+
+                        </div>
+
+                        <!-- Columna derecha -->
+                        <div class="col-md-6">
+
+                            <div class="form-group">
+                                <label for="finInput">Fin de correlativo</label>
+                                <input type="number"
+                                       id="finInput"
+                                       name="fin"
+                                       class="form-control"
+                                       placeholder="0000"
+                                       min="0"
+                                       step="1"
+                                       inputmode="numeric"
+                                       pattern="[0-9]*"
+                                       tabindex="2"
+                                       required />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="basculaInput">Báscula</label>
+                                <select id="basculaInput"
+                                        name="idBascula"
+                                        class="form-control"
+                                        tabindex="4"
+                                        required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="1">BÁSCULA 1</option>
+                                    <option value="2">BÁSCULA 2</option>
+                                    <option value="3">BÁSCULA 3</option>
+                                    <option value="4">BÁSCULA 4</option>
+                                    <option value="5">BÁSCULA 5</option>
+                                    <option value="6">BÁSCULA 6</option>
+                                </select>
+                            </div>
+
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-cancelar btn-light border"
+                        data-dismiss="modal">
+                    Cancelar
+                </button>
+                <!-- Este botón no hace submit directo: lo maneja el JS con validaciones + fetch -->
+                <button type="button"
+                        class="btn btn-confirmar btn-primary"
+                        id="btnGuardarComprobante">
+                    Confirmar
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Anulación -->
+<div class="modal fade" id="modalAnularComprobante" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content modal-anular">
+
+            <div class="modal-header modal-anular-header">
+                <h5 class="modal-title">Anular comprobante</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <form id="formAnularComprobante">
+                    <div class="form-group">
+                        <label for="numeroComprobanteInput">Número</label>
+                        <input type="number"
+                               id="numeroComprobanteInput"
+                               class="form-control"
+                               min="0"
+                               step="1"
+                               inputmode="numeric"
+                               pattern="[0-9]*"
+                               placeholder="Ingrese el número de comprobante a anular"
+                               required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="motivoAnulacionInput">Motivo</label>
+                        <select id="motivoAnulacionInput" class="form-control" required>
+                            <option value="">Seleccione</option>
+                            <option value="error de digitacion">Error de digitación</option>
+                            <option value="marchamo dañado">Marchamo dañado</option>
+                            <option value="marchamo perdido">Marchamo perdido</option>
+                            <option value="marchamo robado">Marchamo Robado</option>
+                            <option value="marchamo mal impreso">Marchamo mal impreso</option>
+                            <option value="correlativo duplicado">Correlativo duplicado</option>
+                            <option value="asignación incorrecta">Asignación incorrecta</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer modal-anular-footer">
+                <button type="button"
+                        class="btn btn-danger btn-cancelar-anular"
+                        data-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="button"
+                        id="btnConfirmarAnularComprobante"
+                        class="btn btn-primary btn-confirmar-anular">
+                    Confirmar
+                </button>
+            </div>
+
+        </div>
+    </div>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        try {
+            const url = new URL(window.location.href);
+            const path = url.pathname.toLowerCase();
+
+            // Solo para la pantalla principal de correlativos
+            if (path === "/correlativocomprobante/index" || path === "/correlativocomprobante") {
+                const cleanPath = "/CorrelativoComprobante";
+                // No mostramos los parámetros en la barra
+                window.history.replaceState({}, document.title, cleanPath);
+            }
+        } catch (e) {
+            console.warn("No se pudo limpiar la URL de CorrelativoComprobante:", e);
+        }
+    });
+</script>
+
+</div>
+
+
+
+@section Scripts {
+    <script src="~/js/correlativo-comprobante.js" asp-append-version="true" ></script>
+}
+
+@functions {
+    public string BuildPageUrl(int page, int size, string search)
+    {
+        var q = System.Web.HttpUtility.ParseQueryString(string.Empty);
+        q["page"] = page.ToString();
+        q["size"] = size.ToString();
+        if (!string.IsNullOrWhiteSpace(search)) q["search"] = search;
+
+        // Ajusta el nombre del controlador si es diferente
+        return Url.Action("Index", "CorrelativoComprobante") + "?" + q.ToString();
+    }
+}

@@ -1,0 +1,1290 @@
+/* ====== ESTILOS BASE ====== */
+body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+}
+
+.button-orange {
+    background-color: #FD7304;
+    border: none;
+    transition: background-color 0.3s;
+}
+.button-orange:hover {
+    background-color: #FD6104;
+}
+
+/* ====== BANNER ====== */
+.custom-banner {
+    background-color: #FD6104;
+    padding: 0.3rem 1rem;
+    color: white;
+    font-family: 'Gilroy-Bold', sans-serif;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.banner-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 1rem;
+}
+
+.banner-content h1 {
+    font-size: 1.2rem;
+    margin: 0;
+    font-weight: bold;
+    color: white;
+}
+
+/* ====== DROPDOWN MEJORADO (Estilo Header) ====== */
+
+/* Contenedor del dropdown */
+.activity-dropdown {
+    position: relative;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+/* Zona de tolerancia para evitar cierre accidental */
+.activity-dropdown::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: -10px;
+    right: -10px;
+    height: 10px;
+    background: transparent;
+}
+
+/* Botón del dropdown */
+.activity-dropdown .dropdown-toggle {
+    background-color: #182A6E;
+    color: white;
+    font-family: 'Gilroy-Bold', sans-serif;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-width: 120px;
+    position: relative;
+    
+    /* Hacer el área de toque más grande */
+    min-height: 44px;
+    
+    /* Mejorar la respuesta táctil */
+    -webkit-tap-highlight-color: rgba(0, 90, 175, 0.3);
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    
+    /* Prevenir zoom en iOS */
+    touch-action: manipulation;
+}
+
+/* Evitar iconos duplicados */
+.activity-dropdown .dropdown-toggle::after {
+    display: none !important;
+}
+
+.activity-dropdown .dropdown-toggle:hover,
+.activity-dropdown .dropdown-toggle:focus {
+    background-color: #005AAF;
+    box-shadow: 0 0 0 0.2rem rgba(0, 90, 175, 0.25);
+    outline: none;
+}
+
+.activity-dropdown .dropdown-toggle:active {
+    background-color: #182A6E !important;
+    transform: scale(0.98);
+}
+
+/* Flecha del dropdown */
+.activity-dropdown .dropdown-arrow {
+    transition: transform 0.3s ease;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+/* Menú del dropdown */
+.activity-dropdown .dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: auto;
+    background: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    overflow: hidden;
+    z-index: 1000;
+    min-width: 220px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    margin: 0.25rem 0 0 0;
+    padding: 8px 0;
+    list-style: none;
+    display: block; /* Siempre visible en DOM pero controlado por opacity/visibility */
+}
+
+/* Mostrar dropdown con animación suave */
+.activity-dropdown:hover .dropdown-menu,
+.activity-dropdown.active .dropdown-menu,
+.activity-dropdown .dropdown-menu.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Items del dropdown */
+.activity-dropdown .dropdown-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    transition: all 0.3s ease;
+    border-radius: 0;
+    color: #333;
+    text-decoration: none;
+    white-space: nowrap;
+    position: relative;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    border-bottom: 1px solid #f1f3f4;
+    
+    /* Mejorar área de toque para items */
+    min-height: 44px;
+}
+
+.activity-dropdown .dropdown-item:last-child {
+    border-bottom: none;
+}
+
+/* Contenedor de icono y texto */
+.activity-dropdown .dropdown-item > i:first-child {
+    width: 18px;
+    text-align: center;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.activity-dropdown .dropdown-item > span {
+    flex-grow: 1;
+}
+
+/* Icono de check (marca de selección) */
+.activity-dropdown .dropdown-item .check-icon {
+    color: #22C55E;
+    font-size: 14px;
+    margin-left: 10px;
+    flex-shrink: 0;
+}
+
+/* Estados hover y activo */
+.activity-dropdown .dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #005AAF;
+    text-decoration: none;
+    transform: translateX(3px);
+}
+
+.activity-dropdown .dropdown-item:active {
+    background-color: #e3f2fd !important;
+    transform: scale(0.98);
+}
+
+/* Item activo (seleccionado) */
+.activity-dropdown .dropdown-item.active {
+    background-color: #e3f2fd;
+    color: #005AAF;
+    font-weight: 600;
+}
+
+.activity-dropdown .dropdown-item.active:hover {
+    background-color: #bbdefb;
+}
+
+/* Estados activos y focus */
+.activity-dropdown .dropdown-item:focus {
+    background-color: #f8f9fa;
+    color: #005AAF;
+}
+
+/* ====== LAYOUT ====== */
+main.container {
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 3.5rem 1.5rem;
+}
+
+/* ====== SECCIÓN DE TARJETAS SUPERIORES - CENTRADAS ====== */
+.cards-section {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 1rem; /* Separación pequeña entre tarjetas */
+    margin-bottom: 3rem;
+    flex-wrap: wrap; /* Para responsive */
+}
+
+.card-espera-container,
+.card-solicitar-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 0 0 auto; /* No crecen ni se encogen */
+    max-width: 350px; /* Ancho máximo */
+    width: 100%;
+}
+
+.card-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+/* ====== UNIT CARDS (ESPERA Y SOLICITUD) ====== */
+.unit-card-espera,
+.unit-card-solicitud {
+    width: 100%;
+    aspect-ratio: 1.3/1;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 2px solid transparent;
+    position: relative;
+    padding: 0 10px 0 24px;
+    max-height: 130px;
+    max-width: 350px;
+}
+
+/* UNIDAD EN ESPERA - Estilo Plana (Azul) */
+.unit-card-espera {
+    background-color: #182A6E;
+    color: white;
+}
+
+/* SOLICITAR UNIDADES - Estilo Volteo (Gris oscuro) */
+.unit-card-solicitud {
+    background-color: #242424;
+    color: white;
+}
+
+.unit-indicator-white, .unit-indicator-orange {
+    position: absolute;
+    top: 8px;
+    left: 10px;
+    width: 10px;
+    height: 90%;
+    border-radius: 5px;
+}
+.unit-indicator-white { background-color: #EAE8EC; }
+.unit-indicator-orange { background-color: #FF5733; }
+
+/* Contador */
+.counter-input {
+    display: inline-block;
+    width: 54px;
+    text-align: center;
+    margin: 0 5px;
+    border-radius: 5px;
+    padding: 5px;
+    font-size: 1.18rem;
+    color: black;
+    background-color: white;
+    border: 1px solid #C9E9D2;
+    transition: border-color 0.3s;
+    font-weight: bold;
+}
+.counter-input-pipa { border: 1px solid #C9E9D2; }
+.counter-input-pipa:hover { border-color: #4472C4; }
+
+/* ====== PILETAS DE MELAZA - TABLA (DESKTOP ORIGINAL) ====== */
+.piletas-title {
+    margin-bottom: 1.5rem;
+    color: #333;
+}
+
+.piletas-container {
+    background-color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.piletas-table {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+}
+
+.pileta-cell {
+    border-right: 2px solid #e5e7eb;
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    min-height: 300px;
+}
+
+.pileta-cell:last-child {
+    border-right: none;
+}
+
+/* ====== HEADERS DE PILETAS ====== */
+.pileta-header {
+    padding: 6px;
+    text-align: center;
+    font-weight:400;
+    font-family: 'Gilroy-Bold', sans-serif;
+    color: white;
+    font-size: 14px;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+/* Colores según estado */
+.pileta-header-disponible { 
+    background-color: #182A6E; 
+}
+
+.pileta-header-ocupada { 
+    background-color: #FD7304; 
+}
+
+/* ====== CONTENIDO DE PILETAS ====== */
+.pileta-content {
+    padding: 15px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Gilroy-Light', sans-serif;
+    background-color: #FAFAFA;
+}
+
+.pileta-disponible-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-grow: 1;
+}
+
+.disponible-text {
+    font-size: 18px;
+    font-weight: bold;
+    color: #6B7280;
+    text-align: center;
+}
+
+/* ====== BARRA DE PROGRESO - CONTROLADA POR JS ====== */
+.progress-section {
+    margin-bottom: 15px;
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 35px;
+    background-color: #e5e7eb;
+    border-radius: 16px;
+    border: 1px solid #d1d5db;
+    overflow: hidden;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.progress-bar {
+    height: 100%;
+    position: relative;
+    transition: all 0.3s ease;
+    min-width: 0;
+    width: 0%;
+}
+
+.timer-text-bar {
+    font-size: 14px;
+    font-weight: bold;
+    color: #000000; /* Negro */
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    white-space: nowrap;
+    font-family: 'Gilroy-Bold', sans-serif;
+    letter-spacing: 0.5px;
+    z-index: 10;
+    /* Posicionado sobre el contenedor completo */
+    width: 100%;
+    text-align: center;
+}
+
+/* Estados de la barra controlados por JS */
+.progress-bar.timer-active {
+    animation: progressPulse 2s infinite;
+}
+
+.progress-bar.timer-normal {
+    background-color: #22C55E !important; /* Verde */
+}
+
+.progress-bar.timer-warning {
+    background-color: #FF7300 !important; /* Naranja */
+}
+
+.progress-bar.timer-danger {
+    background-color: #EF4444 !important; /* Rojo */
+}
+
+@keyframes progressPulse {
+    0% { 
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+    }
+    50% { 
+        box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+    }
+    100% { 
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+    }
+}
+
+/* ====== INFORMACIÓN ====== */
+.info-section {
+    flex-grow: 1;
+    margin-bottom: 15px;
+}
+
+.info-section p {
+    margin: 5px 0;
+    font-size: 14px;
+    line-height: 1.4;
+    color: #374151;
+}
+
+.info-section strong {
+    color: #1f2937;
+}
+
+/* ====== FILA LABEL/VALUE ====== */
+.info-row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 0.25rem 0.75rem;
+    font-size: 0.9rem;
+    padding: 0.1rem 0; /* Padding más pequeño */
+}
+
+.info-row .label {
+    font-family: 'Gilroy-Bold', sans-serif;
+    color: #FFFF;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.info-row .value {
+    font-family: 'Gilroy-Light', sans-serif;
+    color: #FFFF;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+/* ====== CONTROLES ====== */
+.controls-section {
+    margin-top: auto;
+}
+
+.timer-controls {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.btn-iniciar,
+.btn-detener {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Gilroy-Bold', sans-serif;
+}
+
+.btn-iniciar {
+    background-color: #22C55E;
+    color: white;
+}
+
+.btn-iniciar:hover {
+    background-color: #16A34A;
+    transform: translateY(-1px);
+}
+
+.btn-detener {
+    background-color: #EF4444;
+    color: white;
+}
+
+.btn-detener:hover {
+    background-color: #DC2626;
+    transform: translateY(-1px);
+}
+
+/* ====== BOTONES DE TEMPERATURA EN PILETAS ====== */
+.btn-temperatura {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Gilroy-Bold', sans-serif;
+    background-color: #FF7300;
+    color: white;
+    width: 80%;
+}
+
+.btn-temperatura:hover {
+    background-color: #E85D00;
+    transform: translateY(-1px);
+}
+
+.btn-temperatura:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+}
+
+.btn-tomar-tiempo {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Gilroy-Bold', sans-serif;
+    background-color: #28a745;
+    color: white;
+    width: 80%;
+}
+
+.btn-tomar-tiempo:hover {
+    background-color: #218838;
+    transform: translateY(-1px);
+}
+
+.btn-tomar-tiempo:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+}
+
+.tomar-tiempo-popup {
+    border-radius: 12px !important;
+}
+
+.tomar-tiempo-popup .swal2-title {
+    color: #28a745 !important;
+}
+
+/* ====== CONTROLES DE TEMPERATURA ====== */
+.temperature-controls {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+/* ====== COMPONENTES MODULARES ====== */
+.component-section {
+    transition: all 0.3s ease;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.component-section.hidden {
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+}
+
+/* ====== ESTILOS PARA UNIDADES EN COLA - TARJETAS VERTICALES (4 COLUMNAS) ====== */
+
+.unidades-cola-section,
+.unidades-enfriamiento-section {
+    margin-bottom: 2rem;
+}
+
+.unidades-cola-title {
+    text-align: center;
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-size: 1.5rem;
+    color: #333;
+    margin-bottom: 1.5rem;
+    font-weight: bold;
+}
+
+/* Grid vertical para 3 columnas */
+.unidades-cola-vertical-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin: 0 1rem;
+}
+
+/* Tarjetas */
+.unidad-cola-vertical-card,
+.unidad-enfriamiento-vertical-card {
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 2px solid #cbd5e1;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    min-height: auto;
+    height: fit-content;
+}
+
+.unidad-cola-vertical-card:hover,
+.unidad-enfriamiento-vertical-card:hover {
+    border-color: #FF7300;
+    box-shadow: 0 6px 20px rgba(255, 115, 0, 0.25);
+    transform: translateY(-3px);
+    background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+}
+
+/* Header de la tarjeta */
+.card-header-vertical {
+    background: linear-gradient(135deg, #64748b, #475569);
+    color: white;
+    padding: 1rem;
+    text-align: center;
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-size: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.card-header-vertical.enfriamiento-header {
+    background: linear-gradient(135deg, #0ea5e9, #0284c7);
+}
+
+.card-header-vertical i {
+    font-size: 1.2rem;
+    margin-bottom: 0.25rem;
+}
+
+/* Contador de temperaturas */
+.temperature-counter {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Contador de tiempo para próxima temperatura */
+.temperature-countdown {
+    background: #f1f5f9;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.75rem;
+    text-align: center;
+    font-family: 'Gilroy-Bold', sans-serif;
+}
+
+.countdown-label {
+    font-size: 0.8rem;
+    color: #000000;
+    margin-bottom: 0.25rem;
+}
+
+.countdown-timer {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #1e293b;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    padding: 0.5rem;
+    border-radius: 6px;
+    display: inline-block;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.countdown-timer.countdown-expired{
+  color:#dc2626;
+  background:#fef2f2;
+  border:1px solid #fecaca;
+  animation: pulseRed 1.6s cubic-bezier(.4,0,.2,1) infinite;
+  transform-origin:center;
+  will-change: transform, box-shadow;
+  backface-visibility:hidden;
+}
+.countdown-display .expired-text{
+  animation: pulseRed 1.6s cubic-bezier(.4,0,.2,1) infinite;
+  transform-origin:center;
+  will-change: transform;
+  backface-visibility:hidden;
+}
+
+@keyframes pulseRed{
+  0%{
+    background-color:#fef2f2;
+    border-color:#fecaca;
+    transform:scale(1);                  
+    box-shadow:0 0 0 0 rgba(220,38,38,.35);
+  }
+  35%{
+    background-color:#fee8e8;             
+    border-color:#fcbaba;
+    transform:scale(1.03);                
+    box-shadow:0 0 0 4px rgba(220,38,38,.18);
+  }
+  60%{
+    background-color:#fee2e2;
+    border-color:#fca5a5;
+    transform:scale(1.015);                
+    box-shadow:0 0 0 2px rgba(220,38,38,.12);
+  }
+  100%{
+    background-color:#fef2f2;
+    border-color:#fecaca;
+    transform:scale(1);
+    box-shadow:0 0 0 0 rgba(220,38,38,.35);
+  }
+}
+
+/* Contenido de la tarjeta */
+.card-content-vertical {
+    padding: 1rem;
+    background-color: #4B5563;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-content-vertical-enfriamiento {
+    padding: 1rem;
+    background-color: #FFFF;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-content-vertical-enfriamiento .info-row .label{
+    color: #000000;
+}
+.card-content-vertical-enfriamiento .info-row .value{
+    color: #000000;
+}
+/* Item de información vertical */
+.info-item-vertical {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    font-size: 0.85rem;
+}
+
+.info-item-vertical i {
+    width: 16px;
+    color: #6b7280;
+    flex-shrink: 0;
+    text-align: center;
+    margin-top: 0.1rem;
+}
+
+.info-item-vertical div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.info-item-vertical .label {
+    font-family: 'Gilroy-Bold', sans-serif;
+    color: #374151;
+}
+
+.info-item-vertical .value {
+    font-family: 'Gilroy-Light', sans-serif;
+    color: #6b7280;
+    font-size: 0.85rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+/* Línea divisoria */
+.divider-line {
+    height: 1px;
+    background: linear-gradient(to right, transparent, #e5e7eb, transparent);
+    margin: 0.75rem 0 0.5rem 0; /* Reducir margen superior */
+}
+
+/* Historial de temperaturas - espaciado optimizado */
+.temperature-history-vertical {
+    margin-top: 0; /* Remover margen superior extra */
+    flex-shrink: 0; /* No permitir que se comprima */
+}
+
+.temp-history-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-size: 0.8rem;
+    color: #FFFF;
+    margin-bottom: 0.5rem;
+}
+
+.temp-history-list {
+    max-height: 100px; /* Reducir altura máxima */
+    overflow-y: auto;
+    background: #f8fafc;
+    border-radius: 6px;
+    padding: 0.4rem; /* Reducir padding */
+    border: 1px solid #e5e7eb;
+}
+
+.temp-history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.2rem 0; /* Reducir padding vertical */
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 0.8rem;
+}
+
+.temp-history-header-enfriamiento{
+        display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-size: 0.8rem;
+    color: #000000;
+    margin-bottom: 0.5rem;
+}
+
+.temp-history-header i {
+    color: #FD7304;
+}
+
+.temp-history-item:last-child {
+    border-bottom: none;
+}
+
+.temp-value {
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-weight: bold;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.temp-value.temp-normal {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.temp-value.temp-high {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.temp-date {
+    font-family: 'Gilroy-Light', sans-serif;
+    color: #6b7280;
+    font-size: 0.75rem;
+}
+
+/* Mensaje de acción para tomar temperatura */
+.temperature-action-message {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #b45309;
+    padding: 0.75rem;
+    text-align: center;
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-top: 1px solid #f59e0b;
+    margin-top: auto;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.pulsing-icon {
+    animation: pulseYellow 1.5s infinite;
+    color: #dc2626;
+}
+
+@keyframes pulseYellow {
+    0% { 
+        color: #dc2626;
+        transform: scale(1);
+    }
+    50% { 
+        color: #ef4444;
+        transform: scale(1.2);
+    }
+    100% { 
+        color: #dc2626;
+        transform: scale(1);
+    }
+}
+
+/* Tarjeta que necesita temperatura */
+.unidad-enfriamiento-vertical-card.time-for-temperature {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2), 0 4px 16px rgba(239, 68, 68, 0.3);
+    animation: cardPulse 2s infinite;
+}
+
+@keyframes cardPulse {
+    0% { 
+        box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2), 0 4px 16px rgba(239, 68, 68, 0.3);
+    }
+    50% { 
+        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.4), 0 6px 20px rgba(239, 68, 68, 0.4);
+    }
+    100% { 
+        box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2), 0 4px 16px rgba(239, 68, 68, 0.3);
+    }
+}
+
+/* Estado vacío simple */
+.unidades-cola-empty-simple {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+    padding: 2rem;
+}
+
+.empty-simple-card {
+    background-color: #f8fafc;
+    color: #6b7280;
+    padding: 2rem;
+    border-radius: 8px;
+    text-align: center;
+    border: 2px solid #e5e7eb;
+    max-width: 400px;
+    width: 100%;
+}
+
+.empty-simple-card h4 {
+    font-family: 'Gilroy-Bold', sans-serif;
+    color: #374151;
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.empty-simple-card p {
+    font-family: 'Gilroy-Light', sans-serif;
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+}
+
+.empty-simple-card small {
+    color: #9ca3af;
+}
+
+/* ====== UTILIDADES ====== */
+.text-white { text-shadow: 0 1px 2px rgba(0,0,0,0.10); }
+.cursor-pointer { cursor: pointer; }
+
+/* Grid */
+.grid { display: grid; gap: 1.5rem; }
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.gilroy-bold { font-family: 'Gilroy-Bold', sans-serif; }
+.gilroy-light { font-family: 'Gilroy-Light', sans-serif; }
+
+/* ====== MODALES ====== */
+.modal {
+    z-index: 1055;
+    display: block;
+    padding-top: 2.5rem;
+}
+.modal-dialog {
+    margin: 1.5rem auto;
+    max-width: 500px;
+    width: 95vw;
+}
+
+/* ====== ALERTAS ====== */
+.alert {
+    border-radius: 8px;
+    padding: 2rem;
+    border: 1px solid;
+}
+
+/* ====== ANIMACIONES ====== */
+.btn:focus,
+.form-control:focus {
+    outline: 2px solid #0066cc;
+    outline-offset: 2px;
+}
+.btn,
+.cursor-pointer {
+    transition: all 0.2s;
+}
+.btn:hover,
+.cursor-pointer:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+.timer-running {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* ====== RESPONSIVE ====== */
+@media (max-width: 1200px) {
+    main.container { padding-left: 1rem; padding-right: 1rem; }
+    .piletas-table { grid-template-columns: repeat(4, 1fr); }
+    .unidades-cola-vertical-grid { 
+        grid-template-columns: repeat(3, 1fr); 
+        margin: 0 0.5rem;
+    }
+}
+
+@media (max-width: 992px) {
+    main.container { padding-left: .7rem; padding-right: .7rem; }
+    .piletas-table { grid-template-columns: repeat(3, 1fr); }
+    .unit-card-espera,
+    .unit-card-solicitud { 
+        width: 100%;
+    }
+    .unidades-cola-vertical-grid { 
+        grid-template-columns: repeat(2, 1fr); 
+        margin: 0 0.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .cards-section {
+        flex-direction: column !important;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .card-espera-container,
+    .card-solicitar-container {
+        max-width: 100%;
+        width: 100%;
+    }
+    
+    /* CAMBIAR A ESTILO TARJETAS SOLO EN MÓVIL */
+    .piletas-container {
+        background-color: transparent;
+        box-shadow: none;
+    }
+    
+    .piletas-table {
+        grid-template-columns: 1fr !important;
+        gap: 1rem;
+        border: none;
+        margin-left: 2rem;
+        margin-right: 2rem;
+    }
+    
+    .pileta-cell {
+        border: none;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        min-height: 250px;
+        margin-bottom: 1rem;
+    }
+    
+    /* MANTENER BANNER EN FILA SIEMPRE */
+    .banner-content {
+        flex-direction: row !important;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .banner-content h1 { font-size: 1.3rem; }
+    
+    .activity-dropdown {
+        flex-shrink: 0;
+    }
+    
+    .activity-dropdown .dropdown-toggle {
+        min-width: 100px;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+        font-weight: bold;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .activity-dropdown .dropdown-menu {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        min-width: 200px;
+        right: 0;
+        left: auto;
+    }
+    
+    .activity-dropdown .dropdown-item {
+        padding: 14px 16px;
+        font-size: 15px;
+    }
+    
+    main.container { padding: 1rem 0.4rem 3.5rem 0.4rem; }
+    
+    .unit-card-espera,
+    .unit-card-solicitud {
+        min-width: 0;
+        width: 100%;
+        margin-bottom: 1.1rem;
+        padding-left: 18px;
+        padding-right: 10px;
+    }
+    
+    .counter-input { width: 42px; font-size: 15px; margin: 0 2px; }
+
+    /* Responsive para unidades en cola - una columna en mobile */
+    .unidades-cola-vertical-grid {
+        grid-template-columns: 1fr !important;
+        margin: 0 1rem;
+        gap: 1rem;
+    }
+
+    /* ==== AJUSTE: tamaños del nuevo layout label/value ==== */
+    .info-row { font-size: 0.9rem; }
+    .info-row .label { font-size: 0.85rem; }
+    .info-row .value { font-size: 0.9rem; }
+}
+
+@media (max-width: 576px) {
+    .banner-content h1 { font-size: 1.12rem; }
+    
+    .activity-dropdown .dropdown-toggle {
+        min-width: 90px;
+        padding: 0.3rem 0.6rem;
+        font-size: 0.8rem;
+    }
+    
+    .activity-dropdown .dropdown-item {
+        padding: 12px 14px;
+        font-size: 14px;
+    }
+    
+    .unit-card-espera, .unit-card-solicitud {
+        font-size: 15px;
+    }
+    
+    .counter-input { width: 36px; font-size: 13px;}
+    .modal-dialog { max-width: 99vw;}
+    
+    .pileta-cell {
+        min-height: 220px;
+    }
+    
+    .unidades-cola-vertical-grid {
+        margin: 0 0.5rem;
+    }
+    
+    /* ==== AJUSTE: tamaños del nuevo layout label/value ==== */
+    .info-row { font-size: 0.85rem; }
+    .info-row .label { font-size: 0.8rem; }
+    .info-row .value { font-size: 0.85rem; }
+    
+    .temp-history-list {
+        max-height: 100px;
+    }
+}
+
+@media (max-width: 430px) {
+    .banner-content h1 { font-size: .92rem; }
+    
+    .activity-dropdown .dropdown-toggle {
+        min-width: 80px;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+    
+    .activity-dropdown .dropdown-item {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+    
+    .unit-card-espera, .unit-card-solicitud { 
+        font-size: 13px;
+        aspect-ratio: 1.5/1;
+    }
+    
+    .counter-input { width: 28px; font-size: 11px;}
+    main.container { padding: 0.6rem 0.15rem 2.2rem 0.15rem;}
+    
+    .unidades-cola-vertical-grid {
+        margin: 0 0.25rem;
+    }
+    
+    /* ==== AJUSTE: tamaños del nuevo layout label/value ==== */
+    .info-row { font-size: 0.8rem; gap: 0.2rem 0.5rem; }
+    .info-row .label { font-size: 0.75rem; }
+    .info-row .value { font-size: 0.8rem; }
+    
+    .card-content-vertical {
+        padding: 0.75rem;
+    }
+    
+    .temp-history-list {
+        max-height: 80px;
+    }
+    
+    .temperature-countdown {
+        padding: 0.5rem;
+    }
+    
+    .countdown-timer {
+        font-size: 1rem;
+    }
+}

@@ -1,0 +1,653 @@
+/* Estilos base */
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #FFFFFF;
+}
+
+/* TARJETAS DE FILTRO CLICKEABLES */
+.filter-card-clickable:hover {
+    transform: scale(1.03) !important;
+    box-shadow: 0 0 10px rgba(253, 115, 4, 0.3) !important;
+}
+
+.filter-ingenio-clickable:hover {
+    transform: scale(1.03) !important;
+    box-shadow: 0 0 10px rgba(253, 115, 4, 0.3) !important;
+}
+
+/* BANNER Y PESTAÑAS */
+.banner-wrapper {
+    background-color: #FD6104;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0;
+    width: 100%;
+    position: relative;
+}
+
+.custom-banner {
+    background-color: #FD6104;
+    padding: 1.3rem 1rem;
+    color: white;
+    font-family: 'Gilroy-Bold', sans-serif;
+    width: 40%;
+}
+
+.custom-banner h1 {
+    font-size: 1.5rem;
+    margin: 0;
+    font-weight: bold;
+    color: white;
+}
+
+.tab-buttons {
+    display: flex;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    gap: 5px; /* Separación entre pestañas */
+    margin-right: 20px;
+}
+
+.tab-button {
+    padding: 0.5rem 2.5rem;
+    background-color: #d1d5db;
+    color: #f97316;
+    text-decoration: none !important;
+    border-radius: 8px 8px 0 0;
+    font-weight: bold;
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.tab-button:hover {
+    background-color: #ffffff;
+    color: #f97316;
+}
+
+.active-tab {
+    background-color: #ffffff;
+    color: #f97316;
+    pointer-events: none;
+}
+
+/* SECCIÓN DE TOTAL UNIDADES */
+.section-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    text-align: center;
+    color: #333;
+}
+
+.unit-cards-container {
+    display: flex;
+    justify-content: center;
+    gap: 2rem; /* Espacio entre las tarjetas */
+    margin: 1rem 0;
+}
+
+.unit-card {
+    width: 220px; /* Tamaño exacto de 220px solicitado */
+    height: 100px;
+    border-radius: 8px;
+    display: flex;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.unit-card-blue {
+    background-color: #182A6E;
+    color: white;
+}
+
+.unit-card-dark {
+    background-color: #242424;
+    color: white;
+}
+
+.indicator-bar {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    width: 8px;
+    height: 80px;
+    border-radius: 10px;
+}
+
+.indicator-white {
+    background-color: #EAE8EC;
+}
+
+.indicator-orange {
+    background-color: #FF7300;
+}
+
+.unit-card-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.unit-type {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.unit-count {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+/* SECCIÓN DE INGENIOS */
+.ingenios-container {
+    background-color: #d1d5db;
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+.ingenios-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 1rem;
+    justify-content: center;
+    justify-items: center;
+}
+
+.ingenio-card {
+    width: 170px;
+    height: 90px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #d1d5db;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.ingenio-name {
+    background-color: white;
+    color: black;
+    font-size: 0.7rem;
+    font-weight: bold;
+    padding: 0.5rem;
+    border-radius: 5px;
+    width: 90%;
+    margin-bottom: 0.5rem;
+    white-space: normal;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 40px;
+}
+
+.ingenio-count {
+    background-color: white;
+    color: black;
+    width: 40px;
+    height: 24px;
+    border-radius: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+/* BUSCADOR */
+.search-container {
+    padding: 0 1rem;
+    margin: 1rem 0;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 15px;
+    border: 1px solid #000000;
+    background-color: #f8f9f9;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+/* TARJETAS DE VEHÍCULOS - AJUSTADAS PARA MOSTRAR TODO EL CONTENIDO */
+.units-container {
+    padding: 0 1rem;
+}
+
+.unit-card-wrapper {
+    margin-bottom: 1.5rem;
+}
+
+.vehicle-card {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    /* Eliminamos altura fija para que se ajuste al contenido */
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background-color: white;
+    height: auto; /* Altura automática */
+    display: flex;
+    flex-direction: column;
+}
+
+.vehicle-card-btn {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    background: none;
+    border: none;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+}
+
+.vehicle-image-container {
+    position: relative;
+    height: 180px;
+    background-color: #f8f9fa;
+}
+
+.vehicle-image, .vehicle-image-placeholder {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.vehicle-badge-container {
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+}
+
+.vehicle-badge {
+    padding: 0.5rem 1.5rem;
+    color: white;
+    border-radius: 50px;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.badge-green {
+    background-color: #28a745;
+}
+
+.badge-dark {
+    background-color: #343a40;
+}
+
+.vehicle-details {
+    padding: 1.5rem 1rem 1rem;
+    display: flex;
+    flex-direction: column;
+    /* Eliminamos altura fija y scroll */
+    overflow: visible;
+}
+
+.detail-label {
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+    color: #333;
+}
+
+.detail-value {
+    font-size: 0.85rem;
+    font-weight: bold;
+    margin-bottom: 0.75rem;
+    color: #6c757d;
+}
+
+.detail-divider {
+    border: 2px solid #ff7300;
+    margin: 0.75rem 0;
+}
+
+/* MODALES */
+.modal-header {
+    background-color: #182A6E;
+    color: white;
+}
+
+.modal-header .close {
+    color: white;
+    opacity: 0.8;
+}
+
+.modal-header .close:hover {
+    opacity: 1;
+}
+
+/* Estilos para el modal de reporte de inconsistencias */
+.inconsistency-item {
+    background-color: #fff3cd;
+    border: 1px solid #FD6104;
+    color: #182A6E;
+    margin-bottom: 8px;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.inconsistency-item i {
+    color: #FD6104;
+    margin-right: 8px;
+}
+
+/* ELEMENTOS DE FORMULARIO */
+.error-field {
+    border: 2px solid red !important;
+    background-color: #f8d7da !important;
+}
+
+/* RESPONSIVE - Ajustado para mostrar todo el contenido */
+@media (max-width: 1200px) {
+    .ingenio-card {
+        width: 150px;
+    }
+    
+    .tab-buttons {
+        gap: 5px; /* Separación entre pestañas */
+        margin-right: 5px;
+    }
+}
+
+@media (max-width: 992px) {
+    .ingenio-card {
+        width: 140px;
+        height: 80px;
+    }
+    
+    .ingenio-name {
+        font-size: 0.65rem;
+        min-height: 35px;
+    }
+    
+    .tab-buttons {
+        margin-right: 5px;
+        gap: 5px; /* Separación entre pestañas */
+    }
+}
+
+@media (max-width: 768px) {
+    .custom-banner {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .tab-buttons {
+        position: relative;
+        width: 100%;
+        justify-content: center;
+        margin-top: -8px;
+        margin-right: 0;
+    }
+    
+    .tab-button {
+        flex: 1;
+        text-align: center;
+        gap: 5px; /* Separación entre pestañas */
+    }
+    
+    .unit-cards-container {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .unit-card {
+        width: 220px; /* Mantenemos 220px en pantallas pequeñas */
+        margin-bottom: 1rem;
+    }
+    
+    .ingenios-grid {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+    
+    .ingenio-card {
+        width: 130px;
+        height: 75px;
+    }
+    
+    .ingenio-name {
+        font-size: 0.6rem;
+        min-height: 32px;
+        padding: 0.3rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .banner-wrapper {
+        flex-direction: column;
+    }
+    
+    .custom-banner h1 {
+        font-size: 1.2rem;
+    }
+    
+    .tab-button {
+        padding: 0.3rem 0.7rem;
+        font-size: 0.8rem;
+    }
+    
+    .unit-cards-container {
+        flex-direction: column;
+    }
+    
+    .ingenios-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
+    
+    .ingenio-card {
+        width: 100%;
+        height: 70px;
+    }
+    
+    .ingenio-name {
+        font-size: 0.55rem;
+        width: 95%;
+    }
+    
+    .vehicle-image-container {
+        height: 160px;
+    }
+    
+    .detail-label, .detail-value {
+        font-size: 0.8rem;
+    }
+}
+
+/* Para pantallas muy pequeñas */
+@media (max-width: 375px) {
+    .custom-banner h1 {
+        font-size: 1rem;
+    }
+    
+    .tab-button {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.7rem;
+    }
+    
+    .unit-card {
+        width: 220px; /* Mantenemos 220px incluso en pantallas muy pequeñas */
+        height: 80px;
+    }
+    
+    .unit-type {
+        font-size: 1.3rem;
+    }
+    
+    .unit-count {
+        font-size: 1.6rem;
+    }
+    
+    .ingenios-grid {
+        grid-template-columns: repeat(1, 1fr);
+    }
+    
+    .ingenio-card {
+        width: 90%;
+        height: 60px;
+    }
+}
+
+/* Correcciones específicas para el modal de reporte de inconsistencias */
+#modalReportar .modal-dialog {
+    max-width: 60%;
+    width: auto;
+    margin: 1rem auto;
+    position: relative;
+}
+
+#modalReportar .modal-content {
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    width: 100%;
+    max-height: 100vh; /* Altura máxima en pantallas pequeñas */
+    overflow-y: auto; /* Permitir scroll si el contenido es muy grande */
+}
+
+#modalReportar .modal-header {
+    padding: 0.75rem 1rem;
+    align-items: center;
+}
+
+#modalReportar .modal-title {
+    font-size: 1.1rem;
+    word-break: break-word; /* Permitir que el título se ajuste */
+    max-width: 80%; /* Evitar que compita con el botón de cerrar */
+}
+
+#modalReportar .modal-body {
+    padding: 1rem;
+    overflow-y: auto;
+    max-height: 80vh; /* Altura máxima para permitir scroll */
+}
+
+#modalReportar .modal-footer {
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap; /* Permitir que los botones fluyan en pantallas pequeñas */
+}
+
+#modalReportar .modal-footer button {
+    margin: 0.25rem;
+}
+
+#modalReportar .form-group {
+    margin-bottom: 1rem;
+}
+
+#modalReportar .inconsistency-item {
+    background-color: #fff3cd;
+    border: 1px solid #FD6104;
+    color: #182A6E;
+    margin-bottom: 0.5rem;
+    padding: 0.75rem;
+    border-radius: 4px;
+    word-break: break-word;
+}
+
+#modalReportar .inconsistency-item i {
+    color: #FD6104;
+    margin-right: 0.5rem;
+}
+
+/* Ajustes responsivos para pantallas muy pequeñas */
+@media (max-width: 576px) {
+    #modalReportar .modal-dialog {
+        max-width: 95%;
+        margin: 0.5rem auto;
+    }
+    
+    #modalReportar .modal-content {
+        max-height: 95vh;
+    }
+    
+    #modalReportar .modal-header {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    #modalReportar .modal-title {
+        font-size: 1rem;
+    }
+    
+    #modalReportar .modal-body {
+        padding: 0.75rem;
+        max-height: 65vh;
+    }
+    
+    #modalReportar .modal-footer {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    #modalReportar .inconsistency-item {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    #modalReportar textarea.form-control {
+        font-size: 0.9rem;
+    }
+}
+
+/* Corrección para dispositivos extremadamente pequeños */
+@media (max-width: 375px) {
+    #modalReportar .modal-dialog {
+        max-width: 98%;
+        margin: 0.25rem auto;
+    }
+    
+    #modalReportar .modal-footer {
+        justify-content: center;
+    }
+    
+    #modalReportar .modal-footer button {
+        margin: 0.2rem;
+        padding: 0.375rem 0.5rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* ESTILOS PARA UNIDADES CON INCONSISTENCIAS - SOLO FONDO GRIS */
+.inconsistencies-section {
+    border-top: 3px solid #FD6104;
+    padding-top: 2rem;
+    margin-top: 2rem;
+}
+
+.vehicle-card-inconsistency {
+    background-color: #f8f9fa; /* Fondo gris claro */
+    cursor:auto;
+    opacity: 0.85; /* Ligeramente opaco */
+}
+
+.vehicle-card-content-inconsistency {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    pointer-events: none; /* Deshabilita completamente la interacción */
+}
+
+/* Evitar efectos hover en inconsistencias */
+.vehicle-card-inconsistency:hover {
+    transform: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background-color: #f8f9fa; /* Mantener el fondo gris en hover */
+}
+
+/* Responsive para inconsistencias */
+@media (max-width: 768px) {
+    .inconsistencies-section {
+        padding-top: 1.5rem;
+        margin-top: 2rem !important;
+    }
+}

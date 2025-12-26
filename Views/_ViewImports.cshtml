@@ -1,0 +1,15 @@
+@using FrontendQuickpass
+@using FrontendQuickpass.Models
+@using FrontendQuickpass.Helpers
+@using static FrontendQuickpass.Helpers.PermissionHelper
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+@*
+    PERMISSION Helper - Uso directo de PermissionHelper
+
+    Ejemplos:
+    - @if (HasRole(Context, "GERENTE_PLANTA")) { ... }
+    - @if (Can(Context, "ListaNegra", "DELETE")) { ... }
+    - @if (IsAdmin(Context)) { ... }
+    - @GetRoleCode(Context)
+*@

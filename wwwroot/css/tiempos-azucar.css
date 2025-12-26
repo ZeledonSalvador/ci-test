@@ -1,0 +1,368 @@
+/* ====== ESTILOS BASE ====== */
+body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+}
+
+.button-orange {
+    background-color: #FD7304;
+    border: none;
+    transition: background-color 0.3s;
+}
+.button-orange:hover {
+    background-color: #ea580c;
+}
+
+/* Banner */
+.custom-banner {
+    background-color: #FD6104;
+    padding: 1rem 1rem;
+    color: white;
+    font-family: 'Gilroy-Bold', sans-serif;
+    width: 100%;
+}
+.custom-banner h1 {
+    font-size: 1.2rem;
+    margin: 0;
+    font-weight: bold;
+    color: white;
+}
+
+/* Layout */
+main.container {
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 3.5rem 1.5rem;
+}
+
+/* Grid */
+.grid { display: grid; gap: 1.5rem; }
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.gilroy-bold { font-family: 'Gilroy-Bold', sans-serif; }
+.gilroy-light { font-family: 'Gilroy-Light', sans-serif; }
+
+/* === UNIT CARDS === */
+.card-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.unit-card-plana,
+.unit-card-volteo {
+    width: 100%;
+    aspect-ratio: 1.3/1; /* Proporción consistente */
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 2px solid transparent;
+    position: relative;
+    padding: 0 10px 0 24px;
+    max-height: 130px;
+    max-width: 350px;
+}
+
+.unit-card-plana {
+    background-color: #182A6E;
+    color: white;
+}
+
+.unit-card-volteo {
+    background-color: #242424;
+    color: white;
+}
+
+.unit-indicator-white, .unit-indicator-orange {
+    position: absolute;
+    top: 8px;
+    left: 10px;
+    width: 10px;
+    height: 90%;
+    border-radius: 5px;
+}
+.unit-indicator-white { background-color: #EAE8EC; }
+.unit-indicator-orange { background-color: #FD6104; }
+
+/* Contador */
+.counter-input {
+    display: inline-block;
+    width: 54px;
+    text-align: center;
+    margin: 0 5px;
+    border-radius: 5px;
+    padding: 5px;
+    font-size: 1.18rem;
+    color: black;
+    background-color: white;
+    border: 1px solid #4472C4;
+    transition: border-color 0.3s;
+    font-weight: bold;
+}
+.counter-input-volteo { border: 1px solid #C9E9D2; }
+.counter-input-volteo:hover { border-color: #4472C4; }
+.counter-input-plana { border: 1px solid #4472C4; }
+
+/* ==== CRONÓMETROS ==== */
+.progress-circle {
+    width: 95px;
+    height: 95px;
+    border-radius: 50%;
+    background: #f0f0f0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.timer-text {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.13rem;
+    color: black;
+    font-weight: bold;
+}
+/* Borde para tarjetas de cronómetro de tiempos */
+.cronometro-bordered {
+    border: 2.5px solid #FD7304 !important;
+    box-shadow: 0 2px 16px 0 rgba(40,40,70,0.10);
+}
+
+/* Badges */
+.sweeping-badge {
+    display: inline-block;
+    padding: 8px 12px;
+    margin-top: 8px;
+    border-radius: 8px;
+    font-weight: bold;
+    text-align: center;
+    font-size: 12px;
+}
+.sweeping-badge-plana {
+    border: 2px solid #0067c2;
+    background-color: #0067c2;
+    color: #f0f0f0;
+}
+.sweeping-badge-volteo {
+    border: 2px solid #343435;
+    background-color: #343435;
+    color: #f0f0f0;
+}
+
+/* Cards de proceso y cola */
+.process-card-plana {
+    background-color: #182A6E;
+    background-image: linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px), 
+                      linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+.process-card-volteo {
+    background-color: #242424;
+    background-image: linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px), 
+                      linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+.queue-card-plana { 
+    background-color: #2563eb; 
+}
+.queue-card-volteo { 
+    background-color: #6b7280; 
+}
+
+.bg-gray-600, .bg-blue-600 {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-radius: 0.5rem;
+}
+
+.bg-gray-600:hover, .bg-blue-600:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.bg-white.p-2.rounded-md.text-sm.mb-4 {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 0.5rem;
+}
+
+/* Asegurarse que el diseño de 2 columnas funcione correctamente */
+#seccionesDinamicas {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+#volteoSection,
+#planaSection {
+    width: 70% !important;
+    margin: 0 auto;
+}
+
+.text-white { text-shadow: 0 1px 2px rgba(0,0,0,0.10); }
+.cursor-pointer { cursor: pointer; }
+
+/* FOOTER */
+footer {
+    width: 100%;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    min-height: 44px;
+    background-color: #242424;
+    color: white;
+    z-index: 1010;
+    text-align: center;
+    font-family: 'Gilroy-Light', sans-serif;
+    font-size: 0.99rem;
+    letter-spacing: .01em;
+}
+
+/* MODALS */
+.modal {
+    z-index: 1055;
+    display: block;
+    padding-top: 2.5rem;
+}
+.modal-dialog {
+    margin: 1.5rem auto;
+    max-width: 500px;
+    width: 95vw;
+}
+
+/* Animación, loading, hover, etc */
+.btn:focus,
+.form-control:focus {
+    outline: 2px solid #0066cc;
+    outline-offset: 2px;
+}
+.btn,
+.cursor-pointer {
+    transition: all 0.2s;
+}
+.btn:hover,
+.cursor-pointer:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+.timer-running {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+/* Responsive ajustes - MANTENIENDO DISEÑO ORIGINAL PARA DESKTOP */
+@media (max-width: 1200px) {
+    main.container { padding-left: 1rem; padding-right: 1rem; }
+}
+
+@media (max-width: 992px) {
+    main.container { padding-left: .7rem; padding-right: .7rem; }
+    .unit-card-plana,
+    .unit-card-volteo { 
+        width: 100%;
+    }
+    .progress-circle { width: 80px; height: 80px; }
+}
+
+/* SOLO MODIFICAR RESPONSIVE PARA TABLET Y MÓVIL */
+@media (max-width: 768px) {
+    .grid-cols-2 {
+        grid-template-columns: 1fr !important;
+    }
+    
+    #seccionesDinamicas {
+        grid-template-columns: 1fr !important;
+    }
+    
+    #volteoSection,
+    #planaSection {
+        width: 100% !important; /* Quitar el 70% en móviles */
+        margin: 0 auto;
+    }
+    
+    main.container { padding: 1rem 0.4rem 3.5rem 0.4rem; }
+    .custom-banner h1 { font-size: 1.3rem; }
+    
+    .unit-card-plana,
+    .unit-card-volteo {
+        min-width: 0;
+        width: 100%;
+        margin-bottom: 1.1rem;
+        padding-left: 18px;
+        padding-right: 10px;
+    }
+    
+    .counter-input { width: 42px; font-size: 15px; margin: 0 2px; }
+    .progress-circle { width: 70px; height: 70px; }
+    .timer-text { font-size: 13px; }
+    
+    /* Ajustar layout de cronómetros en móvil */
+    .flex.justify-between.items-center {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .custom-banner h1 { font-size: 1.12rem; }
+    
+    .unit-card-plana, .unit-card-volteo {
+        padding: 7px 6px 10px 12px;
+        min-height: 100px;
+        font-size: 15px;
+    }
+    
+    .counter-input { width: 36px; font-size: 13px;}
+    .progress-circle { width: 58px; height: 58px;}
+    .timer-text { font-size: 11px;}
+    .modal-dialog { max-width: 99vw;}
+    
+    /* Ajustes para tarjetas individuales en móviles */
+    .bg-gray-600, .bg-blue-600 {
+        width: 100%;
+        margin-bottom: 0.75rem;
+    }
+    
+    footer { 
+        font-size: 0.83rem; 
+        padding-left: 0.25rem; 
+        padding-right: 0.25rem; 
+    }
+}
+
+@media (max-width: 430px) {
+    .custom-banner h1 { font-size: .92rem; }
+    
+    .unit-card-plana, .unit-card-volteo { 
+        font-size: 13px;
+        aspect-ratio: 1.5/1; /* Ajuste para móviles muy pequeños */
+    }
+    
+    .counter-input { width: 28px; font-size: 11px;}
+    .progress-circle { width: 38px; height: 38px;}
+    .timer-text { font-size: 9.7px;}
+    main.container { padding: 0.6rem 0.15rem 2.2rem 0.15rem;}
+    footer { font-size: 0.7rem;}
+}
+
+/* Touch devices optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .timer-start-btn,
+    .timer-stop-btn {
+        min-height: 44px;
+        padding: 0.6rem 1rem;
+    }
+}

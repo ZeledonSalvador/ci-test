@@ -1,0 +1,26 @@
+@model FrontendQuickpass.Models.TiemposMelazaViewModel
+
+<div class="solicitud-container">
+    <!-- Label y tarjeta de unidades en espera -->
+    <div class="unidades-espera-section">
+        <div class="section-label">UNIDAD EN ESPERA</div>
+        <div class="unidades-espera-card">
+            <div class="unit-type-label">Pipa</div>
+            <div class="unit-count" id="lblTotalRegistrosPipa">@Model.TotalRegistrosPipa</div>
+        </div>
+    </div>
+
+    <!-- Label y tarjeta de solicitar unidades -->
+    <div class="solicitar-unidades-section">
+        <div class="section-label">SOLICITAR UNIDADES</div>
+        <div class="solicitar-unidades-card">
+            <button id="decreaseButtonPipa" class="counter-btn-side counter-btn-left" type="button">−</button>
+            <div class="center-content">
+                <div class="unit-type-label">Pipa</div>
+                <input type="number" id="numberInputPipa" class="counter-value" value="@Model.NumberInputPipa" min="0" max="999" />
+            </div>
+            <button id="increaseButtonPipa" class="counter-btn-side counter-btn-right" type="button">+</button>
+        </div>
+        <button id="solicitarPipa" class="btn-solicitar-main" type="button">Solicitar</button>
+    </div>
+</div>

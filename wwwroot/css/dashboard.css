@@ -1,0 +1,590 @@
+/* =========================
+   Variables de color/espaciado
+   ========================= */
+:root {
+  --bg: #0f0f10;
+  /* fondo KPI */
+  --card: #141519;
+  /* fondo contenedor oscuro */
+  --text: #ffffff;
+  /* texto / fondo de cards claras */
+  --muted: #9aa3b2;
+  --brand: #FD6104;
+  /* naranja corporativo */
+  --blue: #0000A3;
+  /* azul corporativo */
+  --grid-gap: 16px;
+  --pipa: #82807F;
+  --filter-w: 200px;   /* ancho uniforme */
+  --filter-h: 38px;    /* alto uniforme */
+}
+
+/* =========================
+   Layout general
+   ========================= */
+.dash-wrapper {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  /* panel KPI + contenido */
+  gap: var(--grid-gap);
+  font-family: 'Gilroy-Bold', sans-serif;
+  padding: 16px;
+}
+
+.main-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--grid-gap);
+}
+
+/* =========================
+   Panel KPI
+   ========================= */
+.kpi-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kpi {
+  background: #000;
+  color: var(--text);
+  padding: 10px;
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .25);
+  text-align: center;
+}
+
+.kpi-value {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.kpi-label {
+  font-size: 14px;
+  color: #bfc6d4;
+}
+
+
+/* =========================
+   Filtros
+   ========================= */
+.filters {
+  background: var(--text);
+  color: var(--card);
+  border-radius: 14px;
+  box-sizing: border-box;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: max-content max-content max-content;
+  justify-content: start;
+  column-gap: 12px;
+  row-gap: 8px;
+}
+
+.filter label {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.filters .date-range.time-range > span{
+  padding: 0 6px;
+  line-height: 1;
+}
+
+.date-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+}
+
+.date-range span {
+  padding: 0 4px;
+}
+
+.time-range input[type="time"]{
+  width: var(--filter-w) !important;
+  min-width: 0 !important;
+  height: var(--filter-h) !important;
+  padding: 8px 12px;
+  border: 1px solid #242833;
+  border-radius: 10px;
+  background: #fff;
+  color: #141519;
+  font-family: 'Gilroy-Bold', sans-serif;
+}
+
+.time-range span { 
+  padding: 0 6px; 
+}
+
+.filters input[type="date"],
+.filters select {
+  width: var(--filter-w) !important;
+  /* no estirar a 100% en desktop */
+  min-width: 0 !important;
+  height: var(--filter-h) !important;
+  background: #fff;
+  color: var(--card);
+  border: 1px solid #242833;
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+/* (opcional) reduce padding interno del control nativo para que no “crezca” visualmente en WebKit */
+.filters input[type="date"]::-webkit-datetime-edit,
+.filters input[type="time"]::-webkit-datetime-edit{ padding: 0 2px; }
+
+/* =========================
+   Grid de charts
+   ========================= */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  /* 2 columnas */
+  grid-auto-rows: auto;
+  gap: var(--grid-gap);
+}
+
+/* =========================
+   Tarjeta de chart
+   ========================= */
+.chart-card {
+  background: var(--text);
+  /* card clara */
+  color: var(--card);
+  border-radius: 14px;
+  padding: 4px 12px 6px 12px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  /* header | gráfico | leyenda */
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  text-align: left;
+  position: relative;
+  height: auto;
+  /* sin altura fija */
+}
+
+/* Encabezado del chart */
+.chart-card header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0;
+  padding: 4px 0 0 0;
+  font-weight: 800;
+}
+
+/* ===== Leyenda abajo del gráfico ===== */
+.chart-card>.legend {
+  display: flex;
+  align-items: flex-start;
+  /* antes: left */
+  justify-content: flex-end;
+  column-gap: 2px;
+  /* separación entre grupos (título | items) */
+  row-gap: 0;
+  padding: 4px 6px 0 0;
+  /* la levanta más al gráfico */
+  line-height: 0.8;
+  font-size: 15px;
+  /* ajusta si quieres más pequeño */
+}
+
+/* Cada item (● Volteo / ● Plana / ● Pipa) bien pegado */
+.chart-card .legend .legend-item {
+  display: inline-flex;
+  align-items: left;
+  gap: 0;
+  /* distancia punto ↔ texto */
+  margin-left: 2px;
+  /* separación mínima entre items */
+}
+
+.chart-card .legend .legend-item:first-of-type {
+  margin-left: 20px;
+}
+
+/* Título “Tipo Camión” con poco margen a la derecha */
+.chart-card .legend .legend-title {
+  font-weight: 800;
+  margin-right: 8px;
+  /* muy cerca de Volteo */
+}
+
+/* Punto pequeño y con poco margen */
+.chart-card>.legend .dot {
+  width: 9px;
+  height: 9px;
+  margin: 0 4px 0 2px;
+  /* MUY pegado al texto */
+  transform: translateY(1px);
+}
+
+/* puntos de leyenda */
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  margin: 0 6px 0 10px;
+  position: relative;
+  top: 1px;
+}
+
+.dot-blue {
+  background: var(--blue);
+}
+
+.dot-orange {
+  background: var(--brand);
+}
+
+.dot-black {
+  background: var(--pipa);
+}
+
+/* =========================
+   Área scrolleable del chart
+   ========================= */
+.chart-scroll {
+  overflow-x: auto;
+  /* scroll horizontal si hay muchas etiquetas */
+  overflow-y: hidden;
+  height: 300px;
+  /* alto base del área del gráfico */
+  scrollbar-gutter: stable both-edges;
+}
+
+.chart-scrollH {
+  overflow-x: auto;
+  /* scroll horizontal si hay muchas etiquetas */
+  overflow-y: hidden;
+  height: 250px;
+  /* alto base del área del gráfico */
+  scrollbar-gutter: stable both-edges;
+}
+
+/* el canvas ocupa ese alto exacto */
+.chart-scroll canvas {
+  display: block;
+  height: 100% !important;
+  width: 100% !important;
+}
+
+/* contenedor interior del canvas */
+.chart-inner {
+  height: 100%;
+  padding-bottom: 0;
+  box-sizing: border-box;
+}
+
+/* Evita que otras reglas externas cambien el alto del canvas */
+.chart-card canvas {
+  height: auto !important;
+  /* el alto lo manda .chart-scroll */
+}
+
+/* Fallback general */
+canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+/* Scrollbar (WebKit/Chromium) */
+.chart-scroll::-webkit-scrollbar {
+  height: 10px;
+}
+
+.chart-scroll::-webkit-scrollbar-track {
+  background: #eee;
+}
+
+.chart-scroll::-webkit-scrollbar-thumb {
+  background: #bbb;
+  border-radius: 8px;
+}
+
+.chart-scroll::-webkit-scrollbar-thumb:hover {
+  background: #9a9a9a;
+}
+
+/* ============ DASH SWITCHER (menú lateral) ============ */
+.dash-switcher {
+  position: fixed;
+  inset: 0 0 0 auto;      /* anclado al lado derecho */
+  z-index: 60;
+  pointer-events: none;   /* bloquea clics fuera del panel/lengueta */
+}
+
+/* Lengüeta (flecha) */
+.dash-switcher__tab{
+  position: fixed;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 48px;
+  border: 0;
+  border-radius: 12px;
+  background: #fff;
+  color: #222;
+  box-shadow: 0 6px 18px rgba(0,0,0,.16);
+  cursor: pointer;
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  transition: right .28s ease, background .18s ease, box-shadow .18s ease, transform .18s ease;
+  z-index: 61; /* por encima del panel */
+  outline: none;
+}
+
+/* barrita naranja al pasar el mouse por la pestaña */
+.dash-switcher__tab::before{
+  content:"";
+  position:absolute;
+  left:6px;
+  top:6px;
+  bottom:6px;
+  width: 0;
+  background:#FD6104;
+  border-radius: 3px;
+  transition: width .18s ease;
+}
+.dash-switcher__tab:hover::before,
+.dash-switcher__tab:focus-visible::before{
+  width: 4px;
+}
+.dash-switcher__tab:hover{
+  box-shadow: 0 8px 22px rgba(0,0,0,.22);
+}
+
+/* Al abrir: la lengüeta queda visible adelante y en #FDE104 */
+.dash-switcher[aria-expanded="true"] .dash-switcher__tab {
+  background: #FD6104;
+  color: #111;
+  box-shadow: 0 8px 24px rgba(253, 225, 4, .35);
+}
+.dash-switcher[aria-expanded="true"] .dash-switcher__tab svg {
+  transform: rotate(180deg);
+  transition: transform .2s ease;
+}
+
+/* Panel (centrado verticalmente respecto a la lengüeta) */
+.dash-switcher__panel {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  transform: translate(102%, -50%);  /* fuera de pantalla + centrado vertical */
+  width: 360px;
+  max-width: 86vw;
+  max-height: 72vh;
+  min-height: 240px;
+  background: #fff;
+  color: #111;
+  border-radius: 18px;
+  box-shadow: -12px 16px 32px rgba(0,0,0,.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform .28s ease;
+  pointer-events: auto;          /* permite clics dentro del panel */
+  z-index: 60;
+}
+.dash-switcher[aria-expanded="true"] .dash-switcher__panel {
+  transform: translate(0, -50%); /* entra y queda centrado a la altura del botón */
+}
+
+/* Header del panel */
+.dash-switcher__header {
+  background: #0000A3;          /* solicitado */
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  font-weight: 800;
+  border-bottom: 1px solid #eaecef;
+}
+.dash-switcher__close {
+  border: 0;
+  background: transparent;
+  font-size: 24px;
+  line-height: 1;
+  color: #fff;
+  cursor: pointer;
+}
+
+/* Lista de opciones */
+.dash-switcher__list {
+  list-style: none;
+  margin: 0;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: auto;
+}
+
+/* Enlaces: sin subrayado (todas las variantes) */
+.dash-switcher a,
+.dash-switcher a:link,
+.dash-switcher a:visited,
+.dash-switcher a:hover,
+.dash-switcher a:focus,
+.dash-switcher a:active {
+  text-decoration: none !important;   /* elimina las líneas */
+  outline: none;
+}
+
+/* Tarjeta de cada opción */
+.dash-switcher__link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 14px;
+  border-radius: 14px;
+  color: #121212;
+  background: #f6f7fb;
+  border: 1px solid #eef0f5;
+  box-shadow: 0 2px 10px rgba(0,0,0,.04);
+  transition: transform .08s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
+}
+.dash-switcher__link:hover {
+  background: #eef1f8;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0,0,0,.10);
+  border-color: #e7eaf2;
+}
+.dash-switcher__link.is-active {
+  border-color: #FD6104;
+  box-shadow: 0 10px 26px rgba(253, 97, 4, .18);
+}
+
+/* Icono de cada item */
+.dash-switcher__link .ico {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  color: #fff;
+  background: #182A6E;
+  box-shadow: 0 4px 12px rgba(0,0,0,.15);
+}
+.dash-switcher__link .icoh {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  color: #fff;
+  background: #242424;
+  box-shadow: 0 4px 12px rgba(0,0,0,.15);
+}
+/* Texto y la “pill” opcional */
+.dash-switcher__link .txt {
+  font-weight: 800;
+}
+.dash-switcher__link .pill {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: #FD6104;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+/* Cuando el switcher está abierto, todo el bloque acepta clics */
+.dash-switcher[aria-expanded="true"] {
+  pointer-events: auto;
+}
+.dash-switcher[aria-expanded="true"] .dash-switcher__panel,
+.dash-switcher[aria-expanded="true"] .dash-switcher__tab {
+  pointer-events: auto;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .dash-switcher__panel {
+    width: 320px;
+    max-height: 70vh;
+  }
+  .dash-switcher__tab {
+    right: 6px;
+    width: 36px;
+    height: 48px;
+  }
+}
+
+
+/* =========================
+   Responsivo
+   ========================= */
+@media (max-width: 1100px) {
+  .dash-wrapper {
+    grid-template-columns: 1fr;
+  }
+
+  .kpi-panel {
+    order: 2;
+  }
+
+  .main-panel {
+    order: 1;
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+  /* Un gráfico por fila (siempre) */
+.charts-grid--single {
+  grid-template-columns: 1fr !important;
+}
+
+/* Si quieres más alto el lienzo en esta vista */
+.charts-grid--single .chart-scroll {
+  height: 360px; /* ajusta si lo prefieres más alto/bajo */
+}
+
+
+  /* 1 columna */
+  .chart-scroll {
+    height: 260px;
+  }
+
+  /* un poco más bajo en mobile */
+}
+
+@media (min-width: 1400px) {
+  .chart-scroll {
+    height: 360px;
+  }
+
+  /* más alto en pantallas grandes */
+}
+
+@media (max-width: 900px) {
+  .filters {
+    grid-template-columns: 1fr;
+  }
+
+  .filters input[type="date"],
+  .filters select {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+/* al final de dashboard.css */
+.charts-grid--single { grid-template-columns: 1fr !important; }
+.charts-grid--single .chart-card { grid-column: 1 / -1; }

@@ -1,0 +1,353 @@
+@model List<FrontendQuickpass.Models.ActiveBlacklistDto>
+
+@{
+    ViewData["Title"] = "Lista negra de motoristas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var pager = ViewBag.Pager as FrontendQuickpass.Models.Pager 
+                ?? new FrontendQuickpass.Models.Pager();
+
+    var filters = ViewBag.Filters ?? new { Page = 1, Size = 10, search = "" };
+
+    int currentPage = (int)(filters.GetType().GetProperty("Page")?.GetValue(filters) ?? pager.Page);
+    int sizeVal     = (int)(filters.GetType().GetProperty("Size")?.GetValue(filters) ?? pager.Size);
+    string search   = (string)(filters.GetType().GetProperty("search")?.GetValue(filters) ?? "");
+
+    var totalPages  = pager.TotalPages > 0 ? pager.TotalPages : 1;
+
+    var pagesToShow = new List<int>();
+    void AddP(int p){ if(p>=1 && p<=totalPages && !pagesToShow.Contains(p)) pagesToShow.Add(p); }
+    AddP(1); AddP(2);
+    for (int p = currentPage - 1; p <= currentPage + 1; p++) AddP(p);
+    AddP(totalPages - 1); AddP(totalPages);
+    pagesToShow.Sort();
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/lista-negra-motoristas.css" />
+}
+
+<section class="lnm-banner">
+    <h1>Lista negra de motoristas</h1>
+</section>
+
+<div class="container-fluid mt-3">
+    <!-- Filtros -->
+    <form id="lnm-filter-form" method="get" class="lnm-filter-form">
+        <div class="form-row align-items-end">
+            <div class="col-md-6 mb-2">
+                <label for="search"><i class="fas fa-search"></i> Buscar</label>
+                <input type="text" class="form-control rounded-xl" id="search" name="search" value="@search" placeholder="Motorista, licencia, cliente, codigo...">
+            </div>
+
+            <input type="hidden" name="size" value="@sizeVal" />
+
+            <div class="col-md-3 mb-2">
+                <button type="submit" class="btn btn-primary btn-block lnm-btn-filter rounded-md">
+                    <i class="fas fa-filter"></i> Aplicar Filtros
+                </button>
+            </div>
+        </div>
+    </form>
+
+    @if (!string.IsNullOrWhiteSpace(ViewBag.Error as string))
+    {
+        <div class="alert alert-danger mt-3">@ViewBag.Error</div>
+    }
+
+    <!-- Grid de tarjetas -->
+    <div class="row mt-3" id="lnm-cards-container">
+        @if (Model != null && Model.Any())
+        {
+            foreach (var r in Model)
+            {
+                var cliente = (r?.Shipment?.Client?.Name ?? "").Replace("_", " ").ToUpper();
+                var producto = (r?.Shipment?.Product ?? "").Replace("_", " ").ToUpper();
+                var motorista = (r?.Driver?.Name ?? "").ToUpper();
+                var licencia = (r?.Driver?.License ?? "");
+                var evento = (r?.EventType ?? "").ToUpper();
+                var falta = (r?.FaultType ?? "").ToUpper();
+                var lugar = (r?.EventLocation ?? "").ToUpper();
+                var fecha = r?.ReportDatetime;
+
+                var penaltyType = r?.PenaltyApplied?.PenaltyType ?? "N/D";
+                var startDate = r?.PenaltyApplied?.PenaltyStartDate;
+                var endDate = r?.PenaltyApplied?.PenaltyEndDate;
+                var calculatedDays = r?.PenaltyApplied?.CalculatedDays ?? 0;
+                var observation = r?.PenaltyApplied?.Observation ?? "";
+
+                var banner = !string.IsNullOrWhiteSpace(penaltyType) ? penaltyType : $"R{r?.Id}";
+
+                var allUrls = r?.ProcessedUrls ?? new List<string>();
+                var driverPhoto = r?.DriverPhotoUrl ?? "";
+                var evidenceUrls = r?.EvidenceUrlsProcessed ?? new List<string>();
+
+                var dataUrls = string.Join("||", allUrls);
+                var dataEvidenceUrls = string.Join("||", evidenceUrls);
+
+                var statusHistory = System.Text.Json.JsonSerializer.Serialize(r?.StatusHistory ?? new List<FrontendQuickpass.Models.BlacklistStatusHistory>());
+
+        <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12 mb-4">
+            <div class="lnm-card view-details-card-clickable" 
+                 data-report-id="@r?.Id"
+                 data-driver-name="@motorista"
+                 data-driver-license="@licencia"
+                 data-client="@cliente"
+                 data-product="@producto"
+                 data-event-type="@evento"
+                 data-fault-type="@falta"
+                 data-location="@lugar"
+                 data-event-date="@(fecha.HasValue ? ToLocal(fecha.Value).ToString("dd/MM/yyyy HH:mm") : "N/D")"
+                 data-description="@r?.Description"
+                 data-driver-photo="@driverPhoto"
+                 data-evidence-urls="@dataEvidenceUrls"
+                 data-all-urls="@dataUrls"
+                 data-penalty-type="@penaltyType"
+                 data-penalty-start="@(startDate.HasValue ? ToLocal(startDate.Value).ToString("yyyy-MM-ddTHH:mm") : "")"
+                 data-penalty-end="@(endDate.HasValue ? ToLocal(endDate.Value).ToString("yyyy-MM-ddTHH:mm") : "")"
+                 data-penalty-days="@calculatedDays"
+                 data-penalty-observation="@observation"
+                 data-status-history='@Html.Raw(statusHistory.Replace("'", "&apos;"))'
+                 style="cursor: pointer;">
+                
+                <div class="lnm-card-banner">@banner.ToUpper()</div>
+
+                <div class="lnm-card-body">
+                    <p class="lnm-field-title"><i class="fas fa-user text-primary"></i> <strong>Motorista:</strong></p>
+                    <p class="lnm-field-value">@motorista</p>
+
+                    <p class="lnm-field-title"><i class="far fa-id-card text-primary"></i> <strong>Licencia:</strong></p>
+                    <p class="lnm-field-value">@licencia</p>
+
+                    <p class="lnm-field-title"><i class="fas fa-list-ul text-primary"></i> <strong>Evento:</strong></p>
+                    <p class="lnm-field-value">@evento</p>
+
+                    <p class="lnm-field-title"><i class="fas fa-exclamation-triangle text-primary"></i> <strong>Falta:</strong></p>
+                    <p class="lnm-field-value">@falta</p>
+
+                    <hr class="lnm-sep" />
+
+                    <p class="lnm-field-title"><i class="far fa-calendar-alt text-primary"></i> <strong>Fecha de evento:</strong></p>
+                    <p class="lnm-field-value">
+                        @(fecha.HasValue ? ToLocal(fecha.Value).ToString("dd/MM/yyyy HH:mm") : "N/D")
+                    </p>
+
+                    <p class="lnm-field-title"><i class="fas fa-clock text-primary"></i> <strong>Duración:</strong></p>
+                    <p class="lnm-field-value">
+                        @if (penaltyType.ToLower() == "permanente")
+                        {
+                            <span>Indefinido</span>
+                        }
+                        else if (calculatedDays > 0)
+                        {
+                            <span>@calculatedDays días</span>
+                        }
+                        else
+                        {
+                            <span>N/D</span>
+                        }
+                    </p>
+                </div>
+            </div>
+        </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="alert alert-info">No hay resultados.</div>
+            </div>
+        }
+    </div>
+
+    <!-- Paginación -->
+    <div class="lnm-pagination-controls">
+        @if (totalPages > 1)
+        {
+            <div class="lnm-pagination-row d-flex justify-content-between align-items-center flex-wrap">
+                <div class="lnm-pagination-spacer"></div>
+
+                <div class="lnm-pagination lnm-pagination-nav d-flex align-items-center">
+                    <a class="page-nav @(currentPage <= 1 ? "disabled" : "")"
+                       href="@(currentPage <= 1 ? "javascript:void(0)" : BuildPageUrl(currentPage - 1, sizeVal, search))"
+                       title="Anterior" aria-label="Página anterior">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+
+                    @for (int i = 0; i < pagesToShow.Count; i++)
+                    {
+                        var p = pagesToShow[i];
+                        var prev = i > 0 ? pagesToShow[i - 1] : (int?)null;
+                        if (prev.HasValue && p - prev.Value > 1)
+                        {
+                            <span class="ellipsis">…</span>
+                        }
+                        var isCurrent = (p == currentPage);
+                        <a class="page-num @(isCurrent ? "current" : "")"
+                           href="@(isCurrent ? "javascript:void(0)" : BuildPageUrl(p, sizeVal, search))"
+                           aria-current="@(isCurrent ? "page" : null)">@p</a>
+                    }
+
+                    <a class="page-nav @(currentPage >= totalPages ? "disabled" : "")"
+                       href="@(currentPage >= totalPages ? "javascript:void(0)" : BuildPageUrl(currentPage + 1, sizeVal, search))"
+                       title="Siguiente" aria-label="Página siguiente">
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                </div>
+
+                <div class="lnm-page-size-selector d-flex align-items-center">
+                    <label for="pageSizeSelect" class="mb-0 mr-2 text-muted small">Registros:</label>
+                    <select id="pageSizeSelect" class="form-control form-control-sm">
+                        @{
+                            int[] sizes = new[] { 10, 20, 30, 50 };
+                            foreach (var s in sizes)
+                            {
+                                <option value="@s" selected="@(sizeVal == s)">@s</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex justify-content-end">
+                <div class="lnm-page-size-selector d-flex align-items-center">
+                    <label for="pageSizeSelect" class="mb-0 mr-2 text-muted small">Registros:</label>
+                    <select id="pageSizeSelect" class="form-control form-control-sm">
+                        @{
+                            int[] sizes = new[] { 10, 20, 30, 50 };
+                            foreach (var s in sizes)
+                            {
+                                <option value="@s" selected="@(sizeVal == s)">@s</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Modal visor de evidencias -->
+<div class="modal fade" id="evidenceModal" tabindex="-1" role="dialog" aria-hidden="true" style="z-index: 1200;">
+  <div class="modal-dialog modal-md modal-dialog-centered lnm-modal-evidence" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Evidencias</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body lnm-viewer-body text-center">
+        <div id="evidence-viewer-content"></div>
+        <div class="lnm-file-controls">
+            <button type="button" class="btn btn-secondary" id="prev-evidence" title="Anterior">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button type="button" class="btn btn-secondary" id="next-evidence" title="Siguiente">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para ver detalles -->
+<div class="modal fade" id="viewDetailsModal" tabindex="-1" role="dialog" aria-hidden="true" style="z-index: 1050;">
+    <div class="modal-dialog modal-md modal-dialog-centered lnm-modal-details" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detalles de la amonestación</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="details-layout">
+                    <!-- Columna izquierda: Solo descripción del incidente y estado de amonestación -->
+                    <div class="details-left-panel">
+                        <div class="info-section">
+                            <h6 class="section-title">Descripción del incidente</h6>
+                            <div class="description-text" id="detailDescription"></div>
+                        </div>
+                        <div class="history-section">
+                            <h6 class="section-title">Historial de cambios</h6>
+                            <div id="detailStatusHistory" class="history-box">
+                                <!-- El historial se carga dinámicamente -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Separador naranja -->
+                    <div class="separator"></div>
+
+                    <!-- Columna derecha: Evidencias e historial -->
+                    <div class="details-right-panel">
+                        <div class="info-section">
+                            <h6 class="section-title">Estado de la amonestación</h6>
+                            <div class="penalty-status-card">
+                                <div class="penalty-header">
+                                    <span class="penalty-type" id="detailPenaltyType"></span>
+                                    <span class="penalty-countdown" id="detailCountdown"></span>
+                                </div>
+                                <div class="penalty-dates">
+                                    <div class="penalty-date-item">
+                                        <span class="date-label">Inicio:</span>
+                                        <span id="detailPenaltyStart" class="date-value"></span>
+                                    </div>
+                                    <div class="penalty-date-item">
+                                        <span class="date-label">Fin:</span>
+                                        <span id="detailPenaltyEnd" class="date-value"></span>
+                                    </div>
+                                </div>
+                                <div class="penalty-observation">
+                                    <span class="info-label">Observaciones:</span>
+                                    <div id="detailPenaltyObservation" class="observation-text"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="evidence-section">
+                            <h6 class="section-title">
+                                Evidencias 
+                                <span id="detailEvidenceCount" class="evidence-count"></span>
+                            </h6>
+                            <div id="detailEvidenceSlider" class="evidence-grid">
+                                <!-- Las evidencias se cargarán dinámicamente -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        window.API_BASE = '@(ViewBag.BaseUrl ?? "")';
+    </script>
+    <script src="~/js/lista-negra-motoristas.js"></script>
+}
+
+@functions{
+    public DateTime ToLocal(DateTime utc)
+    {
+        if (utc.Kind == DateTimeKind.Unspecified)
+            utc = DateTime.SpecifyKind(utc, DateTimeKind.Utc);
+        return utc.ToLocalTime();
+    }
+
+    public string BuildPageUrl(int page, int size, string search)
+    {
+        var q = System.Web.HttpUtility.ParseQueryString(string.Empty);
+        q["page"] = page.ToString();
+        q["size"] = size.ToString();
+        if (!string.IsNullOrWhiteSpace(search)) q["search"] = search;
+        return Url.Action("Index", "ListaNegraMotoristas") + "?" + q.ToString();
+    }
+}

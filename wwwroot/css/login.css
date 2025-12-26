@@ -1,0 +1,146 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background-image: url('/assets/fondo-login.webp');
+    background-size: cover;
+    /* Hace que la imagen cubra toda la pantalla */
+    background-position: center;
+    /* Centra la imagen */
+    background-repeat: no-repeat;
+    /* Evita que la imagen se repita */
+    background-attachment: fixed;
+    /* Fija la imagen de fondo al hacer scroll */
+    font-family: 'Gilroy-Bold', sans-serif;
+}
+
+.wrapper {
+    display: flex;
+    justify-content: center;
+    /* Centra horizontalmente */
+    align-items: center;
+    /* Centra verticalmente */
+    min-height: 100vh;
+    /* Ocupa toda la altura de la pantalla */
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#formContent {
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0);
+    padding: 30px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    text-align: center;
+    box-shadow: 0 30px 60px 0 rgba(0, 0, 0, 0);
+}
+
+input,
+select {
+    opacity: 0.8;
+    /* Ajusta la opacidad */
+    background-color: rgba(255, 255, 255, 0.5);
+    /* Fondo con opacidad */
+    border-radius: 15px;
+    padding: 10px;
+    border: 1px solid #ccc;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    margin: 15px auto;
+    /* Espaciado entre los elementos */
+    width: 100%;
+    /* Cambia este valor para aumentar el ancho */
+    max-width: 800px;
+    /* Opcional: establece un límite máximo */
+    gap: 5px;
+    /* Espacio entre el icono y el select/input */
+}
+
+.input-group-icon {
+    background-color: #F15D06;
+    /* Color de fondo del ícono */
+    padding: 15px;
+    /* Espaciado interno */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 8px 0 0 8px;
+    /* Bordes redondeados */
+}
+
+.input-group input,
+.input-group select {
+    flex: 1;
+    /* El campo de entrada ocupa el resto del espacio */
+    padding: 15px;
+    /* Aumenta el espaciado interno */
+    font-size: 18px;
+    /* Tamaño de fuente más grande */
+    height: 60px;
+    /* Altura del input */
+    border: 1px solid #ccc;
+    border-left: none;
+    /* Eliminar el borde que se superpone con el ícono */
+    border-radius: 8px 8px 8px 8px;
+    /* Bordes redondeados */
+    outline: none;
+}
+
+.input-group-icon i {
+    font-size: 30px;
+    /* Tamaño del ícono */
+    color: #fff;
+    /* Color del ícono */
+}
+
+.fadeIn {
+    animation: fadeIn 1s ease-in-out;
+}
+
+/* Estilo de la imagen de fondo para responsive */
+@media only screen and (max-width: 768px) {
+    html {
+        background-size: contain;
+        /* Ajusta la imagen para que sea más pequeña y se vea bien en pantallas pequeñas */
+    }
+
+    #formContent {
+        width: 100%;
+        /* Ajusta el ancho del formulario en pantallas pequeñas */
+        padding: 20px;
+        /* Reduce el padding para mejor ajuste */
+    }
+}
+
+@media only screen and (max-width: 480px) {
+    html {
+        background-size: cover;
+        /* Asegura que la imagen cubra la pantalla en dispositivos móviles */
+    }
+
+    #formContent {
+        width: 100%;
+        /* Asegura que el formulario ocupe todo el ancho disponible */
+        padding: 15px;
+        /* Ajusta el padding para adaptarse a la pantalla más pequeña */
+    }
+
+    h2 {
+        font-size: 14px;
+        /* Ajusta el tamaño de la fuente para pantallas pequeñas */
+    }
+
+    input[type=button],
+    input[type=submit],
+    input[type=reset] {
+        padding: 10px 40px;
+        /* Ajusta el tamaño de los botones */
+        font-size: 11px;
+        /* Reduce el tamaño de la fuente de los botones */
+    }
+}

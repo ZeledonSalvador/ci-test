@@ -1,0 +1,240 @@
+﻿<div class="pre-mobile-wrapper">
+    <!-- Imagen principal del camión con burbujas decorativas -->
+    <div class="pre-mobile-truck-container">
+        <img src="~/assets/prechequeo.webp" 
+             alt="Camión" 
+             class="pre-mobile-truck-image" 
+             draggable="false">
+    </div>
+
+    <!-- Títulos principales -->
+    <div class="pre-mobile-titles">
+        <p>Recuerda Siempre <strong>Realizar</strong></p>
+        <h2>TU PRE</h2>
+        <h1>CHEQUEO</h1>
+    </div>
+
+    <!-- Formulario Prechequeo -->
+    <div class="pre-mobile-precheck-box">
+        <p>Prechequeo</p>
+        <input type="text" id="txtTransaccionMobile" class="pre-mobile-input" 
+               placeholder="Número de prechequeo" required autofocus>
+        <button type="button" id="btnBuscarMobile" class="pre-mobile-btn">Verificar</button>
+    </div>
+</div>
+
+<!-- MODAL MOBILE -->
+<div class="modal fade pre-mobile-modal" id="editModalMobile" tabindex="-1" aria-labelledby="editModalLabel" 
+     aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div id="carouselFormsMobile" class="carousel slide" data-bs-interval="false">
+                <div class="carousel-inner">
+
+                    <!-- Slide 1: Datos del Viaje -->
+                    <div class="carousel-item active">
+                        <div class="pre-mobile-modal-header">
+                            <span class="pre-mobile-modal-title">VIAJE DISPONIBLE PRECHEQUEO</span>
+                            <button type="button" class="pre-mobile-close" aria-label="Cerrar" 
+                                    onclick="closeModal()">&times;</button>
+                        </div>
+                        
+                        <div class="pre-mobile-modal-body">
+                            <!-- Información del viaje -->
+                            <div class="pre-mobile-group">
+                                <label>ORIGEN:</label>
+                                <span id="txt_ingenio"></span>
+                            </div>
+                            
+                            <div class="pre-mobile-group">
+                                <label>TIPO:</label>
+                                <div id="tipoUnidad" class="pre-mobile-tipo-row">
+                                    <!-- Imágenes de tipos de camión -->
+                                    <div id="imgPlanaContainer" class="pre-mobile-truck-type-img" style="display:none">
+                                        <img src="~/assets/plana.png" 
+                                             alt="PLANA" class="pre-mobile-truck-icon plana-icon">
+                                    </div>
+                                    <div id="imgVolteoContainer" class="pre-mobile-truck-type-img" style="display:none">
+                                        <img src="~/assets/volteo.png" 
+                                             alt="VOLTEO" class="pre-mobile-truck-icon volteo-icon">
+                                    </div>
+                                    <div id="imgPipaContainer" class="pre-mobile-truck-type-img" style="display:none">
+                                        <img src="~/assets/pipa.png" 
+                                             alt="PIPA" class="pre-mobile-truck-icon pipa-icon">
+                                    </div>
+                                    
+                                    <!-- Checkboxes -->
+                                    <div class="pre-mobile-check-container">
+                                        <div id="divPlana" class="pre-mobile-check" style="display:none">
+                                            <input type="checkbox" id="chkPlana" disabled>
+                                            <label for="chkPlana">PLANA</label>
+                                        </div>
+                                        <div id="divVolteo" class="pre-mobile-check" style="display:none">
+                                            <input type="checkbox" id="chkVolteo" disabled>
+                                            <label for="chkVolteo">VOLTEO</label>
+                                        </div>
+                                        <div id="divPipa" class="pre-mobile-check" style="display:none">
+                                            <input type="checkbox" id="chkPipa" disabled>
+                                            <label for="chkPipa">PIPA</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="pre-mobile-group">
+                                <label>DESTINO:</label>
+                                <img src="~/assets/almapac.png" 
+                                     alt="ALMAPAC" class="pre-mobile-almapac-logo">
+                            </div>
+                            
+                            <!-- Grid de información detallada -->
+                            <div class="pre-mobile-mini-grid">
+                                <div>
+                                    <label>FECHA:</label>
+                                    <span id="txtFecha"></span>
+                                </div>
+                                <div>
+                                    <label>HORA:</label>
+                                    <span id="txtHora"></span>
+                                </div>
+                                <div>
+                                    <label>CABEZAL:</label>
+                                    <span id="txt_placaCamion"></span>
+                                </div>
+                                <div>
+                                    <label>REMOLQUE:</label>
+                                    <span id="txt_placaRemolque"></span>
+                                </div>
+                            </div>
+                            
+                            <div class="pre-mobile-group">
+                                <label>EMPRESA:</label>
+                                <span id="txt_transporte"></span>
+                            </div>
+                            
+                            <div class="pre-mobile-modal-footer">
+                                <button type="button" class="pre-mobile-modal-btn" id="nextBtn">
+                                    REALIZÓ PRECHEQUEO
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 2: Captura de Fotografía - ESTRUCTURA IGUAL A DESKTOP -->
+                    <div class="carousel-item">
+                        <!-- Estructura exacta como desktop pero adaptada para móvil -->
+                        <div class="pre-mobile-modal-body-camera" style="background-color: #f9f9f9; border-radius: 30px; flex-grow: 1; width: 100%; margin: 1rem auto; display: flex; flex-direction: column; justify-content: flex-start; padding: 1rem; position: relative; max-width: 95vw; overflow: visible;">    
+                            
+                            <!-- Etiqueta "Captura de Fotografía" - Mitad fuera, mitad dentro (igual que desktop) -->
+                            <span class="pre-mobile-photo-label" style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); z-index: 1055; padding: 0.4rem 1rem; background-color: #182A6E; color: #fff; border-radius: 20px; font-size: 1rem; font-weight: bold; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); text-align: center; white-space: nowrap;">
+                                Captura de Fotografía
+                            </span>
+                            
+                            <!-- Botón de cerrar (igual que desktop) -->
+                            <button type="button" class="pre-mobile-close-camera" data-dismiss="modal" aria-label="Close" onclick="closeModal()" style="position: absolute; right: 15px; top: -10px; background: none; border: none; font-size: 1.3rem; color: #7f8c8d; cursor: pointer; transition: color 0.3s; z-index: 1056;">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+
+                            <!-- Contenido principal con padding superior para la etiqueta -->
+                            <div class="pre-mobile-camera-content" style="padding-top: 1.5rem;">
+                                
+                                <!-- Contenedor de cámara centrado -->
+                                <div class="pre-mobile-camera-wrapper" style="display: flex; justify-content: center; margin-bottom: 1.3rem;">
+                                    <div class="pre-mobile-camera-box" style="width: 280px; height: 210px; overflow: hidden; border: 2px solid #e5e7eb; border-radius: 13px; position: relative; background: #191d23; display: flex; align-items: center; justify-content: center; box-shadow: 0 1.5px 10px 0 rgba(30,58,138,.07);">
+                                        <video id="cameraMobile" width="280" height="210" autoplay playsinline></video>
+                                        <canvas id="canvasMobile" width="280" height="210" style="display:none"></canvas>
+                                        <img id="capturedPhotoMobile" src="" alt="Captured Photo" style="width: 100%; height: 100%; object-fit: cover; display: none; border-radius: 11px;" />
+                                    </div>
+                                </div>
+
+                                <!-- License and Motorista Section (igual que desktop) -->
+                                <div class="pre-mobile-driver-section" style="display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; text-align: center; margin-top: -1rem; margin-bottom: 0.6rem; gap: 0.1rem;">
+                                    <div id="txt_licencia"></div>
+                                    <div id="txt_motorista"></div>
+                                </div>
+
+                                <!-- Botón capturar con líneas a los lados (igual que desktop) -->
+                                <div class="pre-mobile-capture-section" style="position: relative; display: flex; align-items: center; justify-content: center; margin: 1.1em 0;">
+                                    <span class="pre-mobile-line-left" style="position: absolute; left: 0; right: auto; height: 2.5px; width: 33%; background-color: #182A6E; top: 50%; transform: translateY(-45%);"></span>
+                                    <button type="button" id="takePhotoMobile" class="pre-mobile-capture-btn" style="background: #FD6104; color: #fff; border: none; padding: 12px 23px; font-weight: 800; border-radius: 14px; font-size: 1.11rem; display: flex; align-items: center; gap: 9px; cursor: pointer; box-shadow: 0 2px 9px 0 rgba(255,92,0,0.08); transition: all .18s ease-in-out; -webkit-tap-highlight-color: transparent; z-index: 1; position: relative;">
+                                        <img src="~/assets/photo-camera-svgrepo-com.svg" 
+                                             alt="Camera Icon" style="width: 1.2em; height: 1.2em; filter: invert(1); display: inline-block; vertical-align: middle;" aria-hidden="true" /> Capturar
+                                    </button>
+                                    <span class="pre-mobile-line-right" style="position: absolute; right: 0; left: auto; height: 2.5px; width: 33%; background-color: #182A6E; top: 50%; transform: translateY(-50%); border: 2px;"></span>
+                                </div>
+
+                                <!-- Header del ranking con 3 columnas (igual que desktop) -->
+                                <div class="pre-mobile-ranking-header-desktop" style="background-color: #182A6E; border-radius: 15px; padding: 0.3rem 0; margin: 0.8rem 0;">
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; width: 100%; align-items: center; gap: 0;">
+                                        <!-- Título Badges -->
+                                        <div style="display: flex; justify-content: center; align-items: center; text-align: center;">
+                                            <h3 style="color: white; font-size: 1.1rem; margin: 0; font-weight: bold; line-height: 1.2;">INSIGNIA</h3>
+                                        </div>
+                                        
+                                        <!-- Título Viajes -->
+                                        <div style="display: flex; justify-content: center; align-items: center; text-align: center;">
+                                            <h3 style="color: white; font-size: 1.1rem; margin: 0; font-weight: bold; line-height: 1.2;">VIAJES</h3>
+                                        </div>
+                                        
+                                        <!-- Título Nivel -->
+                                        <div style="display: flex; justify-content: center; align-items: center; text-align: center;">
+                                            <h3 style="color: white; font-size: 1.1rem; margin: 0; font-weight: bold; line-height: 1.2;">NIVEL</h3>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Contenedor de iconos con 3 columnas (igual que desktop) -->
+                                <div class="pre-mobile-ranking-icons-desktop" style="display: grid; grid-template-columns: 1fr 1fr 1fr; width: 100%; align-items: center; gap: 0; margin: 0.5rem 0; padding: 0;">
+                                    <!-- Badge Insignia - Columna 1 -->
+                                    <div style="display: flex; justify-content: center; align-items: center; text-align: center; padding: 0.2rem;">
+                                        <div style="position: relative; display: inline-block; width: 6rem; height: 6rem;">
+                                            <img class="badge-icon" src="assets/images/sin-clasificacion.png" alt="Badge" style="width: 100%; height: 100%; object-fit: contain; display: block;">
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Viajes Icon con burbuja - Columna 2 -->
+                                    <div style="display: flex; justify-content: center; align-items: center; text-align: center; padding: 0.2rem;">
+                                        <div style="position: relative; display: inline-block; width: 5rem; height: 5rem;">
+                                            <img class="viajes-icon" src="assets/images/truck-viajes.png" alt="Viajes" style="width: 100%; height: 100%; object-fit: contain; display: block;">
+                                            <div class="pre-mobile-bubble-desktop" style="position: absolute; top: -5px; right: -5px; background-color: #FF5722; color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; border: 2px solid white; box-sizing: border-box;">
+                                                <span class="viajes-numero">0</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Nivel Icon SVG - Columna 3 -->
+                                    <div style="display: flex; justify-content: center; align-items: center; text-align: center; padding: 0.2rem;">
+                                        <div style="position: relative; display: inline-block; width: 7.5rem; height: 6.5rem;">
+                                            <!-- SVG Battery Icon Vertical -->
+                                            <svg class="nivel-icon" viewBox="0 0 100 100" style="width: 100%; height: 100%; display: block;">
+                                                <!-- Battery Terminal (arriba) - sin relleno -->
+                                                <rect x="38" y="14" width="24" height="7.8" rx="3" ry="3"
+                                                      fill="none" stroke="#000000" stroke-width="3"/>
+                                                <rect x="30" y="22" width="40" height="64" rx="4" ry="4"
+                                                      fill="none" stroke="#000000" stroke-width="3"/>
+                                                <!-- Battery Fill (dynamic - de abajo hacia arriba) -->
+                                                <rect class="battery-fill" x="33" y="83" width="34" height="0" rx="2" ry="2"
+                                                      fill="#000000" data-bottom-y="83" data-max-height="58"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Botones de navegación -->
+                                <div class="pre-mobile-nav">
+                                    <button type="button" class="pre-mobile-btn-secondary" id="backBtn">
+                                        <strong><i class="fa fa-arrow-left"></i> Volver</strong>
+                                    </button>
+                                    <button type="button" class="pre-mobile-btn-main" id="changeStatusButton">
+                                        <strong>Continuar</strong>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div> <!-- carousel-inner -->
+            </div> <!-- carousel -->
+        </div>
+    </div>
+</div>

@@ -1,0 +1,387 @@
+@model FrontendQuickpass.Models.TiemposAzucarViewModel
+@{
+    ViewData["Title"] = "Recepcion Azucar";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/tiempos-azucar.css" />
+}
+
+<section class="custom-banner text-align-left">
+    <h1>RECEPCIÓN DE AZÚCAR</h1>
+</section>
+
+<main class="container mx-auto py-8" id="rootTiemposAzucar">
+    <!-- Unidad en Espera & Solicitar Unidades -->
+    <section class="grid grid-cols-2 gap-4 mb-8" style="font-family: 'Gilroy-Bold', sans-serif;">
+        <div class="bg-white">
+            <h2 class="text-lg font-bold mb-4 text-center">UNIDAD EN ESPERA</h2>
+            <div class="grid grid-cols-2 gap-4">
+                
+                <!-- Plano -->
+                <div class="card-container">
+                    <div class="text-white text-center rounded-lg unit-card-plana pb-4">
+                        <div class="unit-indicator unit-indicator-white"></div>
+                        <div class="flex flex-col items-center">
+                            <span class="text-3xl mb-1">Plana</span>
+                            <span class="text-5xl mt-1 font-bold" id="lblTotalRegistros">@Model.TotalRegistrosPlanas</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Volteo -->
+                <div class="card-container">
+                    <div class="text-white text-center rounded-lg unit-card-volteo pb-4">
+                        <div class="unit-indicator unit-indicator-orange"></div>
+                        <div class="flex flex-col items-center">
+                            <span class="text-3xl mb-1">Volteo</span>
+                            <div class="text-5xl mt-1 font-bold" id="lblTotalRegistrosV">@Model.TotalRegistrosVolteo</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white">
+            <h2 class="text-lg font-bold mb-4 text-center">SOLICITAR UNIDADES</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Solicitar Plano -->
+                <div class="card-container">
+                    <div class="text-white text-center rounded-lg unit-card-plana">
+                        <div class="unit-indicator unit-indicator-white"></div>    
+                        <div class="flex flex-col items-center">
+                            <span class="text-3xl mb-1">Plana</span>
+                            <div class="flex items-center space-x mt-1">
+                                <button id="decreaseButtonPlano" class="bg-gray-700 text-white px-2 py-1 rounded-md" type="button">-</button>
+                                <span id="numberInputPlano" class="text-center font-bold counter-input counter-input-plana">
+                                    @Model.NumberInputPlano
+                                </span>
+                                <button id="increaseButtonPlano" class="bg-gray-700 text-white px-2 py-1 rounded-md" type="button">+</button>
+                            </div>
+                            <button id="solicitarp" class="button-orange mt-2 py-1 px-3 rounded-md text-xs font-semibold" type="button" style="font-size: 18px;">Solicitar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Solicitar Volteo -->
+                <div class="card-container">
+                    <div class="text-white text-center rounded-lg unit-card-volteo">
+                        <div class="unit-indicator unit-indicator-orange"></div>
+                        <div class="flex flex-col items-center">
+                            <span class="text-3xl mb-1">Volteo</span>
+                            <div class="flex items-center space-x mt-1">
+                                <button id="decreaseButtonVolteo" class="bg-gray-700 text-white px-2 py-1 rounded-md" type="button">-</button>
+                                <span id="numberInputVolteo" class="text-center font-bold counter-input counter-input-volteo">
+                                    @Model.NumberInputVolteo
+                                </span>
+                                <button id="increaseButtonVolteo" class="bg-gray-700 text-white px-2 py-1 rounded-md" type="button">+</button>
+                            </div>
+                            <button id="solicitarv" class="button-orange mt-2 py-1 px-3 rounded-md text-xs font-semibold" type="button" style="font-size: 18px;">Solicitar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Secciones dinámicas -->
+    <section id="seccionesDinamicas" style="font-family: 'Gilroy-Bold', sans-serif;">
+
+        <!-- ==================== VOLTEO ==================== -->
+        <div id="volteoSection">
+            @if (Model.UnidadesVolteoProceso.Any())
+            {
+                <h2 class="text-lg font-bold mb-4 text-center">UNIDADES DE VOLTEO</h2>
+
+                @for (var i = 0; i < Model.UnidadesVolteoProceso.Count; i++)
+                {
+                    var unidad = Model.UnidadesVolteoProceso[i];
+                    var timerId = $"timerVolteo_{i}";
+                    var circleId = $"progressCircleVolteo_{i}";
+                    var startButtonId = $"startButtonVolteo_{i}";
+                    var stopButtonId = $"stopButtonVolteo_{i}";
+
+                    <!-- Unidades de Volteo -->
+                    <div class="space-y-2 unit-card-wrapper" 
+                        data-codegen="@unidad.codeGen" 
+                        data-tipo="volteo" 
+                        data-timer-id="@timerId"
+                        data-shipment-id="@unidad.id"
+                        data-truck-type="@unidad.vehicle?.truckType">
+                        <div class="flex justify-between items-center text-white p-2 rounded-lg timer-card-volteo"
+                             style="background-color: #242424; background-image: linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 20px 20px;">
+                            <div class="w-1/4 flex flex-col items-center">
+                                <div id="@circleId" style="width: 95px; height: 95px; border-radius: 50%; background: #f0f0f0; position: relative;">
+                                    <div id="@timerId"
+                                         style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px; color: black;">
+                                        00:00:00
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-2 flex flex-col items-center">
+                                <div class="flex justify-center">
+                                    <button id="@startButtonId"
+                                            type="button"
+                                            class="text-white px-3 py-1 rounded-md timer-start-btn"
+                                            data-requires-sweeping="@unidad.requiresSweeping"
+                                            data-codigo-generacion="@unidad.codeGen"
+                                            data-tipo="volteo"
+                                            data-timer-id="@timerId"
+                                            data-shipment-id="@unidad.id"
+                                            data-truck-type="@unidad.vehicle?.truckType"
+                                            style="background-color: #22C55E;">Iniciar</button>
+
+                                    <button id="@stopButtonId"
+                                            type="button"
+                                            class="bg-red-500 text-white px-3 py-1 rounded-md ml-2 timer-stop-btn"
+                                            data-codigo-generacion="@unidad.codeGen"
+                                            data-tipo="volteo"
+                                            data-timer-id="@timerId"
+                                            data-shipment-id="@unidad.id"
+                                            data-truck-type="@unidad.vehicle?.truckType">Detener</button>
+                                </div>
+
+                                @if (unidad.requiresSweeping == "S")
+                                {
+                                    <span class="font-bold mt-2"
+                                          style="display: inline-block; padding: 8px 12px; margin-top: 8px; border: 2px solid #343435; border-radius: 8px; background-color: #343435; color: #f0f0f0;">
+                                        Se Requiere Barrido
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                            <div class="bg-white p-2 shadow-lg rounded-b-lg text-sm mb-4" style="font-family: 'Gilroy-Light', sans-serif;margin-top: 0px;">
+                                <p><strong>Transacción:</strong> @(unidad.idNavRecord?.ToString() ?? "Sin Datos")</p>
+                                <p><strong>Ingenio:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode((unidad.ingenio?.name ?? "").Replace("_", " ")))</p>
+                                <p><strong>Motorista:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.driver?.name ?? ""))</p>
+                                <p><strong>Placa Remolque:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.vehicle?.trailerPlate ?? ""))</p>
+                                <p><strong>Placa Camión:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.vehicle?.plate ?? ""))</p>
+                                <p><strong>Hora de Ingreso:</strong> @(unidad.dateTimePrecheckeo?.ToString("yyyy-MM-dd HH:mm:ss") ?? "No hay datos")</p>
+                            </div>
+                    </div>
+                }
+            }
+
+            @if (Model.UnidadesVolteoCola.Any())
+            {
+                <h2 class="text-lg font-bold mb-4 text-center">UNIDAD VOLTEO EN COLA</h2>
+                @foreach (var unidad in Model.UnidadesVolteoCola)
+                {
+                    <div class="bg-gray-600 text-white p-2 rounded-lg mb-2 unit-card-wrapper" style="font-family: 'Gilroy-Light', sans-serif;">
+                        <div class="btn cursor-pointer"
+                             data-transporter="@Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.driver?.name ?? ""))"
+                             data-trailerplate="@Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.vehicle?.trailerPlate ?? ""))"
+                             data-plate="@Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.vehicle?.plate ?? ""))"
+                             data-codigo-generacion="@unidad.codeGen"
+                             onclick="confirmAuthorization(this)">
+                            <ul class="space-y text-sm" style="color: white; text-align: left;">
+                                <li><strong>Transacción:</strong> @(unidad.idNavRecord?.ToString() ?? "Sin Datos")</li>
+                                <li><strong>Ingenio:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode((unidad.ingenio?.name ?? "").Replace("_", " ")))</li>
+                                <li><strong>Motorista:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.driver?.name ?? ""))</li>
+                                <li><strong>Placa Remolque:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.vehicle?.trailerPlate ?? ""))</li>
+                                <li><strong>Placa Camión:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.vehicle?.plate ?? ""))</li>
+                                <li><strong>Hora de Ingreso:</strong> @(unidad.dateTimePrecheckeo?.ToString("yyyy-MM-dd HH:mm:ss") ?? "No hay datos")</li>
+                            </ul>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+        
+        <!-- ==================== PLANAS ==================== -->
+        <div id="planaSection">
+            @if (Model.UnidadesPlanasProceso.Any())
+            {
+                <h2 class="text-lg font-bold mb-4 text-center">UNIDADES PLANAS</h2>
+
+                @for (var i = 0; i < Model.UnidadesPlanasProceso.Count; i++)
+                {
+                    var unidad = Model.UnidadesPlanasProceso[i];
+                    var timerId = $"timerPlana_{i}";
+                    var circleId = $"progressCirclePlana_{i}";
+                    var startButtonId = $"startButtonPlana_{i}";
+                    var stopButtonId = $"stopButtonPlana_{i}";
+
+                    <!-- Unidades Planas -->
+                    <div class="space-y-2 unit-card-wrapper" 
+                        data-codegen="@unidad.codeGen" 
+                        data-tipo="plana" 
+                        data-timer-id="@timerId"
+                        data-shipment-id="@unidad.id"
+                        data-truck-type="@unidad.vehicle?.truckType">
+                        <div class="flex justify-between items-center text-white p-2 rounded-lg timer-card-plana"
+                             style="background-color: #182A6E; background-image: linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 20px 20px;">
+                            <div class="w-1/4 flex flex-col items-center">
+                                <div id="@circleId" style="width: 95px; height: 95px; border-radius: 50%; background: #f0f0f0; position: relative;">
+                                    <div id="@timerId"
+                                         style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px; color: black;">
+                                        00:00:00
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-2 flex flex-col items-center">
+                                <div class="flex justify-center">
+                                    <button id="@startButtonId"
+                                            type="button"
+                                            class="text-white px-3 py-1 rounded-md timer-start-btn"
+                                            data-requires-sweeping="@unidad.requiresSweeping"
+                                            data-codigo-generacion="@unidad.codeGen"
+                                            data-tipo="plana"
+                                            data-timer-id="@timerId"
+                                            data-shipment-id="@unidad.id"
+                                            data-truck-type="@unidad.vehicle?.truckType"
+                                            style="background-color: #22C55E;">Iniciar</button>
+
+                                    <button id="@stopButtonId"
+                                            type="button"
+                                            class="bg-red-500 text-white px-3 py-1 rounded-md ml-2 timer-stop-btn"
+                                            data-codigo-generacion="@unidad.codeGen"
+                                            data-tipo="plana"
+                                            data-timer-id="@timerId"
+                                            data-shipment-id="@unidad.id"
+                                            data-truck-type="@unidad.vehicle?.truckType">Detener</button>
+                                </div>
+
+                                @if (unidad.requiresSweeping == "S")
+                                {
+                                    <span class="font-bold mt-2"
+                                          style="display: inline-block; padding: 8px 12px; margin-top: 8px; border: 2px solid #0067c2; border-radius: 8px; background-color: #0067c2; color: #f0f0f0;">
+                                        Se Requiere Barrido
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                            <div class="bg-white p-2 shadow-lg rounded-b-lg text-sm mb-4" style="font-family: 'Gilroy-Light', sans-serif;margin-top: 0px;">
+                                <p><strong>Transacción:</strong> @(unidad.idNavRecord?.ToString() ?? "Sin Datos")</p>
+                                <p><strong>Ingenio:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode((unidad.ingenio?.name ?? "").Replace("_", " ")))</p>
+                                <p><strong>Motorista:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.driver?.name ?? ""))</p>
+                                <p><strong>Placa Remolque:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.vehicle?.trailerPlate ?? ""))</p>
+                                <p><strong>Placa Camión:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.vehicle?.plate ?? ""))</p>
+                                <p><strong>Hora de Ingreso:</strong> @(unidad.dateTimePrecheckeo?.ToString("yyyy-MM-dd HH:mm:ss") ?? "No hay datos")</p>
+                            </div>
+                        </div>
+                }
+            }
+
+            @if (Model.UnidadesPlanasCola.Any())
+            {
+                <h2 class="text-lg font-bold mb-4 text-center">UNIDAD PLANA EN COLA</h2>
+                @foreach (var unidad in Model.UnidadesPlanasCola)
+                {
+                    <div class="bg-blue-600 text-white p-2 rounded-lg mb-2 unit-card-wrapper" style="font-family: 'Gilroy-Light', sans-serif;">
+                        <div class="btn cursor-pointer"
+                             data-transporter="@Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.driver?.name ?? ""))"
+                             data-trailerplate="@Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.vehicle?.trailerPlate ?? ""))"
+                             data-plate="@Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.vehicle?.plate ?? ""))"
+                             data-codigo-generacion="@unidad.codeGen"
+                             onclick="confirmAuthorization(this)">
+                            <ul class="space-y text-sm" style="color: white; text-align: left;">
+                                <li><strong>Transacción:</strong> @(unidad.idNavRecord?.ToString() ?? "Sin Datos")</li>
+                                <li><strong>Ingenio:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode((unidad.ingenio?.name ?? "").Replace("_", " ")))</li>
+                                <li><strong>Motorista:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.driver?.name ?? ""))</li>
+                                <li><strong>Placa Remolque:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.vehicle?.trailerPlate ?? ""))</li>
+                                <li><strong>Placa Camión:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.vehicle?.plate ?? ""))</li>
+                                <li><strong>Hora de Ingreso:</strong> @(unidad.dateTimePrecheckeo?.ToString("yyyy-MM-dd HH:mm:ss") ?? "No hay datos")</li>
+                            </ul>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </section>
+</main>
+
+<!-- MODAL BARRIDO -->
+<div id="barridoModal" class="modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" style="display: none;">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Seleccionar Tipo de Barrido</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <p>Seleccione el tipo de barrido:</p>
+                <select id="tipoBarrido" class="form-control">
+                    <option value="N">Sencillo</option>
+                    <option value="S">Doble</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="confirmBarrido">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CONFIRMACIÓN STOP -->
+<div id="confirmationModal" class="modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" style="display: none;">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">¿Deseas detener el cronómetro?</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <p>Por favor selecciona una opción para explicar el motivo del retraso:</p>
+                <select id="motivoDetencion" class="form-control">
+                    <option value="sin_observaciones">Sin observaciones.</option>
+                    <option value="corte_energia">Corte de energía eléctrica.</option>
+                    <option value="azucar_terrones">Azúcar con terrones</option>
+                    <option value="falla_bascula">Falla en Báscula</option>
+                    <option value="falta_personal_supervisor">Falta personal supervisor AAES</option>
+                    <option value="falla_volcador">Falla en el volcador</option>
+                    <option value="limpieza_sistema_recepcion">Limpieza del sistema de recepción</option>
+                    <option value="limpieza_fosa_banda_65_66">Limpieza de fosa banda #65 y #66 (PLANA)</option>
+                    <option value="limpieza_fosa_banda_67">Limpieza de fosa banda #67 (VOLTEO)</option>
+                    <option value="movimiento_carro_banda">Movimiento de carro en banda.</option>
+                    <option value="colocando_laminas">Colocando láminas en banda.</option>
+                    <option value="lluvia">Lluvia</option>
+                    <option value="falta_personal_barredores">Falta personal de barredores</option>
+                    <option value="falta_personal_seguridad">Falta personal de seguridad.</option>
+                    <option value="fallo_unidad_recepcion">Falló unidad en recepción.</option>
+                    <option value="levante_rebalse">Levante de rebalse.</option>
+                    <option value="fallo_unidad_bascula">Fallo de unidad en báscula</option>
+                    <option value="falla_puerta_4">Falla de unidad en puerta #4</option>
+                    <option value="falla_sistema_plumas_porton_4">Falla en sistema plumas de portón #4</option>
+                    <option value="limpieza_ductos_carro_banda">Limpieza de ductos de carro en banda.</option>
+                    <option value="falla_sistema_electrico_bandas">Falla en sistema eléctrico de bandas</option>
+                    <option value="rebalse">Rebalse</option>
+                    <option value="obstruccion_tolva">Obstrucción en tolva.</option>
+                    <option value="falla_mecanica_unidad">Falla mecánica de unidad.</option>
+                    <option value="azucar_pegada">Azúcar pegada</option>
+                    <option value="falla_sistemas_bandas">Falla en sistemas de bandas</option>
+                    <option value="cambio_turno">Cambio de turno.</option>
+                    <option value="falta_relevo_operador">Falta de relevo de operador de sistema.</option>
+                    <option value="tiempo_comida">Tiempo de comida.</option>
+                    <option value="revisando_ruta_recepcion">Revisando ruta de recepción.</option>
+                    <option value="fallo_unidad_puerta_5">Falló unidad en puerta #5</option>
+                    <option value="falla_mecanica_unidad_2">Falla mecánica de unidad.</option>
+                    <option value="falla_sistema_toma_tiempo">Falla en sistema de toma de tiempo.</option>
+                    <option value="fuga_aceite">Fuga de Aceite.</option>
+                    <option value="fuga_combustible">Fuga de combustible</option>
+                    <option value="fuga_agua">Fuga de agua.</option>
+                    <option value="fallo_sistema_volcador">Fallo en sistema de volcador</option>
+                    <option value="lluvia_durante_recepcion">Lluvia durante recepción.</option>
+                    <option value="falla_sistema_toma_tiempo_recepcion">Falla en sistema de toma de tiempo (recepción)</option>
+                    <option value="demora_operario_bascula">Demora por operario de báscula</option>
+                    <option value="reunion_operativa_almapac">Reunión Operativa ALMAPAC.</option>
+                    <option value="falta_unidades">Falta de unidades</option>
+                    <option value="motorista_sin_pre_chequeo">Motorista sin Pre-chequeo</option>
+                    <option value="azucar_pegada_terrones">Azúcar pegada y con terrones</option>
+                    <option value="flujo_restringido_tolva_banda_66">Flujo restringido en abertura de tolva de banda #66 [01]</option>
+                    <option value="flujo_restringido_banda_67">Flujo restringido en banda #67 [01]</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" id="cancelStopButton">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="confirmStopButton">Detener Cronómetro</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script defer src="~/js/tiempos-azucar.js"></script>
+}

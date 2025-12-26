@@ -1,0 +1,352 @@
+/*************************************************************
+ * BRIX UNIDADES - ESTILOS COMPLETOS
+ * (Botón flotante verdaderamente fijo en viewport + botón Asignar siempre visible)
+ *************************************************************/
+
+:root{
+  --brix-blue:#0F2A62;
+  --brix-blue-2:#1a3d7a;
+  --brix-bg:#ffffff;
+  --brix-text:#212529;
+  --brix-muted:#6c757d;
+  --brix-border:#e9ecef;
+  --brix-card:#ffffff;
+  --brix-peach:#F8E8DE;     /* fondo de seleccion (camiones) */
+  --brix-peach-border:#E9C9B6;
+  --brix-disabled:#f0f2f4;  /* tarjeta deshabilitada (camiones) */
+  --brix-selected-accent:#0F2A62; /* color para indicador de selección */
+}
+
+/* ===== Contenedor / Vistas ===== */
+.brix-container{
+  min-height:calc(100vh - 120px);
+  background:var(--brix-bg);
+  display:flex;
+  flex-direction:column;
+  position:relative;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+.brix-view{flex:1;display:flex;flex-direction:column}
+.brix-view.hidden{display:none}
+
+/* ===== Header "Total Ingenios" ===== */
+.brix-header{padding:16px 0 0 0}
+.brix-header h2{
+    text-align: left;
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #333;
+    letter-spacing: 0.5px;
+    margin: auto;
+}
+
+/* ===== Header blanco de la vista de camiones (con botón volver) ===== */
+.brix-header-plain{
+  display:flex;align-items:center;gap:12px;
+  background:#fff;
+  padding:12px 16px;
+}
+.btn-back{
+  width:44px;height:44px;border-radius:50%;
+  border:none;background:#eef2f7;color:#1e293b;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:opacity .2s ease;
+  font-size:18px;
+}
+.btn-back:hover{opacity:.9}
+.brix-header-info h2{margin:0;font-size:22px;font-weight:700;color:#212529}
+.brix-header-info p{margin:2px 0 0 0;font-size:14px;font-weight: 700; color:#212529}
+
+/* ===== Buscador ===== */
+.brix-search-container{background:#fff;}
+.search-input-container{position:relative;max-width:560px;margin:0 auto}
+.search-icon{
+  position:absolute;left:16px;top:50%;transform:translateY(-50%);
+  color:#6c757d;font-size:16px;
+}
+.search-input{
+  width:100%;border:2px solid var(--brix-border);border-radius:14px;
+  padding:12px 16px 12px 46px;font-size:16px;background:#f8fafc;
+  transition:border-color .2s, box-shadow .2s;
+}
+.search-input:focus{
+  outline:none;border-color:var(--brix-blue);
+  box-shadow:0 0 0 3px rgba(15,42,98,.1);background:#fff;
+}
+.search-input::placeholder{color:#9aa3af}
+
+/* ===== Contador de selección ===== */
+.brix-selection-info{
+  background:#fff;border-bottom:1px solid var(--brix-border);
+  padding:12px 16px;display:flex;align-items:center;justify-content:space-between;
+  font-weight:700;color:#495057;
+}
+#brixSelectionCount{color:var(--brix-blue)}
+
+/* ===== Loading ===== */
+.brix-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:var(--brix-muted)}
+.spinner{width:40px;height:40px;border:4px solid var(--brix-border);border-top:4px solid var(--brix-blue);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ===== LISTA: Ingenios ===== */
+.brix-ingenios-list{padding:16px 0;flex:1;overflow:auto;background:#fff}
+.brix-ingenio-card{
+  background:var(--brix-card);border-radius:16px;padding:18px 20px;margin:0 0 14px 0;
+  border:1px solid var(--brix-border);
+  box-shadow:0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
+  cursor:pointer;transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.brix-ingenio-card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 8px 25px rgba(0,0,0,.12), 0 4px 8px rgba(0,0,0,.06);
+  border-color:var(--brix-blue);
+}
+.brix-ingenio-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+
+/* Icono de "industria" sin caja — usa .text-primary de Bootstrap en HTML */
+.brix-ingenio-leading{font-size:22px;line-height:1}
+
+/* Label "Ingenio:" */
+.brix-ingenio-label{
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #333;
+    letter-spacing: 0.3px;
+}
+
+/* Nombre del ingenio */
+.brix-ingenio-name{
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #333;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+/* Contenedor de unidades */
+.brix-ingenio-units{
+    display:flex;align-items:center;gap:8px;
+}
+
+/* Label "Unidades:" */
+.brix-ingenio-units-label{
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #333;
+    letter-spacing: 0.3px;
+}
+
+/* Número de unidades */
+.brix-ingenio-units-number{
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #333;
+    letter-spacing: 0.5px;
+}
+
+/* ===== LISTA: Camiones (con mejor diferenciación visual) ===== */
+.brix-camiones-list{
+  flex:1;
+  overflow:auto;
+  background:#fff;
+  margin:0;
+  padding:0 0 20px 0;
+}
+
+.brix-camion-card{
+  position:relative;
+  background:#fff;
+  margin:12px 0;
+  border-radius:16px;
+  padding:18px;
+  border:1px solid var(--brix-border);
+  box-shadow:0 4px 12px rgba(0,0,0,.06), 0 2px 4px rgba(0,0,0,.03);
+  cursor:pointer;
+  transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
+}
+
+.brix-camion-card:hover{
+  transform:translateY(-2px);
+  box-shadow:0 8px 20px rgba(0,0,0,.1), 0 4px 8px rgba(0,0,0,.05);
+}
+
+/* Estado seleccionado (fondo + borde más visible + indicador) */
+.brix-camion-card.selected{
+  background:var(--brix-peach);
+  border:2px solid var(--brix-selected-accent);
+  box-shadow:0 6px 16px rgba(40,167,69,.15), 0 4px 8px rgba(0,0,0,.05);
+}
+
+/* Indicador de selección (checkmark en esquina superior derecha) */
+.brix-camion-card.selected::after{
+  content:'✓';
+  position:absolute;
+  top:8px;
+  right:12px;
+  background:var(--brix-selected-accent);
+  color:#fff;
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:14px;
+  font-weight:800;
+  box-shadow:0 2px 8px rgba(40,167,69,.3);
+}
+
+/* Estado deshabilitado (gris + más opaco) */
+.brix-camion-card.disabled{
+  background:var(--brix-disabled);
+  opacity:.6;
+  cursor:not-allowed;
+  box-shadow:0 2px 8px rgba(0,0,0,.03), 0 1px 2px rgba(0,0,0,.02);
+  border:1px solid #dbe0e6;
+}
+
+.brix-camion-card.disabled:hover{
+  transform:none;
+  box-shadow:0 2px 8px rgba(0,0,0,.03), 0 1px 2px rgba(0,0,0,.02);
+}
+
+/* Asegurar que las seleccionadas no se vean disabled */
+.brix-camion-card.selected.disabled{
+  opacity:1;
+  cursor:pointer;
+  background:var(--brix-peach);
+  border:2px solid var(--brix-selected-accent);
+}
+
+.brix-camion-info{display:flex;flex-direction:column;gap:10px;}
+.brix-camion-row{display:flex;align-items:center;gap:10px}
+.brix-camion-row span{font-size:15.5px;font-weight:700;color:#374151}
+.brix-camion-date{font-weight:500 !important;color:#6b7280 !important}
+
+/* ===== Botón flotante (POSITION FIXED GLOBAL - fuera de cualquier contenedor) ===== */
+#brix-floating-global{
+  position:fixed !important;
+  top:17% !important;
+  right:20px !important;
+  transform:translateY(-50%) !important;
+  z-index:99999 !important;
+  pointer-events:none !important;
+  display:none !important;
+}
+
+#brix-floating-global.show{
+  display:block !important;
+}
+
+#brix-floating-global .btn-floating{
+  position:relative;
+  width:64px;
+  height:64px;
+  border-radius:50%;
+  border:none;
+  background:var(--brix-blue);
+  color:#fff;
+  font-size:24px;
+  cursor:pointer;
+  box-shadow:0 8px 24px rgba(15,42,98,.3), 0 4px 12px rgba(0,0,0,.15);
+  transition:transform .2s ease, box-shadow .2s ease, background .2s ease;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  pointer-events:auto !important;
+}
+
+#brix-floating-global .btn-floating:hover{
+  transform:scale(1.1);
+  box-shadow:0 12px 32px rgba(15,42,98,.4), 0 6px 16px rgba(0,0,0,.2);
+  background:var(--brix-blue-2);
+}
+
+#brix-floating-global .floating-counter{
+  position:absolute;
+  top:-8px;
+  right:-8px;
+  background:#dc3545;
+  color:#fff;
+  border-radius:50%;
+  width:24px;
+  height:24px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+  font-weight:800;
+  border:2px solid #fff;
+  box-shadow:0 2px 8px rgba(0,0,0,.15);
+}
+
+/* ===== Botón inferior (SIEMPRE VISIBLE - sin ocultar) ===== */
+.brix-actions{
+  border-top:1px solid var(--brix-border);
+  padding:16px;
+  position:sticky;
+  bottom:0;
+  z-index:999;
+}
+
+.btn-asignar{
+  width:100%;padding:14px 16px;border:none;border-radius:12px;
+  background:var(--brix-blue);color:#fff;font-size:18px;font-weight:800;
+  cursor:pointer;transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
+  box-shadow:0 4px 12px rgba(15,42,98,.25);
+}
+.btn-asignar:hover:not(:disabled){
+  transform:translateY(-2px);
+  box-shadow:0 8px 20px rgba(15,42,98,.35);
+  background:var(--brix-blue-2);
+}
+.btn-asignar:disabled{
+  background:#9aa3af;cursor:not-allowed;
+  box-shadow:0 2px 6px rgba(0,0,0,.1);
+  transform:none;
+}
+
+/* ===== Empty states ===== */
+.brix-empty-state{text-align:center;padding:60px 20px;color:var(--brix-muted)}
+.brix-empty-state i{font-size:64px;color:#dfe3e8;margin-bottom:18px}
+.brix-empty-state h3{margin:0 0 10px 0;font-size:22px;font-weight:800;color:#495057}
+
+/* ===== Responsive ===== */
+@media (max-width:768px){
+  .brix-header{padding:12px 0 0 0}
+  .brix-header h2{font-size:22px}
+  .brix-header-plain{padding:12px 0}
+  .brix-camion-card{margin:10px 0;padding:16px}
+  .brix-ingenio-card{padding:16px}
+  .search-input-container{max-width:none}
+  #brix-floating-global .btn-floating{width:56px;height:56px;font-size:20px}
+  #brix-floating-global .floating-counter{width:20px;height:20px;font-size:11px;top:-6px;right:-6px}
+  #brix-floating-global{right:16px !important}
+  .brix-camion-card.selected::after{width:20px;height:20px;font-size:12px;top:6px;right:8px}
+}
+
+/* ===== Animaciones ===== */
+.fade-in{animation:fadeIn .25s ease-in-out}
+@keyframes fadeIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.slide-up{animation:slideUp .25s ease-out}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+
+/* Animación para el botón flotante global */
+.floating-enter{animation:floatingEnterGlobal .3s ease-out}
+@keyframes floatingEnterGlobal{
+  from{opacity:0;transform:translateY(-50%) scale(0.5)}
+  to{opacity:1;transform:translateY(-50%) scale(1)}
+}
+
+.floating-exit{animation:floatingExitGlobal .2s ease-in}
+@keyframes floatingExitGlobal{
+  from{opacity:1;transform:translateY(-50%) scale(1)}
+  to{opacity:0;transform:translateY(-50%) scale(0.5)}
+}

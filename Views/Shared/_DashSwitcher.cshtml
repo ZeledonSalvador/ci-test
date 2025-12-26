@@ -1,0 +1,53 @@
+@{
+  var action = (ViewContext.RouteData.Values["action"]?.ToString() ?? "").ToLowerInvariant();
+  Func<string, bool> IsActive = a => action == a.ToLowerInvariant();
+}
+
+<div id="dash-switcher" class="dash-switcher" aria-expanded="false">
+  <button id="dash-switcher-tab" class="dash-switcher__tab" aria-controls="dash-switcher-panel" aria-expanded="false"
+          title="Dashboards">
+    <svg viewBox="0 0 24 24" width="20" height="20">
+      <path d="M9 18l6-6-6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" />
+    </svg>
+  </button>
+
+  <aside id="dash-switcher-panel" class="dash-switcher__panel" role="dialog" aria-label="Seleccionar dashboard"
+         aria-modal="true" tabindex="-1">
+    <header class="dash-switcher__header">
+      <span>Seleccionar Dashboard</span>
+      <button class="dash-switcher__close" aria-label="Cerrar">&times;</button>
+    </header>
+
+    <ul class="dash-switcher__list">
+      <li>
+        <a href="@Url.Action("Index", "Dashboard")"
+           class="dash-switcher__link @(IsActive("Index") ? "is-active" : "")"
+           @(IsActive("Index") ? "aria-current=\"page\"" : "")
+           target="_self">
+          <span class="ico"></span>
+          <span class="txt">Histórico</span>
+        </a>
+      </li>
+      <li>
+        <a href="@Url.Action("Recepcion", "Dashboard")"
+           class="dash-switcher__link @(IsActive("Recepcion") ? "is-active" : "")"
+           @(IsActive("Recepcion") ? "aria-current=\"page\"" : "")
+           target="_self">
+          <span class="icoh"></span>
+          <span class="txt">Diario</span>
+        </a>
+      </li>
+      <li>
+        <a href="@Url.Action("Descarga", "Dashboard")"
+           class="dash-switcher__link @(IsActive("Descarga") ? "is-active" : "")"
+           @(IsActive("Descarga") ? "aria-current=\"page\"" : "")
+           target="_self">
+          <span class="ico"></span>
+          <span class="txt">Tiempos / Gráficos</span>
+        </a>
+      </li>
+    </ul>
+  </aside>
+</div>
+<div id="dash-switcher-backdrop" class="dash-switcher__backdrop" hidden></div>

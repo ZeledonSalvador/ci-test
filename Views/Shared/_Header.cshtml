@@ -1,0 +1,616 @@
+@using FrontendQuickpass.Services
+@using FrontendQuickpass.Helpers
+@inject LoginService _loginService
+
+@{
+    // 🔐 Obtener datos del TOKEN JWT (no de cookies editables)
+    string tokenSesion = Context.Request.Cookies[CookieHelper.AUTH_COOKIE_NAME] ?? string.Empty;
+    bool isLoggedIn = !string.IsNullOrEmpty(tokenSesion);
+
+    string codUsuario = string.Empty;
+    string codRol = string.Empty;
+    string username = string.Empty;
+    string permisosMenuJson = string.Empty;
+    List<string> permisosUsuario = new();
+    bool permisosDeserializados = false;
+
+    // Validar token y extraer permisos
+    if (isLoggedIn)
+    {
+        try
+        {
+            var tokenInfo = _loginService.ValidarToken(tokenSesion);
+
+            if (tokenInfo.EsValido)
+            {
+                codUsuario = tokenInfo.CodUsuario.ToString();
+                codRol = tokenInfo.CodRol.ToString();
+                username = tokenInfo.Username;
+                permisosUsuario = tokenInfo.Permisos ?? new List<string>();
+                permisosDeserializados = permisosUsuario.Count > 0;
+            }
+            else
+            {
+                isLoggedIn = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error validando token: {ex.Message}");
+            isLoggedIn = false;
+        }
+    }
+
+    // Obtener la ruta actual para marcar el menú activo
+    string currentPath = Context.Request.Path.Value?.ToLower() ?? "";
+
+    // Función helper para verificar si un menú está activo
+    bool IsActive(string menuPath) {
+        if (string.IsNullOrEmpty(currentPath)) return false;
+        return currentPath.Equals(menuPath.ToLower(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    // Verificar permisos específicos para Monitoreo
+    bool tienePermisosMonitoreo = permisosUsuario.Contains("AutorizacionCamiones")
+                               || permisosUsuario.Contains("AutorizacionIngreso")
+                               || permisosUsuario.Contains("AutorizacionPorton")
+                               || permisosUsuario.Contains("ListaCamiones")
+                               || permisosUsuario.Contains("ReportesIncidentes")
+                               || permisosUsuario.Contains("ListaNegra")
+                               || permisosUsuario.Contains("ListaNegraMotoristas")
+                               || permisosUsuario.Contains("Dashboard")
+                               || permisosUsuario.Contains("Dashboard/Recepcion")
+                               || permisosUsuario.Contains("Dashboard/tiempos-hoy-detalle");
+    
+    // Verificar permisos específicos para Recepción
+    bool tienePermisosAzucar = permisosUsuario.Contains("TiemposAzucar");
+    bool tienePermisosMelaza = permisosUsuario.Contains("TiemposMelaza");
+    bool tienePermisosReporte = permisosUsuario.Contains("Reportes");
+    bool tienePermisosListaTransacciones = permisosUsuario.Contains("ListaTransacciones");
+    bool tienePermisosDetalleTransaccion = permisosUsuario.Contains("DetalleTransaccion");
+
+    // Verificar permisos específicos para Mantenimientos
+    bool tienePermisosCorrelativoComprobante = permisosUsuario.Contains("CorrelativoComprobante");
+    bool tienePermisosCorrelativoMarchamo = permisosUsuario.Contains("CorrelativoMarchamo");
+    bool tienePermisosMantenimientos = tienePermisosCorrelativoComprobante || tienePermisosCorrelativoMarchamo;
+
+    // Verificar si alguna opción de Monitoreo está activa
+    bool monitoreoActive = IsActive("/autorizacioncamiones")
+                    || IsActive("/autorizacioncamionesMelaza")
+                    || IsActive("/autorizacioningreso")
+                    || IsActive("/autorizacioningresomelaza")
+                    || IsActive("/autorizacionporton")
+                    || IsActive("/listacamiones")
+                    || IsActive("/reportesincidentes")
+                    || IsActive("/listanegra")
+                    || IsActive("/listanegramotoristas")
+                    || IsActive("/dashboard")
+                    || IsActive("/dashboard/recepcion")
+                    || IsActive("/dashboard/tiempos-hoy-detalle");
+
+    // Verificar si Recepción está activa
+    bool recepcionActive = IsActive("/tiemposazucar") || IsActive("/tiemposmelaza");
+
+    // Verificar si Reportes está activo
+    bool reporteActive = IsActive("/Reportes");
+
+    // Verificar si Transacciones está activo
+    bool transaccionesActive = IsActive("/listatransacciones") || IsActive("/detalletransaccion");
+
+    // Verificar si Mantenimientos está activo
+    bool mantenimientosActive = IsActive("/correlativocomprobante")
+                              || IsActive("/correlativomarchamo")
+                              || IsActive("/listacomprobante")
+                              || IsActive("/listamarchamos")
+                              || IsActive("/comprobantepdf");
+}
+
+<header class="header">
+  <!-- DESKTOP HEADER (≥1025px) -->
+  <div class="desktop-header container-fluid d-none d-lg-flex justify-content-between align-items-center">
+    <!-- Logo -->
+    <a href="/Prechequeo" class="logo">
+      <img src="~/assets/almapac.png" alt="Almapac Logo">
+    </a>
+
+    <!-- NAVEGACIÓN BASADA EN COOKIES DE PERMISOS -->
+    @if (isLoggedIn && permisosDeserializados)
+    {
+      <nav class="d-none d-lg-flex justify-content-center align-items-center">
+        @* Dropdown Monitoreo *@
+        @if (tienePermisosMonitoreo)
+        {
+          <div class="dropdown-container @(monitoreoActive ? "active-menu" : "")" data-permisos="@string.Join(",", permisosUsuario)">
+            <button class="flex items-center px-2 py-2 rounded border-0 shadow-none @(monitoreoActive ? "active-button" : "")"
+                    id="dropdownMonitoreo"
+                    type="button"
+                    style="outline: none !important; border: none !important; box-shadow: none !important; text-decoration: none !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important; @(monitoreoActive ? "" : "background-color: transparent !important; color: #333 !important;")">
+              <span>Monitoreo</span>
+              <i class="fas fa-caret-down ml-2" style="@(monitoreoActive ? "color: white !important;" : "color: #333 !important;")"></i>
+            </button>
+            <div class="dropdown-menu">
+              @if (permisosUsuario.Contains("AutorizacionCamiones"))
+              {
+                <a class="dropdown-item @(IsActive("/autorizacioncamiones") || IsActive("/autorizacioncamionesMelaza") ? "active" : "")" 
+                   href="/AutorizacionCamiones"
+                   onclick="return navigateWithTabPreference(event, '/AutorizacionCamiones', '/AutorizacionCamionesMelaza')">
+                  <i class="fa fa-truck"></i>Chequeo de Información
+                </a>
+              }
+              @if (permisosUsuario.Contains("AutorizacionIngreso"))
+              {
+                <a class="dropdown-item @(IsActive("/autorizacioningreso") || IsActive("/autorizacioningresomelaza") ? "active" : "")" 
+                   href="/AutorizacionIngreso"
+                   onclick="return navigateWithTabPreference(event, '/AutorizacionIngreso', '/AutorizacionIngresoMelaza')">
+                  <i class="fas fa-unlock"></i>Autorización Ingreso
+                </a>
+              }
+              @if (permisosUsuario.Contains("AutorizacionPorton"))
+              {
+                <a class="dropdown-item @(IsActive("/autorizacionporton") ? "active" : "")" href="/AutorizacionPorton">
+                  <i class="fas fa-check-square"></i>Autorización Portón
+                </a>
+              }
+              @if (permisosUsuario.Contains("ListaCamiones"))
+              {
+                <a class="dropdown-item @(IsActive("/listacamiones") ? "active" : "")" href="/ListaCamiones">
+                  <i class="fas fa-clipboard-list"></i>Lista de Camiones
+                </a>
+              }
+              @if (permisosUsuario.Contains("ReportesIncidentes"))
+              {
+                <a class="dropdown-item @(IsActive("/reportesincidentes") ? "active" : "")" href="/ReportesIncidentes">
+                  <i class="fas fa-exclamation-triangle"></i>Reportes de Incidentes
+                </a>
+              }
+              @if (permisosUsuario.Contains("ListaNegra"))
+              {
+                <a class="dropdown-item @(IsActive("/listanegra") ? "active" : "")" href="/ListaNegra">
+                  <i class="fas fa-user-slash"></i>Lista Negra
+                </a>
+              }
+              @if (permisosUsuario.Contains("ListaNegraMotoristas"))
+              {
+                <a class="dropdown-item @(IsActive("/listanegramotoristas") ? "active" : "")" href="/ListaNegraMotoristas">
+                  <i class="fas fa-list-alt"></i>Lista Negra Motorista
+                </a>
+              }
+              @if (permisosUsuario.Contains("Dashboard"))
+              {
+                <a class="dropdown-item @(IsActive("/dashboard") ? "active" : "")" href="/Dashboard">
+                  <i class="fas fa-tachometer-alt"></i>Dashboard
+                </a>
+              }
+            </div>
+          </div>
+        }
+        
+        @* ==== Recepción (dropdown) ==== *@
+        @if (tienePermisosAzucar || tienePermisosMelaza)
+        {
+          <div class="dropdown-container @(recepcionActive ? "active-menu" : "")" data-permisos="@string.Join(",", permisosUsuario)">
+            <button class="flex items-center px-2 py-2 rounded border-0 shadow-none @(recepcionActive ? "active-button" : "")"
+                    id="dropdownRecepcion"
+                    type="button"
+                    style="outline: none !important; border: none !important; box-shadow: none !important; text-decoration: none !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important; @(recepcionActive ? "" : "background-color: transparent !important; color: #333 !important;")">
+              <span>Recepción</span>
+              <i class="fas fa-caret-down ml-2" style="@(recepcionActive ? "color: white !important;" : "color: #333 !important;")"></i>
+            </button>
+
+            <div class="dropdown-menu">
+              @if (tienePermisosAzucar)
+              {
+                <a class="dropdown-item @(IsActive("/tiemposazucar") ? "active" : "")" href="/TiemposAzucar">
+                  <i class="fas fa-cubes"></i> Recepción Azúcar
+                </a>
+              }
+
+              @if (tienePermisosMelaza)
+              {
+                <a class="dropdown-item @(IsActive("/tiemposmelaza") ? "active" : "")" href="/TiemposMelaza">
+                  <i class="fas fa-tint"></i> Recepción Melaza
+                </a>
+              }
+            </div>
+          </div>
+        }
+
+        @* ==== Mantenimientos (dropdown) ==== *@
+        @if (tienePermisosMantenimientos)
+        {
+          <div class="dropdown-container @(mantenimientosActive ? "active-menu" : "")" data-permisos="@string.Join(",", permisosUsuario)">
+            <button class="flex items-center px-2 py-2 rounded border-0 shadow-none @(mantenimientosActive ? "active-button" : "")"
+                    id="dropdownMantenimientos"
+                    type="button"
+                    style="outline: none !important; border: none !important; box-shadow: none !important; text-decoration: none !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important; @(mantenimientosActive ? "" : "background-color: transparent !important; color: #333 !important;")">
+              <span>Mantenimientos</span>
+              <i class="fas fa-caret-down ml-2" style="@(mantenimientosActive ? "color: white !important;" : "color: #333 !important;")"></i>
+            </button>
+
+            <div class="dropdown-menu">
+              @if (tienePermisosCorrelativoComprobante)
+              {
+                <a class="dropdown-item @(IsActive("/correlativocomprobante") || IsActive("/listacomprobante") || IsActive("/comprobantepdf") ? "active" : "")" href="/CorrelativoComprobante">
+                  <i class="fas fa-file-invoice"></i> Correlativo Comprobantes
+                </a>
+              }
+
+              @if (tienePermisosCorrelativoMarchamo)
+              {
+                <a class="dropdown-item @(IsActive("/correlativomarchamo") || IsActive("/listamarchamos") ? "active" : "")" href="/CorrelativoMarchamo">
+                  <i class="fas fa-stamp"></i> Correlativo Marchamos
+                </a>
+              }
+            </div>
+          </div>
+        }
+
+        @* Transacciones *@
+        @if (tienePermisosListaTransacciones)
+        {
+          <div class="menu-item @(transaccionesActive ? "active-menu" : "")" data-permisos="@string.Join(",", permisosUsuario)">
+              <a href="/ListaTransacciones" class="flex items-center px-2 py-2 rounded border-0 shadow-none @(transaccionesActive ? "active-button" : "") @(IsActive("/ListaTransacciones") ? "active" : "")" style="outline: none !important; border: none !important; box-shadow: none !important; text-decoration: none !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important; @(transaccionesActive ? "" : "background-color: transparent !important; color: #333 !important;")">
+                  <span>Transacciones</span>
+              </a>
+          </div>
+        }
+
+        @* Informes *@
+        @if (tienePermisosReporte)
+        {
+          <div class="menu-item @(reporteActive ? "active-menu" : "")" data-permisos="@string.Join(",", permisosUsuario)">
+              <a href="/Reportes" class="flex items-center px-2 py-2 rounded border-0 shadow-none @(reporteActive ? "active-button" : "") @(IsActive("/Reportes") ? "active" : "")" style="outline: none !important; border: none !important; box-shadow: none !important; text-decoration: none !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important; @(reporteActive ? "" : "background-color: transparent !important; color: #333 !important;")">
+                  <span>Informes</span>
+              </a>
+          </div>
+        }
+      </nav>
+    }
+
+    <!-- Login/Logout -->
+    <div class="d-flex align-items-center">
+      @if (isLoggedIn)
+      {
+        <a href="/Logout" class="login-button d-none d-sm-flex">
+          <i class="fas fa-sign-out-alt"></i><span>Cerrar Sesión</span>
+        </a>
+      }
+      else
+      {
+        <a href="/Login" class="login-button d-none d-sm-flex">
+          <i class="fas fa-user"></i><span>Iniciar Sesión</span>
+        </a>
+      }
+    </div>
+  </div>
+
+  <!-- MOBILE/TABLET HEADER (<1025px) -->
+  <div class="mobile-header container-fluid d-flex d-lg-none justify-content-between align-items-center p-0">
+    <a href="/Prechequeo" class="logo">
+      <img src="~/assets/almapac.png" alt="Almapac Logo">
+    </a>
+    
+    <div class="d-flex align-items-center">
+      @if (isLoggedIn)
+      {
+        <button id="menu-toggle" type="button" aria-label="Toggle Menu" aria-expanded="false">
+          <i class="fas fa-bars"></i>
+        </button>
+      }
+      else
+      {
+        <a href="/Login" class="login-button-mobile">
+          <i class="fas fa-user"></i>
+          <span class="login-text">Iniciar Sesión</span>
+        </a>
+      }
+    </div>
+  </div>
+</header>
+
+@if (isLoggedIn)
+{
+  <!-- MENÚ MÓVIL/TABLET OVERLAY -->
+  <nav id="mobile-menu" class="d-lg-none" role="navigation" aria-label="Menú de navegación móvil">
+    <div class="container-fluid py-3">
+      @if (permisosDeserializados)
+      {
+        @if (tienePermisosMonitoreo)
+        {
+          <div class="mobile-menu-section">
+            <div class="mobile-menu-header @(monitoreoActive ? "active-header" : "")">
+              <i class="fas fa-desktop me-2"></i>Monitoreo
+            </div>
+            
+            @if (permisosUsuario.Contains("AutorizacionCamiones"))
+            {
+              <a class="mobile-menu-item @(IsActive("/autorizacioncamiones") || IsActive("/autorizacioncamionesMelaza") ? "active" : "")" 
+                 href="/AutorizacionCamiones"
+                 onclick="return navigateWithTabPreference(event, '/AutorizacionCamiones', '/AutorizacionCamionesMelaza')">
+                <i class="fa fa-truck"></i>
+                <span>Chequeo de Información</span>
+              </a>
+            }
+            @if (permisosUsuario.Contains("AutorizacionIngreso"))
+            {
+              <a class="mobile-menu-item @(IsActive("/autorizacioningreso") || IsActive("/autorizacioningresomelaza") ? "active" : "")" 
+                 href="/AutorizacionIngreso"
+                 onclick="return navigateWithTabPreference(event, '/AutorizacionIngreso', '/AutorizacionIngresoMelaza')">
+                <i class="fas fa-unlock"></i>
+                <span>Autorización Ingreso</span>
+              </a>
+            }
+            @if (permisosUsuario.Contains("AutorizacionPorton"))
+            {
+              <a class="mobile-menu-item @(IsActive("/autorizacionporton") ? "active" : "")" href="/AutorizacionPorton">
+                <i class="fas fa-check-square"></i>
+                <span>Autorización Portón</span>
+              </a>
+            }
+            @if (permisosUsuario.Contains("ListaCamiones"))
+            {
+              <a class="mobile-menu-item @(IsActive("/listacamiones") ? "active" : "")" href="/ListaCamiones">
+                <i class="fas fa-clipboard-list"></i>
+                <span>Lista de Camiones</span>
+              </a>
+            }
+            @if (permisosUsuario.Contains("ReportesIncidentes"))
+            {
+              <a class="mobile-menu-item @(IsActive("/reportesincidentes") ? "active" : "")" href="/ReportesIncidentes">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Reportes de Incidentes</span>
+              </a>
+            }
+            @if (permisosUsuario.Contains("ListaNegra"))
+            {
+              <a class="mobile-menu-item @(IsActive("/listanegra") ? "active" : "")" href="/ListaNegra">
+                <i class="fas fa-user-slash"></i>
+                <span>Lista Negra</span>
+              </a>
+            }
+            @if (permisosUsuario.Contains("ListaNegraMotoristas"))
+            {
+              <a class="mobile-menu-item @(IsActive("/listanegramotoristas") ? "active" : "")" href="/ListaNegraMotoristas">
+                <i class="fas fa-list-alt"></i>
+                <span>Lista Negra Motorista</span>
+              </a>
+            }
+            @if (permisosUsuario.Contains("Dashboard"))
+            {
+              <a class="mobile-menu-item @(IsActive("/dashboard") ? "active" : "")" href="/Dashboard">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+              </a>
+            }
+          </div>
+        }
+
+        @if (tienePermisosMonitoreo && (tienePermisosAzucar || tienePermisosMelaza))
+        {
+          <div class="mobile-menu-separator"></div>
+        }
+
+        @if (tienePermisosAzucar || tienePermisosMelaza)
+        {
+          <div class="mobile-menu-section">
+            <div class="mobile-menu-header @(recepcionActive ? "active-header" : "")">
+              <i class="fas fa-inbox me-2"></i>Recepción
+            </div>
+
+            @if (tienePermisosAzucar)
+            {
+              <a class="mobile-menu-item @(IsActive("/tiemposazucar") ? "active" : "")" href="/TiemposAzucar">
+                <i class="fas fa-cubes"></i>
+                <span>Recepción Azúcar</span>
+              </a>
+            }
+
+            @if (tienePermisosMelaza)
+            {
+              <a class="mobile-menu-item @(IsActive("/tiemposmelaza") ? "active" : "")" href="/TiemposMelaza">
+                <i class="fas fa-tint"></i>
+                <span>Recepción Melaza</span>
+              </a>
+            }
+          </div>
+        }
+
+        @if ((tienePermisosAzucar || tienePermisosMelaza) && tienePermisosMantenimientos)
+        {
+          <div class="mobile-menu-separator"></div>
+        }
+
+        @* Mantenimientos *@
+        @if (tienePermisosMantenimientos)
+        {
+          <div class="mobile-menu-section">
+            <div class="mobile-menu-header @(mantenimientosActive ? "active-header" : "")">
+              <i class="fas fa-cogs me-2"></i>Mantenimientos
+            </div>
+
+            @if (tienePermisosCorrelativoComprobante)
+            {
+              <a class="mobile-menu-item @(IsActive("/correlativocomprobante") || IsActive("/listacomprobante") || IsActive("/comprobantepdf") ? "active" : "")" href="/CorrelativoComprobante">
+                <i class="fas fa-file-invoice"></i>
+                <span>Correlativo Comprobantes</span>
+              </a>
+            }
+
+            @if (tienePermisosCorrelativoMarchamo)
+            {
+              <a class="mobile-menu-item @(IsActive("/correlativomarchamo") || IsActive("/listamarchamos") ? "active" : "")" href="/CorrelativoMarchamo">
+                <i class="fas fa-stamp"></i>
+                <span>Correlativo Marchamos</span>
+              </a>
+            }
+          </div>
+        }
+
+        @if (tienePermisosMantenimientos && tienePermisosListaTransacciones)
+        {
+          <div class="mobile-menu-separator"></div>
+        }
+
+        @* Transacciones *@
+        @if (tienePermisosListaTransacciones)
+        {
+          <div class="mobile-menu-section">
+            <a class="mobile-menu-item @(IsActive("/listatransacciones") ? "active" : "")" href="/ListaTransacciones">
+              <i class="fas fa-list-ul"></i>
+              <span>Transacciones</span>
+            </a>
+          </div>
+        }
+
+        @if (tienePermisosListaTransacciones && tienePermisosReporte)
+        {
+          <div class="mobile-menu-separator"></div>
+        }
+
+        @* Informes *@
+        @if (tienePermisosReporte)
+        {
+          <div class="mobile-menu-section">
+            <a class="mobile-menu-item @(IsActive("/reportes") ? "active" : "")" href="/Reportes">
+              <i class="fas fa-file-alt"></i>
+              <span>Informes</span>
+            </a>
+          </div>
+        }
+      }
+      else
+      {
+        <div class="mobile-menu-section">
+          <div class="mobile-menu-item text-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>Error cargando menú desde cookies. <a href="#" onclick="location.reload()">Actualizar página</a></span>
+          </div>
+        </div>
+      }
+
+      <div class="mobile-menu-login">
+        <a class="mobile-menu-item" href="/Logout">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Cerrar Sesión</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+}
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const menuToggle = document.getElementById('menu-toggle');
+  const mobileMenu = document.getElementById('mobile-menu');
+  
+  if (!menuToggle || !mobileMenu) return;
+
+  let isMenuOpen = false;
+
+  const openMenu = () => {
+    isMenuOpen = true;
+    mobileMenu.classList.add('active');
+    menuToggle.classList.add('active');
+    menuToggle.querySelector('i').classList.replace('fa-bars', 'fa-times');
+    menuToggle.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+  };
+
+  const closeMenu = () => {
+    isMenuOpen = false;
+    mobileMenu.classList.remove('active');
+    menuToggle.classList.remove('active');
+    menuToggle.querySelector('i').classList.replace('fa-times', 'fa-bars');
+    menuToggle.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+  };
+
+  menuToggle.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isMenuOpen) { closeMenu(); } else { openMenu(); }
+  });
+
+  mobileMenu.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => setTimeout(closeMenu, 100));
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isMenuOpen) closeMenu();
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth >= 1025 && isMenuOpen) closeMenu();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (isMenuOpen && !mobileMenu.contains(e.target) && !menuToggle.contains(e.target)) {
+      closeMenu();
+    }
+  });
+
+  const dropdownContainers = document.querySelectorAll('.dropdown-container');
+  
+  dropdownContainers.forEach(container => {
+    const button = container.querySelector('button');
+    const menu = container.querySelector('.dropdown-menu');
+    
+    if (!button || !menu) return;
+    
+    let timeout;
+
+    container.addEventListener('mouseenter', () => {
+      clearTimeout(timeout);
+      container.classList.add('active');
+      button.setAttribute('aria-expanded', 'true');
+    });
+
+    container.addEventListener('mouseleave', () => {
+      timeout = setTimeout(() => {
+        container.classList.remove('active');
+        button.setAttribute('aria-expanded', 'false');
+      }, 300);
+    });
+
+    button.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const isActive = container.classList.contains('active');
+      
+      dropdownContainers.forEach(otherContainer => {
+        if (otherContainer !== container) {
+          otherContainer.classList.remove('active');
+          const otherButton = otherContainer.querySelector('button');
+          if (otherButton) otherButton.setAttribute('aria-expanded', 'false');
+        }
+      });
+      
+      if (isActive) {
+        container.classList.remove('active');
+        button.setAttribute('aria-expanded', 'false');
+      } else {
+        container.classList.add('active');
+        button.setAttribute('aria-expanded', 'true');
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!container.contains(e.target)) {
+        container.classList.remove('active');
+        button.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    button.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        container.classList.add('active');
+        button.setAttribute('aria-expanded', 'true');
+        const firstItem = menu.querySelector('.dropdown-item');
+        if (firstItem) firstItem.focus();
+      }
+    });
+  });
+});
+</script>

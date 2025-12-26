@@ -1,0 +1,414 @@
+@model FrontendQuickpass.Models.CorrelativoMarchamoViewModel
+
+@{
+    ViewData["Title"] = "Correlativo de marchamos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var pager = ViewBag.Pager as FrontendQuickpass.Models.PaginationInfoModel
+        ?? new FrontendQuickpass.Models.PaginationInfoModel();
+
+    var filters = ViewBag.Filters ?? new { Page = 1, Size = 10, Search = "" };
+
+    int currentPage = (int)(filters.GetType().GetProperty("Page")?.GetValue(filters) ?? pager.CurrentPage);
+    if (currentPage <= 0) currentPage = 1;
+
+    int sizeVal = (int)(filters.GetType().GetProperty("Size")?.GetValue(filters) ?? pager.PageSize);
+    if (sizeVal <= 0) sizeVal = 10;
+
+    string search = Model.Search ?? "";
+
+    var totalPages = pager.TotalPages > 0 ? pager.TotalPages : 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+
+    var pagesToShow = new List<int>();
+    void AddP(int p) { if (p >= 1 && p <= totalPages && !pagesToShow.Contains(p)) pagesToShow.Add(p); }
+    AddP(1); AddP(2);
+    for (int p = currentPage - 1; p <= currentPage + 1; p++) AddP(p);
+    AddP(totalPages - 1); AddP(totalPages);
+    pagesToShow.Sort();
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/correlativo-marchamo.css" asp-append-version="true"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/dropzone.min.css" />
+}
+
+<section class="ln-banner">
+    <h1>Correlativo Marchamo</h1>
+</section>
+
+<!-- Contenedor principal en columna -->
+<div class="conteiner cc-content-wrapper">
+
+    <!-- Filtros -->
+    <div class="search-container">
+        <div class="search position-relative">
+            <input type="text"
+                   class="form-control rounded-xl pr-5"
+                   id="search"
+                   name="search"
+                   value="@Model.Search"
+                   placeholder="Báscula, código de cliente, números de inicio o fin del rango.">
+
+            <button type="button"
+                    id="btnSearch"
+                    class="search-icon-btn">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(ViewBag.Error as string))
+    {
+        <div class="alert alert-danger mt-3">@ViewBag.Error</div>
+    }
+
+    <!-- Botón Agregar -->
+    <div class="d-flex justify-content-end">
+        <button type="button" id="btnAgregar" class="btn-agregar">
+            <i class="fas fa-plus mr-1"></i>
+            Agregar
+        </button>
+    </div>
+
+    <!-- Tabla -->
+    <div class="card lista-card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 tabla-correlativos" id="tablaCorrelativos"
+                       data-current-page="@currentPage" data-size="@sizeVal" data-search="@Model.Search">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Producto</th>
+                            <th>Báscula</th>
+                            <th>Inicio</th>
+                            <th>Fin</th>
+                            <th>Total</th>
+                            <th>Disponibles</th>
+                            <th>Fecha de creación</th>
+                            <th class="col-opciones text-center sticky-actions">
+                                <span class="opc-full">Opciones</span>
+                                <span class="opc-short">OPC</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            var lowDisponibles = item.Disponibles < 300;
+                            <tr class="fila-marchamo"
+                                data-id="@item.Id"
+                                data-idbascula="@item.IdBascula"
+                                data-ingenio-code="@item.IngenioCode"
+                                data-product-code="@item.ProductCode"
+                                data-cliente="@item.Cliente"
+                                data-producto="@item.Producto"
+                                data-bascula="@item.BasculaNombre"
+                                data-inicio="@item.MinSealNumber"
+                                data-fin="@item.MaxSealNumber"
+                                data-is-active="@item.IsActive.ToString().ToLowerInvariant()"
+                                data-can-edit="@item.CanEdit.ToString().ToLowerInvariant()">
+                            <td>@item.Cliente</td>
+                            <td>@item.Producto</td>
+                            <td>@item.BasculaNombre</td>
+                            <td>@item.MinSealNumber</td>
+                            <td>@item.MaxSealNumber</td>
+                            <td>@item.Total</td>
+                            <td class="@(item.Disponibles < 300 ? "text-danger" : "")">@item.Disponibles</td> <!-- umbral de ejemplo -->
+                            <td class="js-utc-date" data-utc="@item.CreatedAt.ToString("o")">@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="col-opciones opciones-cell sticky-actions">
+                                <!-- Botones para escritorio -->
+                                <div class="solo-desktop">
+                                    
+                                    <button type="button"
+                                            class="btn-icon btn-edit @(item.CanEdit ? "" : "btn-icon-disabled")"
+                                            aria-disabled="@(!item.CanEdit).ToString().ToLowerInvariant()"
+                                            title="@(item.CanEdit ? "Editar" : "No tiene permisos para editar")">
+                                        <i class="fas fa-pen"></i>
+                                    </button>
+                                    <button type="button"
+                                            class="btn-icon btn-annul"
+                                            title="Anular">
+                                        <i class="fas fa-times-circle"></i>
+                                    </button>
+                                    <button type="button"
+                                            class="btn-icon btn-toggle-active"
+                                            title="@(item.IsActive ? "Deshabilitar" : "Habilitar")">
+                                        <i class="fas @(item.IsActive ? "fa-ban" : "fa-redo")"></i>
+                                    </button>
+                                    <button type="button"
+                                            class="btn-icon btn-detail"
+                                            title="Ver detalle">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Botón kebab para móvil -->
+                                <div class="solo-mobile">
+                                    <button type="button" class="btn-icon btn-actions" title="Opciones">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paginación (debe ser hijo directo de cc-content-wrapper) -->
+    <div class="conteiner-paginacion">
+        <div class="lc-pagination-controls">
+            @if (totalPages > 1)
+            {
+                <div class="lc-pagination-row d-flex justify-content-between align-items-center flex-wrap">
+                    <div class="lc-pagination-spacer"></div>
+
+                    <div class="lc-pagination lc-pagination-nav d-flex justify-content-center align-items-center">
+                        <!-- Anterior -->
+                        <a class="page-nav @(currentPage <= 1 ? "disabled" : "")"
+                           href="@(currentPage <= 1 ? "javascript:void(0)" : BuildPageUrl(currentPage - 1, sizeVal, search))"
+                           title="Anterior" aria-label="Página anterior">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+
+                        <!-- Números de página -->
+                        @for (int i = 0; i < pagesToShow.Count; i++)
+                        {
+                            var p = pagesToShow[i];
+                            var prev = i > 0 ? pagesToShow[i - 1] : (int?)null;
+                            if (prev.HasValue && p - prev.Value > 1)
+                            {
+                                <span class="ellipsis">…</span>
+                            }
+
+                            var isCurrent = (p == currentPage);
+                            <a class="page-num @(isCurrent ? "current" : "")"
+                               href="@(isCurrent ? "javascript:void(0)" : BuildPageUrl(p, sizeVal, search))"
+                               aria-current="@(isCurrent ? "page" : null)">
+                                @p
+                            </a>
+                        }
+
+                        <!-- Siguiente -->
+                        <a class="page-nav @(currentPage >= totalPages ? "disabled" : "")"
+                           href="@(currentPage >= totalPages ? "javascript:void(0)" : BuildPageUrl(currentPage + 1, sizeVal, search))"
+                           title="Siguiente" aria-label="Página siguiente">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </div>
+
+                    <!-- Select de registros -->
+                    <div class="lc-page-size-selector d-flex align-items-center">
+                        <label for="pageSizeSelect" class="mb-0 mr-2 text-muted small">Registros:</label>
+
+                        <select id="pageSizeSelect" class="form-control form-control-sm">
+                            @{
+                                int[] sizes = new[] { 10, 20, 30, 50 };
+                                foreach (var s in sizes)
+                                {
+                                    <option value="@s" selected="@(sizeVal == s)">@s</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                </div>
+            }
+            else
+            {
+                <div class="d-flex justify-content-end">
+                    <div class="lc-page-size-selector d-flex align-items-center">
+                        <label for="pageSizeSelect" class="mb-0 mr-2 text-muted small">Registros:</label>
+                        <select id="pageSizeSelect" class="form-control form-control-sm">
+                            @{
+                                int[] sizes = new[] { 10, 20, 30, 50 };
+                                foreach (var s in sizes)
+                                {
+                                    <option value="@s" selected="@(sizeVal == s)">@s</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+            }
+        </div>
+    </div> <!-- Cierre de .conteiner-paginacion -->
+
+</div> <!-- Cierre de .conteiner cc-content-wrapper -->
+
+<!-- Modal para agregar / editar -->
+<div class="modal fade" id="modalMarchamo" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalMarchamoTitulo">Registro de correlativos</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <form id="formMarchamo">
+                    <input type="hidden" id="marchamoId" />
+
+                    <div class="row modal-columns">
+
+                        <!-- Columna Izquierda -->
+                        <div class="col-md-6">
+
+                            <div class="form-group">
+                                <label for="clienteInput">Cliente</label>
+                                    <select id="clienteInput" class="form-control" tabindex="3" required>
+                                        <option value="">Seleccione un cliente</option>
+                                    </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="inicioInput">Inicio</label>
+                                <input type="number" id="inicioInput" class="form-control" min="0" step="1" inputmode="numeric" pattern="[0-9]*" tabindex="1" required />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="basculaInput">Báscula</label>
+                                <select id="basculaInput" class="form-control" tabindex="5" required>
+                                    <option value="">Seleccione una báscula</option>
+                                    <option value="1">Báscula 1</option>
+                                    <option value="2">Báscula 2</option>
+                                    <option value="3">Báscula 3</option>
+                                    <option value="4">Báscula 4</option>
+                                    <option value="5">Báscula 5</option>
+                                    <option value="6">Báscula 6</option>
+                                </select>
+                            </div>
+
+                        </div>
+
+                        <!-- Columna Derecha -->
+                        <div class="col-md-6">
+
+                            <div class="form-group">
+                                <label for="productoInput">Producto</label>
+                                <select id="productoInput" class="form-control" tabindex="4" required>
+                                    <option value="">Seleccione un producto</option>
+                                    <option value="AZ-001">Azúcar</option>
+                                    <option value="MEL-001">Melaza</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="finInput">Fin</label>
+                                <input type="number" id="finInput" class="form-control" min="0" step="1" inputmode="numeric" pattern="[0-9]*" tabindex="2" required />
+                            </div>
+
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-cancelar btn-light border"
+                        data-dismiss="modal">
+                    Cancelar
+                </button>
+
+                <button type="button"
+                        id="btnGuardarMarchamo"
+                        class="btn btn-confirmar btn-primary">
+                    Confirmar
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Anular marchamos -->
+<div class="modal fade" id="modalAnularMarchamo" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content modal-anular">
+
+            <div class="modal-header modal-anular-header">
+                <h5 class="modal-title">Anular marchamos</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <form id="formAnularMarchamo">
+                    <div class="form-group">
+                        <label for="numeroMarchamoInput">Número</label>
+                        <input type="number"
+                               id="numeroMarchamoInput"
+                               class="form-control"
+                               min="0"
+                               step="1"
+                               inputmode="numeric"
+                               pattern="[0-9]*"
+                               placeholder="Ingrese el número de marchamo a anular"
+                               required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="motivoAnulacionInput">Motivo</label>
+                        <select id="motivoAnulacionInput" class="form-control" required>
+                            <option value="">Seleccione</option>
+                            <option value="error de digitacion">Error de digitación</option>
+                            <option value="marchamo dañado">Marchamo dañado</option>
+                            <option value="marchamo perdido">Marchamo perdido</option>
+                            <option value="marchamo robado">Marchamo Robado</option>
+                            <option value="marchamo mal impreso">Marchamo mal impreso</option>
+                            <option value="correlativo duplicado">Correlativo duplicado</option>
+                            <option value="asignación incorrecta">Asignación incorrecta</option>
+                         
+
+                        </select>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer modal-anular-footer">
+                <button type="button"
+                        id="btnConfirmarAnular"
+                        class="btn btn-primary btn-confirmar-anular">
+                    Confirmar
+                </button>
+                <button type="button"
+                        class="btn btn-danger btn-cancelar-anular"
+                        data-dismiss="modal">
+                    Cancelar
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/correlativo-marchamo.js" asp-append-version="true"></script>
+}
+
+<form id="__AjaxAntiForgeryForm" method="post" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
+
+
+@functions {
+    public string BuildPageUrl(int page, int size, string search)
+    {
+        var q = System.Web.HttpUtility.ParseQueryString(string.Empty);
+        q["page"] = page.ToString();
+        q["size"] = size.ToString();
+        if (!string.IsNullOrWhiteSpace(search)) q["search"] = search;
+
+        // Ajusta el nombre del controlador si es diferente
+        return Url.Action("Index", "CorrelativoMarchamo") + "?" + q.ToString();
+    }
+}

@@ -1,0 +1,269 @@
+@model FrontendQuickpass.Models.AutorizacionIngresoModel
+@{
+    ViewData["Title"] = "Autorizacion de Ingreso";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var ingeniosFijos = new List<(string Codigo, string Nombre)>
+    {
+        ("007001-001", "COMPAÑÍA AZUCARERA SALVADOREÑA"),
+        ("001001-001", "INGENIO CENTRAL AZUCARERO JIBOA"),
+        ("007001-003", "INGENIO CHAPARRASTIQUE"),
+        ("001001-002", "INGENIO EL ÁNGEL"),
+        ("001001-003", "INGENIO LA CABAÑA"),
+        ("001001-004", "INGENIO LA MAGDALENA")
+    };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/autorizacion-ingreso.css" />
+}
+
+<!-- Banner y pestañas -->
+<div class="banner-wrapper">
+    <!-- Banner Izquierdo -->
+    <section class="custom-banner">
+        <h1>Autorización de Ingreso</h1>
+    </section>
+
+    <!-- Botones a la derecha como pestañas -->
+    <div class="tab-buttons">
+        <a href="@Url.Action("Index", "AutorizacionIngreso")" class="tab-button active-tab">
+            <i class="fas fa-cubes" style="margin-right: 5px;"></i>Azúcar
+        </a>
+        <a href="@Url.Action("Index", "AutorizacionIngresoMelaza")" class="tab-button">
+            <i class="fas fa-tint" style="margin-right: 5px;"></i>Melaza
+        </a>
+    </div>
+</div>
+
+<main class="container-fluid py-4">
+    <!-- UNIDADES SOLICITADAS Y TOTAL PENDIENTES EN FILA -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8" style="font-family: 'Gilroy-Bold', sans-serif;">
+        <div class="bg-white">
+            <h2 class="section-title text-center mb-3">UNIDADES SOLICITADAS</h2>
+            <div class="d-flex justify-content-center">
+                <div class="unit-cards-container">
+                    <!-- Tarjeta de "Plano" -->
+                    <div class="unit-card unit-card-blue">
+                        <div class="indicator-bar indicator-white"></div>
+                        <div class="unit-card-content">
+                            <span class="unit-type">Plano</span>
+                            <span class="unit-count">@Model.ColaR</span>
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta de "Volteo" -->
+                    <div class="unit-card unit-card-dark">
+                        <div class="indicator-bar indicator-orange"></div>
+                        <div class="unit-card-content">
+                            <span class="unit-type">Volteo</span>
+                            <span class="unit-count">@Model.ColaV</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white">
+            <h2 class="section-title text-center mb-3">TOTAL UNIDADES PENDIENTES</h2>
+            <div class="d-flex justify-content-center">
+                <div class="unit-cards-container">
+                    <!-- Tarjeta de "Plano" -->
+                    <div class="unit-card unit-card-blue">
+                        <div class="indicator-bar indicator-white"></div>
+                        <div class="unit-card-content">
+                            <span class="unit-type">Plano</span>
+                            <span class="unit-count">@Model.CountPlanas</span>
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta de "Volteo" -->
+                    <div class="unit-card unit-card-dark">
+                        <div class="indicator-bar indicator-orange"></div>
+                        <div class="unit-card-content">
+                            <span class="unit-type">Volteo</span>
+                            <span class="unit-count">@Model.CountVolteo</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TOTAL INGENIOS -->
+    <section class="mb-4">
+        <h2 class="section-title text-center mb-3">TOTAL INGENIOS</h2>
+        <div class="ingenios-container">
+            <div class="ingenios-grid">
+                @foreach (var ingenio in ingeniosFijos)
+                {
+                    var cantidad = Model.IngenioCounts.ContainsKey(ingenio.Codigo) ? Model.IngenioCounts[ingenio.Codigo] : 0;
+                    <div class="ingenio-card filter-ingenio-clickable"
+                         data-filter-ingenio="@ingenio.Codigo"
+                         style="cursor: pointer; transition: all 0.3s ease;">
+                        <h3 class="ingenio-name">@ingenio.Nombre</h3>
+                        <div class="ingenio-count">@cantidad</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- BÚSQUEDA -->
+    <div class="search-container mb-4">
+        <input type="text" id="searchInput" onkeyup="filterCards()" placeholder="Busca aqui la transaccion..." 
+        class="search-input">
+    </div>
+
+    <!-- UNIDADES PLANAS Y VOLTEO -->
+    <div class="units-container">
+        <div class="row">
+            <!-- Columna izquierda - UNIDADES PLANAS -->
+            <div id="planas" class="col-12 col-lg-6 mb-4">
+                <h2 class="section-title text-center mb-3">UNIDADES PLANAS</h2>
+                <div class="row g-3">
+                    @foreach (var item in Model.TruckTypeR)
+                    {
+                        <div class="col-12 col-sm-6 unit-card-wrapper" data-tipo="plana" data-ingenio="@item.ingenio?.ingenioNavCode">
+                            <div class="card border rounded-4" 
+                                onclick="confirmAuthorization(this)"
+                                        data-codigo-generacion="@item.codeGen"
+                                        data-transporter="@item.driver?.name"
+                                        data-trailerplate="@item.vehicle?.trailerPlate"
+                                        data-plate="@item.vehicle?.plate"  
+                                style="border-color: #ddd; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); width: 100%; max-width: 450px; height: 475px; margin: 0 auto; cursor: pointer;">
+                                <div style="position: relative;">
+                                    <div class="absolute bottom-0 mb-4 left-1/2 transform -translate-x-1/2 translate-y-[200%]">
+                                        <span class="badge text-white py-2" 
+                                            style="padding-left: 90px; padding-right: 90px; border-radius: 10px; font-size: 18px; 
+                                                background-color: #004382"> PLANA
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="card-body p-4" style="margin-top: 30px;">
+                                    <p class="text-start" style="font-size: 0.9rem;">
+                                        <i class="fas fa-calendar-alt text-primary"></i>
+                                        <strong>Fecha Prechequeo:</strong>
+                                    </p>
+                                    <p class="text-muted mb-1 text-start" style="font-size: 0.9rem;"> 
+                                        @(item.dateTimePrecheckeo?.ToString("dd/MM/yyyy HH:mm") ?? "No disponible")
+                                    </p>
+                                    <p class="text-start" style="font-size: 0.9rem;">
+                                        <i class="fas fa-code text-primary"></i>
+                                        <strong>Código Generación:</strong></p>
+                                        <p class="text-muted mb-1 text-start" style="font-size: 0.9rem;"> 
+                                        @item.codeGen
+                                    </p>
+                                    <p class="text-start" style="font-size: 0.9rem;">
+                                        <i class="fas fa-credit-card text-primary"></i>
+                                        <strong>No. Tarjeta:</strong></p>
+                                        <p class="text-muted mb-1 text-start" style="font-size: 0.9rem;"> 
+                                        @item.magneticCard
+                                    </p>
+                                    <p class="text-start" style="font-size: 0.9rem;">
+                                        <i class="fas fa-life-ring text-primary"></i>
+                                        <strong>No. Buzzer:</strong></p>
+                                        <p class="text-muted mb-1 text-start" style="font-size: 0.9rem;"> 
+                                        @item.buzzer
+                                    </p>
+                                    <hr style="border: 2px solid #ff7300; margin: 10px 0;" />
+                                    <p class="text-start" style="font-size: 0.9rem;">
+                                        <i class="fas fa-industry text-primary"></i>
+                                        <strong>@item.ingenio?.name?.Replace("_", " ")</strong>
+                                    </p>
+                                    <p class="text-start" style="font-size: 0.9rem;">
+                                        <i class="fas fa-user text-primary"></i> 
+                                        <strong>Motorista:</strong></p>
+                                        <p class="text-muted mb-1 text-start" style="font-size: 0.9rem;"> 
+                                        @item.driver?.name
+                                    </p>
+                                    <p class="text-start" style="font-size: 0.9rem;">
+                                        <i class="fas fa-truck text-primary"></i>
+                                        <strong>Placa Remolque:</strong></p>
+                                        <p class="text-muted mb-1 text-start" style="font-size: 0.9rem;"> 
+                                        @item.vehicle?.trailerPlate
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+            
+            <!-- Columna derecha - UNIDADES VOLTEO -->
+            <div id="volteo" class="col-12 col-lg-6 mb-4">
+                <h2 class="section-title text-center mb-3">UNIDADES VOLTEO</h2>
+                <div class="row g-3">
+                    @foreach (var item in Model.TruckTypeV)
+                    {
+                        <div class="col-12 col-sm-6 unit-card-wrapper" data-tipo="volteo" data-ingenio="@item.ingenio?.ingenioNavCode">
+                            <div class="card border rounded-4" 
+                                onclick="confirmAuthorization(this)"
+                                        data-codigo-generacion="@item.codeGen"
+                                        data-transporter="@item.driver?.name"
+                                        data-trailerplate="@item.vehicle?.trailerPlate"
+                                        data-plate="@item.vehicle?.plate"  
+                                    style="border-color: #ddd; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); width: 100%; max-width: 450px; height: 475px; margin: 0 auto; cursor: pointer;">
+                                <div style="position: relative;">
+                                    <div class="absolute bottom-0 mb-4 left-1/2 transform -translate-x-1/2 translate-y-[200%]">
+                                        <span class="badge text-white py-2" 
+                                            style="padding-left: 90px; padding-right: 90px; border-radius: 10px; font-size: 18px; 
+                                                background-color: #2D2D2B"> VOLTEO
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="card-body p-4" style="margin-top: 30px;">
+                                    <p class="text-start" style="font-size: 0.9rem;">
+                                        <i class="fas fa-calendar-alt text-primary"></i>
+                                        <strong>Fecha Prechequeo:</strong></p>
+                                        <p class="text-muted mb-1 text-start" style="font-size: 0.9rem;"> 
+                                            @(item.dateTimePrecheckeo?.ToString("dd/MM/yyyy HH:mm") ?? "No disponible")
+                                    </p>
+                                    <p class="text-start" style="font-size: 0.9rem;">
+                                        <i class="fas fa-code text-primary"></i>
+                                        <strong>Código Generación:</strong></p>
+                                        <p class="text-muted mb-1 text-start" style="font-size: 0.9rem;"> 
+                                        @item.codeGen
+                                    </p>
+                                    <p class="text-start" style="font-size: 0.9rem;">
+                                        <i class="fas fa-credit-card text-primary"></i>
+                                        <strong>No. Tarjeta:</strong></p>
+                                        <p class="text-muted mb-1 text-start" style="font-size: 0.9rem;"> 
+                                        @item.magneticCard
+                                    </p>
+                                    <p class="text-start" style="font-size: 0.9rem;">
+                                        <i class="fas fa-life-ring text-primary"></i>
+                                        <strong>No. Buzzer:</strong></p>
+                                        <p class="text-muted mb-1 text-start" style="font-size: 0.9rem;"> 
+                                        @item.buzzer
+                                    </p>
+                                    <hr style="border: 2px solid #ff7300; margin: 10px 0;" />
+                                    <p class="text-start" style="font-size: 0.9rem;">
+                                        <i class="fas fa-industry text-primary"></i>
+                                        <strong>@item.ingenio?.name?.Replace("_", " ")</strong>
+                                    </p>
+                                    <p class="text-start" style="font-size: 0.9rem;">
+                                        <i class="fas fa-user text-primary"></i>
+                                        <strong>Motorista:</strong></p>
+                                        <p class="text-muted mb-1 text-start" style="font-size: 0.9rem;"> 
+                                        @item.driver?.name
+                                    </p>
+                                    <p class="text-start" style="font-size: 0.9rem;">
+                                        <i class="fas fa-truck text-primary"></i>
+                                        <strong>Placa Remolque:</strong></p>
+                                        <p class="text-muted mb-1 text-start" style="font-size: 0.9rem;"> 
+                                        @item.vehicle?.trailerPlate
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+@section Scripts
+{
+    <script src="~/js/autorizacion-ingreso.js"></script>
+}

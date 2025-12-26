@@ -1,0 +1,124 @@
+@model FrontendQuickpass.Models.TiemposMelazaViewModel
+
+<div id="component-brix-unidades" class="brix-container active">
+    <!-- ===== VISTA: LISTA DE INGENIOS ===== -->
+    <div id="brix-ingenios-view" class="brix-view">
+        <div class="brix-header">
+            <h2>Total Ingenios</h2>
+        </div>
+
+        <div class="brix-ingenios-list" id="brixIngeniosList">
+            <!-- Loading visible desde el inicio -->
+            <div class="melaza-loading" id="brixIngeniosLoading">
+                <div class="spinner"></div>
+                <p>Cargando datos...</p>
+            </div>
+
+            <!-- Contenido (oculto inicialmente) -->
+            <div class="brix-ingenios-container" id="brixIngeniosContainer" style="display:none;"></div>
+
+            <!-- Estados (ocultos inicialmente) -->
+            <div class="melaza-empty-state" id="brixIngeniosEmpty" style="display:none;">
+                <i class="fas fa-flask"></i>
+                <h3>Sin datos de Brix</h3>
+                <p>No hay ingenios con unidades pendientes de medición de Brix.</p>
+            </div>
+
+            <div class="melaza-empty-state" id="brixIngeniosError" style="display:none;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Error</h3>
+                <p id="brixIngeniosErrorMessage">Error al cargar los datos de ingenios</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== VISTA: LISTA DE CAMIONES POR INGENIO ===== -->
+    <div id="brix-camiones-view" class="brix-view hidden">
+        <!-- Header blanco con volver + título y subtítulo -->
+        <div class="brix-header-plain">
+            <button class="btn-back" id="btnBackToIngenios" aria-label="Volver">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <div class="brix-header-info">
+                <h2>Lista de camiones</h2>
+                <p id="brixIngenioName"></p>
+            </div>
+        </div>
+
+        <!-- Buscador -->
+        <div class="brix-search-container">
+            <div class="search-input-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="brixSearchInput" class="search-input" placeholder="Busca aquí la placa...">
+            </div>
+        </div>
+
+        <!-- Contador de selección -->
+        <div class="brix-selection-info">
+            <span>Seleccionado</span>
+            <span id="brixSelectionCount">(0/3)</span>
+        </div>
+
+        <!-- Listado -->
+        <div class="brix-camiones-list" id="brixCamionesList">
+            <!-- Loading -->
+            <div class="melaza-loading" id="brixCamionesLoading">
+                <div class="spinner"></div>
+                <p>Cargando camiones...</p>
+            </div>
+
+            <!-- Contenido -->
+            <div class="brix-camiones-container" id="brixCamionesContainer" style="display:none;"></div>
+
+            <!-- Vacío -->
+            <div class="melaza-empty-state" id="brixCamionesEmpty" style="display:none;">
+                <i class="fas fa-truck"></i>
+                <h3>Sin camiones</h3>
+                <p>No se encontraron camiones para este ingenio.</p>
+            </div>
+
+            <!-- Error -->
+            <div class="melaza-empty-state" id="brixCamionesError" style="display:none;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Error</h3>
+                <p id="brixCamionesErrorMessage">Error al cargar los camiones</p>
+            </div>
+        </div>
+
+        <!-- Botón inferior -->
+        <div class="brix-actions">
+            <button class="btn-primary btn-asignar" id="btnAsignarBrix" disabled>Asignar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Templates ===== -->
+<template id="brix-ingenio-template">
+    <div class="brix-ingenio-card fade-in" data-ingenio-code="" data-ingenio-name="">
+        <div class="brix-ingenio-header">
+            <i class="fas fa-industry text-primary brix-ingenio-leading"></i>
+            <h3 class="brix-ingenio-label">Ingenio:</span>
+            <h3 class="brix-ingenio-name"></h3>
+        </div>
+        <div class="brix-ingenio-units">
+            <i class="fas fa-truck text-primary"></i>
+            <h3 class="brix-ingenio-units-label">Unidades:</span>
+            <h3 class="brix-ingenio-units-number"></span>
+        </div>
+    </div>
+</template>
+
+<template id="brix-camion-template">
+    <div class="brix-camion-card slide-up" data-shipment-id="">
+        <div class="brix-camion-info">
+            <div class="brix-camion-row">
+                <i class="fas fa-truck text-primary"></i>
+                <span class="brix-camion-plate"></span>
+            </div>
+            <div class="brix-camion-row">
+                <i class="fas fa-calendar-alt text-primary"></i>
+                <span class="brix-camion-date"></span>
+            </div>
+        </div>
+    </div>
+</template>

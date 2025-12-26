@@ -1,0 +1,80 @@
+@{
+    ViewData["Title"] = "Prechequeo";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    @if (ViewBag.IsMobile == true)
+    {
+        <link rel="stylesheet" href="~/css/prechequeo-mobile.css" />
+    }
+    else
+    {
+        <link rel="stylesheet" href="~/css/prechequeo.css" />
+    }
+}
+
+@if (ViewBag.IsMobile == true)
+{
+    @await Html.PartialAsync("_PrechequeoMobile")
+}
+else
+{
+    @await Html.PartialAsync("_PrechequeoDesktop")
+}
+
+@section Scripts {
+    <script src="~/js/precheck.js"></script>
+
+    <!-- Script optimizado sin recargas constantes -->
+    <script>
+        (function() {
+            // Configuración inicial una sola vez
+            const deviceConfig = {
+                initialIsMobile: @Html.Raw(ViewBag.IsMobile?.ToString().ToLower() ?? "false"),
+                currentIsMobile: window.matchMedia('(max-width: 768px)').matches
+            };
+
+            // Manejar cambios de orientación sin recargar
+            function handleOrientationChange() {
+                // Simplemente forzar un reflow para que CSS media queries se apliquen
+                if (document.body) {
+                    document.body.style.display = 'none';
+                    document.body.offsetHeight; // Trigger reflow
+                    document.body.style.display = '';
+                }
+                
+                console.log('Orientation changed - layout adjusted via CSS');
+            }
+
+            // Media query listener para cambios críticos solamente
+            const mediaQuery = window.matchMedia('(max-width: 768px)');
+            let lastMatchState = mediaQuery.matches;
+
+            function handleCriticalResize(e) {
+                // Solo actuar si hay un cambio real de estado móvil/desktop
+                if (e.matches !== lastMatchState) {
+                    lastMatchState = e.matches;
+                    console.log(`Critical layout change detected: ${e.matches ? 'Mobile' : 'Desktop'}`);
+                    
+                    // Notificar al sistema de prechequeo si existe
+                    if (window.prechequeoManager) {
+                        window.prechequeoManager.handleLayoutChange(e.matches);
+                    }
+                }
+            }
+
+            // Event listeners optimizados
+            mediaQuery.addListener(handleCriticalResize);
+            
+            // Solo manejar orientación en móviles
+            if ('orientation' in screen) {
+                screen.orientation.addEventListener('change', handleOrientationChange);
+            } else {
+                // Fallback para navegadores antiguos
+                window.addEventListener('orientationchange', handleOrientationChange);
+            }
+
+        })();
+    </script>
+}

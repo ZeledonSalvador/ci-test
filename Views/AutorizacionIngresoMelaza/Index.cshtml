@@ -1,0 +1,171 @@
+@model FrontendQuickpass.Models.AutorizacionIngresoModel
+@{
+    ViewData["Title"] = "Autorizacion de Ingreso";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var ingeniosFijos = new List<(string Codigo, string Nombre)>
+    {
+        ("007001-001", "COMPAÑÍA AZUCARERA SALVADOREÑA"),
+        ("001001-001", "INGENIO CENTRAL AZUCARERO JIBOA"),
+        ("007001-003", "INGENIO CHAPARRASTIQUE"),
+        ("001001-002", "INGENIO EL ÁNGEL"),
+        ("001001-003", "INGENIO LA CABAÑA"),
+        ("001001-004", "INGENIO LA MAGDALENA")
+    };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/autorizacion-ingreso-melaza.css" />
+}
+
+<!-- Banner y pestañas -->
+<div class="banner-wrapper">
+    <!-- Banner Izquierdo -->
+    <section class="custom-banner">
+        <h1>Autorización de Ingreso</h1>
+    </section>
+
+    <!-- Botones a la derecha como pestañas -->
+    <div class="tab-buttons">
+        <a href="@Url.Action("Index", "AutorizacionIngreso")" class="tab-button">
+            <i class="fas fa-cubes" style="margin-right: 5px;"></i>Azúcar
+        </a>
+        <a href="@Url.Action("Index", "AutorizacionIngresoMelaza")" class="tab-button active-tab">
+            <i class="fas fa-tint" style="margin-right: 5px;"></i>Melaza
+        </a>
+    </div>
+</div>
+
+<main class="container-fluid py-4">
+    <!-- UNIDADES SOLICITADAS Y TOTAL PENDIENTES -->
+    <section class="upper-cards-section mb-8" style="font-family: 'Gilroy-Bold', sans-serif;">
+        <div class="upper-cards-container">
+            <div class="upper-card-wrapper">
+                <h2 class="text-lg font-bold mb-4 text-center">UNIDADES SOLICITADAS</h2>
+                <div class="melaza-card text-white text-center rounded-lg"
+                     style="background-color:#182A6E; padding:15px; width:300px; max-width:100%; height:110px; position:relative; margin:0 auto;">
+                    <div style="position:absolute; top:10px; left:10px; width:10px; height:90px; background-color:#EAE8EC; border-radius:5px;"></div>
+                    <div class="d-flex flex-column align-items-center justify-content-center h-100">
+                        <span class="text-3xl mb-1">Pipa</span>
+                        <span class="text-3xl mt-1 font-bold">@Model.ColaP</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="upper-card-wrapper">
+                <h2 class="text-lg font-bold mb-4 text-center">TOTAL UNIDADES PENDIENTES</h2>
+                <div class="melaza-card text-white text-center rounded-lg"
+                     style="background-color:#242424; padding:15px; width:300px; max-width:100%; height:110px; position:relative; margin:0 auto;">
+                    <div style="position:absolute; top:10px; left:10px; width:10px; height:90px; background-color:#FF5733; border-radius:5px;"></div>
+                    <div class="d-flex flex-column align-items-center justify-content-center h-100">
+                        <span class="text-3xl mb-1">Pipa</span>
+                        <span class="text-3xl mt-1 font-bold">@Model.CountPipa</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TOTAL INGENIOS -->
+    <section class="mb-4">
+        <h2 class="section-title text-center mb-3">TOTAL INGENIOS</h2>
+        <div class="ingenios-container">
+            <div class="ingenios-grid">
+                @foreach (var ingenio in ingeniosFijos)
+                {
+                    var cantidad = Model.IngenioCounts.ContainsKey(ingenio.Codigo) ? Model.IngenioCounts[ingenio.Codigo] : 0;
+                    <div class="ingenio-card filter-ingenio-clickable"
+                         data-filter-ingenio="@ingenio.Codigo"
+                         style="cursor: pointer; transition: all 0.3s ease;">
+                        <h3 class="ingenio-name">@ingenio.Nombre</h3>
+                        <div class="ingenio-count">@cantidad</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- BÚSQUEDA -->
+    <div class="search-container mb-4">
+        <input type="text" id="searchInput" onkeyup="filterCards()" placeholder="Busca aqui la transaccion..." 
+        class="search-input">
+    </div>
+
+    <!-- UNIDADES PIPA -->
+    <div class="units-container">
+        <div class="mb-4">
+            <h2 class="section-title text-center mb-3">UNIDADES PIPA</h2>
+            <div id="pipas" class="cards-grid">
+                @foreach (var item in Model.TruckTypeP)
+                {
+                    <div class="unit-card-wrapper" data-ingenio="@item.ingenio?.ingenioNavCode">
+                        <div class="card border rounded-4" 
+                            onclick="confirmAuthorization(this)"
+                                    data-codigo-generacion="@item.codeGen"
+                                    data-transporter="@item.driver?.name"
+                                    data-trailerplate="@item.vehicle?.trailerPlate"
+                                    data-plate="@item.vehicle?.plate"  
+                            style="border-color: #ddd; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); width: 100%; max-width: 450px; height: 475px; margin: 0 auto; cursor: pointer;">
+                            <div style="position: relative;">
+                                <div class="absolute bottom-0 mb-4 left-1/2 transform -translate-x-1/2 translate-y-[200%]">
+                                    <span class="badge text-white py-2 d-flex justify-content-center align-items-center" 
+                                        style="width: 15.2rem; border-radius: 10px; font-size: 18px; 
+                                            background-color: #004382"> PIPA
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="card-body p-4" style="margin-top: 30px;">
+                                <p class="text-start" style="font-size: 0.9rem;">
+                                    <i class="fas fa-calendar-alt text-primary"></i>
+                                    <strong>Fecha Prechequeo:</strong>
+                                </p>
+                                <p class="text-muted mb-1 text-start" style="font-size: 0.85rem;"> 
+                                    @(item.dateTimePrecheckeo?.ToString("dd/MM/yyyy HH:mm") ?? "No disponible")
+                                </p>
+                                <p class="text-start" style="font-size: 0.9rem;">
+                                    <i class="fas fa-code text-primary"></i>
+                                    <strong>Código Generación:</strong></p>
+                                    <p class="text-muted mb-1 text-start" style="font-size: 0.85rem;"> 
+                                    @item.codeGen
+                                </p>
+                                <p class="text-start" style="font-size: 0.9rem;">
+                                    <i class="fas fa-credit-card text-primary"></i>
+                                    <strong>No. Tarjeta:</strong></p>
+                                    <p class="text-muted mb-1 text-start" style="font-size: 0.85rem;"> 
+                                    @item.magneticCard
+                                </p>
+                                <p class="text-start" style="font-size: 0.9rem;">
+                                    <i class="fas fa-life-ring text-primary"></i>
+                                    <strong>No. Buzzer:</strong></p>
+                                    <p class="text-muted mb-1 text-start" style="font-size: 0.85rem;"> 
+                                    @item.buzzer
+                                </p>
+                                <hr style="border: 2px solid #ff7300; margin: 10px 0;" />
+                                <p class="text-start" style="font-size: 0.9rem;">
+                                    <i class="fas fa-industry text-primary"></i>
+                                    <strong>@item.ingenio?.name?.Replace("_", " ")</strong>
+                                </p>
+                                <p class="text-start" style="font-size: 0.9rem;">
+                                    <i class="fas fa-user text-primary"></i> 
+                                    <strong>Motorista:</strong></p>
+                                    <p class="text-muted mb-1 text-start" style="font-size: 0.85rem;"> 
+                                    @item.driver?.name
+                                </p>
+                                <p class="text-start" style="font-size: 0.9rem;">
+                                    <i class="fas fa-truck text-primary"></i>
+                                    <strong>Placa Remolque:</strong></p>
+                                    <p class="text-muted mb-1 text-start" style="font-size: 0.85rem;"> 
+                                    @item.vehicle?.trailerPlate
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</main>
+
+@section Scripts
+{
+    <script src="~/js/autorizacion-ingreso.js"></script>
+}

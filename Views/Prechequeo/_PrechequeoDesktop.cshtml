@@ -1,0 +1,293 @@
+﻿<!-- Main Section -->
+<main class="main">
+    <!-- Truck Image -->
+    <div class="truck-image-container">
+        <img src="~/assets/prechequeo.webp" alt="Prechequeo Image" class="truck-image">
+    </div>
+
+    <!-- Text Section -->
+    <div class="text-section">
+        <p>Recuerda Siempre <strong>Realizar</strong></p>
+        <h2>TU PRE</h2>
+        <h1>CHEQUEO</h1>
+
+        <!-- Precheck Form -->
+        <div class="precheck-box">
+            <p>Prechequeo</p>
+            <input type="text" id="txtTransaccion" class="precheck-input" 
+                   placeholder="Número de prechequeo" required />
+            <br><br>
+            <button type="button" id="lnkBuscar" class="precheck-button" onclick="buscarTransaccion()">
+                Verificar
+            </button>
+        </div>
+    </div>
+</main>
+
+<!-- Modal de Validación -->
+<div class="modal fade bd-example-modal-lg" id="editModalDesktop" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <!-- Carousel - SOLO BOTONES, NO AUTOMÁTICO -->
+            <div id="carouselFormsDesktop" class="carousel slide" data-ride="false" data-interval="false" data-bs-interval="false" data-wrap="false">
+                <div class="carousel-inner">
+                    <!-- Primer Formulario Ticket -->
+                    <div class="carousel-item active">
+                        <div class="modal-header modal-header-ticket">
+                            <div>
+                                <h5 class="modal-title" id="editPass2">VIAJE DISPONIBLE PRECHEQUEO</h5>
+                            </div>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+
+                        <div class="modal-body">
+                            <div class="image-container">
+                                <div class="form-overlay" style="display: flex; justify-content: flex-start; align-items: center; padding: 0; margin-left: 425px; margin-top: -215px; width: 100%; transform: translateX(-350px);">
+                                    <div class="form-group" style="flex: 0 0 150px; text-align: left; margin-right: 0; padding: 0;">
+                                        <label style="font-size: 20px; display: block; margin-top: -5px;">
+                                            <strong>ORIGEN:</strong>
+                                        </label>
+                                        <h2 id="txt_ingenio" style="font-size: 16px; margin: 0;"></h2>
+                                    </div>
+
+                                    <!-- Tipo -->
+                                    <div class="form-group1" style="flex: 0 0 auto; text-align: left; margin-left: 30px; padding: 0; display: flex; flex-direction: column; align-items: flex-start;">
+                                        <label style="font-size: 20px; display: block; margin-bottom: 10px;">
+                                            <strong>TIPO:</strong>
+                                        </label>
+                                    
+                                        <!-- Contenedor de imágenes y checkboxes en fila -->
+                                        <div id="tipoUnidad" style="display: flex; flex-direction: row; align-items: center; gap: 15px;">
+                                            <!-- Imagen de camión ícono (PLANA) -->
+                                            <div id="imgPlanaContainer" style="display: none;">
+                                                <img src="~/assets/plana.png" 
+                                                    alt="Camión Ícono" 
+                                                    style="width: 45px; height: auto; margin-top: -75px; margin-left: 60px; filter: sepia(1) saturate(5) hue-rotate(200deg);">
+                                            </div>
+                                            <!-- Imagen de camión de volteo -->
+                                            <div id="imgVolteoContainer" style="display: none;">
+                                                <img src="~/assets/volteo.png" 
+                                                    alt="Camión de Volteo" 
+                                                    style="width: 40px; height: 20px; transform: scaleX(-1); margin-top: -65px; margin-left: 65px;">
+                                            </div>
+                                            <!-- Imagen de camión de pipa -->
+                                            <div id="imgPipaContainer" style="display: none;">
+                                                <img src="~/assets/pipa.png" 
+                                                    alt="Camión de Pipa" 
+                                                    style="width: 60px; height: 50px; transform: scaleX(-1); margin-top: -75px; margin-left: 65px;">
+                                            </div>
+
+                                            <!-- Contenedor de checkboxes -->
+                                            <div style="display: flex; flex-direction: column; align-items: flex-start; margin-left: -125px;">
+                                                <!-- Checkbox para PLANA -->
+                                                <div id="divPlana" class="form-check" style="margin-bottom: 5px;">
+                                                    <input type="checkbox" id="chkPlana" class="form-check-input" disabled 
+                                                        style="font-size: 16px; margin-left: -15px;" />
+                                                    <label for="chkPlana" class="form-check-label" style="font-size: 16px; margin-left: 5px;">PLANA</label>
+                                                </div>
+
+                                                <!-- Checkbox para VOLTEO -->
+                                                <div id="divVolteo" class="form-check">
+                                                    <input type="checkbox" id="chkVolteo" class="form-check-input" disabled 
+                                                        style="font-size: 16px; margin-left: -15px;" />
+                                                    <label for="chkVolteo" class="form-check-label" style="font-size: 16px; margin-left: 5px; margin-bottom: 5px;">VOLTEO</label>
+                                                </div>
+
+                                                <!-- Checkbox para PIPA -->
+                                                <div id="divPipa" class="form-check">
+                                                    <input type="checkbox" id="chkPipa" class="form-check-input" disabled 
+                                                        style="font-size: 16px; margin-left: -35px;" />
+                                                    <label for="chkPipa" class="form-check-label" style="font-size: 16px; margin-left: -15px; margin-bottom: 25px;">PIPA</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Destino -->
+                                    <div class="form-group" style="flex: 1.3; text-align: left; margin-left: 100px; padding: 0; margin-top: -15px; width: 100%; max-width: none;">
+                                        <label style="font-size: 20px; display: block; margin-bottom: 5px;">
+                                            <strong>DESTINO:</strong>
+                                        </label>
+                                        <img src="~/assets/almapac.png" 
+                                            style="height: 30px; width: 135px; max-width: none;">
+                                    </div>
+                                </div>
+
+                                <div class="container fecha-prechequeo-container" style="position: fixed; top: 325px; left: 50px; z-index: 1000;">
+                                    <div class="form-row" style="align-items: flex-start; margin-right: 50px;">
+                                        <!-- Fecha -->
+                                        <div class="form-group fecha-prechequeo" style="flex: 0.4; margin-right: 25px;">
+                                            <label style="font-size: 14px; margin-bottom: 5px; margin-top: 18px; margin-left: 35px; display: block; width: 160px;">
+                                                <strong>FECHA PRECHEQUEO:</strong>
+                                            </label>
+                                            <p id="txtFecha" style="font-size: 14px; margin: 0; margin-top: -5px; margin-left: 35px;"></p>
+                                        </div>
+                                        <!-- Transportista -->
+                                        <div class="form-group transporte" style="flex: 0 0 300px; margin-top: 15px;">
+                                            <label style="font-size: 14px; margin-bottom: 5px; margin-left: -55px;">
+                                                <strong>EMPRESA DE TRANSPORTE:</strong>
+                                            </label>
+                                            <p id="txt_transporte" style="font-size: 14px; margin: 0; margin-top: -5px; flex: 1; width: 300px; margin-left: -55px;"></p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Fila para Hora, Placa Camión y Placa Remolque -->
+                                <div class="container" style="position: relative;">
+                                    <div class="form-row-container" style="position: absolute; top: 100px; right: 460px; display: flex; justify-content: flex-start; margin-bottom: 15px;">
+                                        <!-- Hora -->
+                                        <div class="form-group" style="flex: 0.4; margin-top: -2px; margin-left: 90px;">
+                                            <label style="font-size: 14px; margin-bottom: 0px; width: 150px;">
+                                                <strong>HORA PRECHEQUEO:</strong>
+                                            </label>
+                                            <div id="txtHora" style="width: 120px; font-size: 14px"></div>
+                                        </div>
+
+                                        <!-- Cabezal -->
+                                        <div class="form-group" style="flex: 2; margin-left: 25px;">
+                                            <label style="font-size: 14px; margin-bottom: 0px; display: block;">
+                                                <strong>CABEZAL:</strong>
+                                            </label>
+                                            <p id="txt_placaCamion" style="font-size: 14px; width: 20px; margin: 0;"></p>
+                                        </div>
+
+                                        <!-- Remolque -->
+                                        <div class="form-group" style="flex: 1; margin-left: 105px;">
+                                            <label style="font-size: 14px; margin-bottom: 0px; display: block;">
+                                                <strong>REMOLQUE:</strong>
+                                            </label>
+                                            <p id="txt_placaRemolque" style="font-size: 14px; width: 80px; margin: 0;"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> 
+                        </div>    
+                    
+                        <div class="modal-footer" style="border: none; box-shadow: none; position: relative; top: -735px; left: 320px; display: flex; flex-direction: column; align-items: center; background-color: transparent;">
+                            <button type="button" id="nextBtn" style="background: transparent; border: 0; box-shadow: none; color: inherit; cursor: pointer;">
+                                <div style="display: flex; align-items: center; margin-bottom: 70px; margin-left: 25px;">
+                                    <img src="~/assets/plana.png" alt="Camión Ícono" style="width: 55px; height: auto; filter: brightness(0) invert(1); margin-right: 15px;">
+                                    <h5 style="font-size: 28px; font-weight: bold; color: white; margin-right: 10px;">PRECHEQUEO</h5>
+                                </div>
+
+                                <!-- Texto "CONTINUAR" -->
+                                <p style="font-size: 36px; font-weight: bold; color: white; margin-bottom: -10px; margin-left: 44px;">CONTINUAR</p>
+
+                                <!-- Texto "PRECHEQUEO" en la parte inferior -->
+                                <p style="font-size: 38px; color: white; margin-bottom: 75px; margin-left: 47px;">PRECHEQUEO</p>
+                                <p style="font-size: 20px; color: white; margin-bottom: 75px; margin-left: 35px;">REALIZÓ PRECHEQUEO</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Segundo Formulario (Captura de Fotografía) -->
+                    <div class="carousel-item" style="max-width: 500px; margin: 1rem auto; overflow: visible; position: relative;">
+                        
+                        <div class="modal-body" style="background-color: #f9f9f9; border-radius: 30px; flex-grow: 1; width: 100%; margin: auto; display: flex; flex-direction: column; justify-content: flex-start; padding: 1rem; position: relative;">    
+                            
+                            <!-- Etiqueta "Captura de Fotografía" -->
+                            <span style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); z-index: 1055; padding: 0.4rem 1rem; background-color: #182A6E; color: #fff; border-radius: 20px; font-size: 1rem; font-weight: bold; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); text-align: center; white-space: nowrap;">
+                                Captura de Fotografía
+                            </span>
+                            
+                            <!-- Botón de cerrar -->
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="closeModal()" style="position: absolute; right: 15px; top: -10px; background: none; border: none; font-size: 1.3rem; color: #7f8c8d; cursor: pointer; transition: color 0.3s; z-index: 1056;">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+
+                            <div class="p-3" style="padding-top: 1.5rem;">
+                                <div class="flex justify-center mb-4">
+                                    <div class="w-280 h-210 overflow-hidden border-2 border-gray-300" style="width: 280px; height: 210px;">
+                                        <video id="cameraDesktop" width="280" height="210"></video>
+                                        <canvas id="canvasDesktop" width="280" height="210"></canvas>
+                                        <img id="capturedPhotoDesktop" src="" alt="Captured Photo" style="width: 100%; height: 100%; display: none;" />
+                                    </div>
+                                </div>
+
+                                <!-- License and Motorista Section -->
+                                <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; text-align: center; margin-top: -1rem; margin-bottom: 0.6rem; gap: 0.1rem;">
+                                    <div id="txt_licencia"></div>
+                                    <div id="txt_motorista"></div>
+                                </div>
+
+                                <div class="flex justify-center mt-2" style="position: relative; display: flex; align-items: center; justify-content: center;">
+                                    <span style="position: absolute; left: 0; right: auto; height: 2.5px; width: 33%; background-color: #182A6E; top: 50%; transform: translateY(-45%);"></span>
+                                    <button type="button" id="takePhotoDesktop" class="px-3 py-1.5 bg-orange-500 text-white font-bold rounded shadow hover:bg-orange-600">
+                                        <img src="~/assets/photo-camera-svgrepo-com.svg" alt="Camera Icon" style="width: 1.2em; height: 1.2em; filter: invert(1); display: inline-block; vertical-align: middle;" aria-hidden="true" /> Capturar
+                                    </button>
+                                    <span style="position: absolute; right: 0; left: auto; height: 2.5px; width: 33%; background-color: #182A6E; top: 50%; transform: translateY(-50%); border: 2px;"></span>
+                                </div>
+
+                                <!-- Header del ranking -->
+                                <div class="ranking-header" style="background-color: #182A6E; border-radius: 15px; padding: 0.3rem 0; margin: 0.8rem 0;">
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; width: 100%; align-items: center; gap: 0;">
+                                        <div style="display: flex; justify-content: center; align-items: center; text-align: center;">
+                                            <h3 style="color: white; font-size: 1.1rem; margin: 0; font-weight: bold; line-height: 1.2;">INSIGNIA</h3>
+                                        </div>
+                                        <div style="display: flex; justify-content: center; align-items: center; text-align: center;">
+                                            <h3 style="color: white; font-size: 1.1rem; margin: 0; font-weight: bold; line-height: 1.2;">VIAJES</h3>
+                                        </div>
+                                        <div style="display: flex; justify-content: center; align-items: center; text-align: center;">
+                                            <h3 style="color: white; font-size: 1.1rem; margin: 0; font-weight: bold; line-height: 1.2;">NIVEL</h3>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Contenedor de iconos -->
+                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; width: 100%; align-items: center; gap: 0; margin: 0.5rem 0; padding: 0;">
+                                    <!-- Badge Insignia -->
+                                    <div style="display: flex; justify-content: center; align-items: center; text-align: center; padding: 0.2rem;">
+                                        <div style="position: relative; display: inline-block; width: 6rem; height: 6rem;">
+                                            <img class="badge-icon" src="assets/images/sin-clasificacion.png" alt="Badge" style="width: 100%; height: 100%; object-fit: contain; display: block;">
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Viajes Icon con burbuja -->
+                                    <div style="display: flex; justify-content: center; align-items: center; text-align: center; padding: 0.2rem;">
+                                        <div style="position: relative; display: inline-block; width: 5rem; height: 5rem;">
+                                            <img class="viajes-icon" src="assets/images/truck-viajes.png" alt="Viajes" style="width: 100%; height: 100%; object-fit: contain; display: block;">
+                                            <div class="bubble" style="position: absolute; top: -5px; right: -5px; background-color: #FF5722; color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; border: 2px solid white; box-sizing: border-box;">
+                                                <span class="viajes-numero">0</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Nivel Icon SVG -->
+                                    <div style="display: flex; justify-content: center; align-items: center; text-align: center; padding: 0.2rem;">
+                                        <div style="position: relative; display: inline-block; width: 7.5rem; height: 6.5rem;">
+                                            <!-- SVG Battery Icon Vertical -->
+                                            <svg class="nivel-icon" viewBox="0 0 100 100" style="width: 100%; height: 100%; display: block;">
+                                                <!-- Battery Terminal (top) - sin relleno -->
+                                                <rect x="38" y="14" width="24" height="7.8" rx="3" ry="3"
+                                                      fill="none" stroke="#000000" stroke-width="3"/>
+                                                <!-- Battery Body -->
+                                                <rect x="30" y="22" width="40" height="64" rx="4" ry="4"
+                                                      fill="none" stroke="#000000" stroke-width="3"/>
+                                                <!-- Battery Fill (dynamic - bottom to top) -->
+                                                <rect class="battery-fill" x="33" y="83" width="34" height="0" rx="2" ry="2"
+                                                      fill="#000000" data-bottom-y="83" data-max-height="58"/>
+                                            </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                <!-- Botones de navegación - SOLO MANUALES -->
+                                <div class="flex justify-end mt-6" style="display: flex; justify-content: flex-end; gap: 1rem; padding-right: 1rem; margin-top: 1rem;">
+                                    <button type="button" class="btn" id="backBtn" style="width: 25%; height: 2rem; background-color: #888281; color: white; border-radius: 15px; font-size: 0.9rem;">
+                                        <strong><i class="fas fa-arrow-left"></i> Volver</strong>
+                                    </button>
+                                    <button type="button" class="btn" id="changeStatusButton" style="width: 25%; height: 2rem; background-color: #182A6E; color: white; border-radius: 15px; font-size: 0.9rem;">
+                                        <strong>Continuar</strong>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div> <!-- carousel-inner -->
+            </div> <!-- carousel -->
+        </div>
+    </div>
+</div>
+</div>

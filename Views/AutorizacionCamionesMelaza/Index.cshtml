@@ -1,0 +1,378 @@
+@model FrontendQuickpass.Models.AutorizacionCamionesMelazaViewModel
+@{
+    ViewData["Title"] = "Chequeo de Información - Melaza";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var ingeniosFijos = new List<(string Codigo, string Nombre)>
+    {
+        ("007001-001", "COMPAÑÍA AZUCARERA SALVADOREÑA"),
+        ("001001-001", "INGENIO CENTRAL AZUCARERO JIBOA"),
+        ("007001-003", "INGENIO CHAPARRASTIQUE"),
+        ("001001-002", "INGENIO EL ANGEL"),
+        ("001001-003", "INGENIO LA CABAÑA"),
+        ("001001-004", "INGENIO LA MAGDALENA")
+    };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/autorizacion-camiones-melaza.css" />
+}
+
+<!-- Banner y pestañas -->
+<div class="banner-wrapper">
+    <!-- Banner Izquierdo -->
+    <section class="custom-banner">
+        <h1>Chequeo de Información</h1>
+    </section>
+
+    <!-- Botones a la derecha como pestañas -->
+    <div class="tab-buttons">
+        <a href="@Url.Action("Index", "AutorizacionCamiones")" class="tab-button">
+            <i class="fas fa-cubes" style="margin-right: 5px;"></i>Azúcar
+        </a>
+        <a href="@Url.Action("Index", "AutorizacionCamionesMelaza")" class="tab-button active-tab">
+            <i class="fas fa-tint" style="margin-right: 5px;"></i>Melaza
+        </a>
+    </div>
+</div>
+
+<!-- Main Content -->
+<main class="container-fluid py-4">
+    <!-- Total Unidades - Solo Pipa -->
+    <section class="mb-4">
+        <h2 class="section-title text-center mb-3">TOTAL UNIDADES</h2>
+        
+        <div class="d-flex justify-content-center">
+            <div class="unit-cards-container">
+                <!-- Tarjeta de "Pipa" -->
+                <div class="unit-card unit-card-blue">
+                    <div class="indicator-bar indicator-white"></div>
+                    <div class="unit-card-content">
+                        <span class="unit-type">Pipa</span>
+                        <span class="unit-count">@Model.CountPipa</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Total Ingenios -->
+    <section class="mb-4">
+        <h2 class="section-title text-center mb-3">TOTAL INGENIOS</h2>
+        <div class="ingenios-container">
+            <div class="ingenios-grid">
+                @foreach (var ingenio in ingeniosFijos)
+                {
+                    var cantidad = Model.IngenioCounts.ContainsKey(ingenio.Codigo) ? Model.IngenioCounts[ingenio.Codigo] : 0;
+                    <div class="ingenio-card filter-ingenio-clickable"
+                         data-filter-ingenio="@ingenio.Codigo"
+                         style="cursor: pointer; transition: all 0.3s ease;">
+                        <h3 class="ingenio-name">@ingenio.Nombre</h3>
+                        <div class="ingenio-count">@cantidad</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- Buscador -->
+    <div class="search-container mb-4">
+        <input type="text" id="searchInput" onkeyup="filterCards()" 
+            placeholder="Busca aquí la transacción..." 
+            class="search-input">
+    </div>
+
+    <!-- Grid de Unidades Pipa -->
+    <div class="units-container">
+        <div class="row">
+            <!-- Unidades Pipa -->
+            <div class="col-12 mb-4">
+                <h2 class="section-title text-center mb-3">UNIDADES PIPAS</h2>
+
+                <!-- GRID PRINCIPAL -->
+                <div class="row g-3">
+                    @foreach (var item in Model.UnidadesPipa)
+                    {
+                        <div class="col-12 col-sm-6 col-lg-4 col-xl-3 unit-card-wrapper main-card" data-ingenio="@item.ingenio?.ingenioNavCode">
+                            <div class="vehicle-card">
+                                <button class="vehicle-card-btn" onclick="abrirModal('@item.codeGen', '@(item.ingenio?.name?.Replace("_", " "))')">
+                                    <div class="vehicle-image-container">
+                                        @if (item.shipmentAttachments?.Any() == true)
+                                        {
+                                            <img src="@item.shipmentAttachments.First().fileUrl" 
+                                                class="vehicle-image">
+                                        }
+                                        else
+                                        {
+                                            <div class="vehicle-image-placeholder"></div>
+                                        }
+
+                                        <div class="vehicle-badge-container">
+                                            <span class="vehicle-badge badge-pipa">
+                                                Pipa
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="vehicle-details">
+                                        <p class="detail-label">
+                                            <i class="fas fa-calendar-alt text-primary"></i> 
+                                            <strong>Fecha Prechequeo:</strong>
+                                        </p>
+                                        <p class="detail-value">
+                                            @(item.dateTimePrecheckeo?.ToString("dd/MM/yyyy HH:mm") ?? "Sin fecha")
+                                        </p>
+
+                                        <p class="detail-label">
+                                            <i class="fas fa-code text-primary"></i> 
+                                            <strong>Código Generación:</strong>
+                                        </p>
+                                        <p class="detail-value">
+                                            @item.codeGen
+                                        </p>
+
+                                        <hr class="detail-divider">
+
+                                        <p class="detail-label">
+                                            <i class="fas fa-industry text-primary"></i> 
+                                            @Html.Raw(System.Web.HttpUtility.HtmlEncode(item.ingenio?.name?.Replace("_", " ") ?? ""))
+                                        </p>
+
+                                        <p class="detail-label">
+                                            <i class="fas fa-cogs text-primary"></i> 
+                                            <strong>Tipo Operación:</strong>
+                                        </p>
+                                        <p class="detail-value">
+                                            @(item.operationType == "C" ? "Carga" : item.operationType == "D" ? "Recepción" : "No disponible")
+                                        </p>
+
+                                        <p class="detail-label">
+                                            <i class="fas fa-box text-primary"></i> 
+                                            <strong>Producto:</strong>
+                                        </p>
+                                        <p class="detail-value">
+                                            @Html.Raw(System.Web.HttpUtility.HtmlEncode(item.nameProduct?.Replace("_", " ") ?? "N/A"))
+                                        </p>
+
+                                        <p class="detail-label">
+                                            <i class="fas fa-user text-primary"></i> 
+                                            <strong>Motorista:</strong>
+                                        </p>
+                                        <p class="detail-value">
+                                            @Html.Raw(System.Web.HttpUtility.HtmlEncode(item.driver?.name ?? ""))
+                                        </p>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Unidades con Inconsistencias - SIEMPRE ABAJO DEL GRID PRINCIPAL -->
+                @if (Model.UnidadesInconsistencias.Any())
+                {
+                    <div class="inconsistencies-section">
+                        <h2 class="section-title text-center mb-4" style="color: #FD6104">
+                            <i class="fas fa-exclamation-triangle"></i> UNIDADES CON INCONSISTENCIAS
+                        </h2>
+
+                        <div class="row">
+                            <!-- Solo una columna para Pipas con Inconsistencias -->
+                            <div class="col-12 mb-4">
+                                <h2 class="section-title text-center mb-3">UNIDADES PIPAS</h2>
+                                <div class="row g-3">
+                                    @foreach (var item in Model.UnidadesInconsistencias)
+                                    {
+                                        <div class="col-12 col-sm-6 col-lg-4 col-xl-3 unit-card-wrapper" data-ingenio="@item.ingenio?.ingenioNavCode">
+                                            <div class="vehicle-card vehicle-card-inconsistency">
+                                                <div class="vehicle-card-content-inconsistency">
+                                                    <div class="vehicle-image-container">
+                                                        @if (item.shipmentAttachments?.Any() == true)
+                                                        {
+                                                            <img src="@item.shipmentAttachments.First().fileUrl" 
+                                                                class="vehicle-image">
+                                                        }
+                                                        else
+                                                        {
+                                                            <div class="vehicle-image-placeholder"></div>
+                                                        }
+
+                                                        <div class="vehicle-badge-container">
+                                                            <span class="vehicle-badge badge-pipa">
+                                                                Pipa
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="vehicle-details">
+                                                        <p class="detail-label">
+                                                            <i class="fas fa-calendar-alt text-primary"></i> 
+                                                            <strong>Fecha Prechequeo:</strong>
+                                                        </p>
+                                                        <p class="detail-value">
+                                                            @(item.dateTimePrecheckeo?.ToString("dd/MM/yyyy HH:mm") ?? "Sin fecha")
+                                                        </p>
+
+                                                        <p class="detail-label">
+                                                            <i class="fas fa-code text-primary"></i> 
+                                                            <strong>Código Generación:</strong>
+                                                        </p>
+                                                        <p class="detail-value">
+                                                            @item.codeGen
+                                                        </p>
+
+                                                        <hr class="detail-divider">
+
+                                                        <p class="detail-label">
+                                                            <i class="fas fa-industry text-primary"></i> 
+                                                            @Html.Raw(System.Web.HttpUtility.HtmlEncode(item.ingenio?.name?.Replace("_", " ") ?? ""))
+                                                        </p>
+
+                                                        <p class="detail-label">
+                                                            <i class="fas fa-cogs text-primary"></i> 
+                                                            <strong>Tipo Operación:</strong>
+                                                        </p>
+                                                        <p class="detail-value">
+                                                            @(item.operationType == "C" ? "Carga" : item.operationType == "D" ? "Recepción" : "No disponible")
+                                                        </p>
+
+                                                        <p class="detail-label">
+                                                            <i class="fas fa-box text-primary"></i> 
+                                                            <strong>Producto:</strong>
+                                                        </p>
+                                                        <p class="detail-value">
+                                                            @Html.Raw(System.Web.HttpUtility.HtmlEncode(item.nameProduct?.Replace("_", " ") ?? "N/A"))
+                                                        </p>
+
+                                                        <p class="detail-label">
+                                                            <i class="fas fa-user text-primary"></i> 
+                                                            <strong>Motorista:</strong>
+                                                        </p>
+                                                        <p class="detail-value">
+                                                            @Html.Raw(System.Web.HttpUtility.HtmlEncode(item.driver?.name ?? ""))
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Modal Principal de Validación -->
+<div class="modal fade" id="rutaModal" tabindex="-1" role="dialog" aria-labelledby="rutaModalLabel" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #182A6E; color: white;">
+                <h5 class="modal-title" id="modalTitulo" style="color: white;"></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: white;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" class="form-control" id="codigoGeneracionInput" readonly />
+                <input type="hidden" class="form-control" id="nombreIngenioInput" readonly />
+                <form id="formRutaModal">
+                    <div class="form-group">
+                        <label for="txt_licencia" class="col-form-label">Licencia:</label>
+                        <input type="text" class="form-control" id="txt_licencia" />
+                    </div>
+                    
+                    <!-- Row para Placa Remolque y Placa Camión -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="txt_placaremolque" class="col-form-label">Placa Remolque:</label>
+                                <input type="text" class="form-control" id="txt_placaremolque" oninput="validarPlacaRemolque()" />
+                                <small class="form-text text-muted" id="placaRemolqueHint">Debe comenzar con "RE" seguido de números, sin espacios.</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="txt_placamion" class="col-form-label">Placa Camión:</label>
+                                <input type="text" class="form-control" id="txt_placamion" oninput="validarPlacaCamion()" />
+                                <small class="form-text text-muted" id="placaCamionHint">Debe comenzar con "C" seguido de números, sin espacios.</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Row para No. Tarjeta y No. Buzzer -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="txt_tarjeta" class="col-form-label">No. Tarjeta:</label>
+                                <input type="number" class="form-control" id="txt_tarjeta" oninput="this.value = this.value.slice(0, 4)" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="txt_buzzer" class="col-form-label">No. Buzzer:</label>
+                                <input type="number" class="form-control" id="txt_buzzer" oninput="this.value = this.value.slice(0, 4)" />
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" id="btnReportar">Reportar</button>
+                <button type="button" class="btn btn-primary" onclick="validarInformacion()">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Reporte de Inconsistencias -->
+<div class="modal fade" tabindex="-1" role="dialog" id="modalReportar" aria-labelledby="modalReportarLabel" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #182A6E; color: white;">
+                <h5 class="modal-title" style="color: white;">Reportar Inconsistencias</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: white;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formReportar">
+                    <input type="hidden" id="codigoGeneracionModal" value="">
+                    
+                    <div class="card mb-4" id="errorDetailsCard" style="display: none;">
+                        <div class="card-header" style="background-color: #FD6104; color: white;">
+                            <h6 class="mb-0">
+                                <i class="fas fa-exclamation-triangle"></i> 
+                                Datos a reportar como inconsistentes
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="reportedDataList"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="comentario">
+                            <i class="fas fa-comment"></i> Comentario Adicional <span style="color: red;">*</span>
+                        </label>
+                        <textarea class="form-control" id="comentario" rows="4" 
+                                  placeholder="Describe los detalles..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn" onclick="guardarComentario()" 
+                        style="background-color: #FD6104; color: white; border: none;">
+                    Enviar Reporte
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/autorizacion-camiones-melaza.js"></script>
+}

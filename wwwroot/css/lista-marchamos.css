@@ -1,0 +1,341 @@
+/* Contenedor de la tabla - Estilo ListaTransacciones */
+.lista-marchamos-card {
+    background-color: #FFFFFF;
+    border-radius: 1px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+    border: none;
+}
+
+.lista-marchamos-card .table-responsive {
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+/* Tabla principal - Estilo ListaTransacciones */
+.tabla-marchamos {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1100px;
+}
+
+/* Encabezado - Estilo ListaTransacciones */
+.tabla-marchamos thead {
+    background-color: #f8f6f6;
+    border-bottom: 3px solid #F28C00; /* Línea naranja bajo el encabezado */
+}
+
+.tabla-marchamos thead th {
+    padding: 0.75rem 0.5rem;
+    text-align: left;
+    font-weight: 700;
+    color: #182A6E; /* Headers en azul corporativo */
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    vertical-align: middle;
+    border-top: none;
+}
+
+/* Filas del cuerpo - Estilo ListaTransacciones */
+.tabla-marchamos tbody tr {
+    background-color: #fff;
+    border-bottom: 1px solid #CDCAC7;
+    transition: all 0.3s ease;
+}
+
+.tabla-marchamos tbody tr:hover {
+    background-color: #dcdcdc;
+    box-shadow: inset 0 0 0 1px #182A6E;
+}
+
+.tabla-marchamos tbody tr:last-child {
+    border-bottom: none;
+}
+
+/* Celdas - Estilo ListaTransacciones */
+.tabla-marchamos tbody td {
+    padding: 0.75rem 0.5rem;
+    color: #242424;
+    font-size: 0.85rem;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-top: none;
+    text-transform: uppercase;
+}
+
+/* ============================
+   ANCHOS DE COLUMNAS - ListaMarchamos
+   ============================ */
+/* 1. Fecha registro */
+.tabla-marchamos th:nth-child(1),
+.tabla-marchamos td:nth-child(1) {
+    width: 18%;
+    text-align: center;
+}
+
+/* 2. Marchamo */
+.tabla-marchamos th:nth-child(2),
+.tabla-marchamos td:nth-child(2) {
+    width: 12%;
+    text-align: center;
+}
+
+/* 3. Estado */
+.tabla-marchamos th:nth-child(3),
+.tabla-marchamos td:nth-child(3) {
+    width: 15%;
+    text-align: center;
+}
+
+/* 4. N° Envío (GUID - necesita más espacio) */
+.tabla-marchamos th:nth-child(4),
+.tabla-marchamos td:nth-child(4) {
+    width: 30% !important;
+    text-align: center !important;
+    padding-left: 1rem;
+    white-space: normal;
+    word-break: break-all;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .lista-marchamos-card {
+        width: 95%;
+    }
+}
+
+/* ---------------------------
+   Banner
+----------------------------*/
+.ln-banner {
+  display: flex;
+  align-items: center;
+  background:#182A6E;
+  color: #fff;
+  padding: .5rem 1rem;
+}
+.ln-banner h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+/* Estilo del formulario */
+.search-container{
+    padding: 5px;
+    cursor: text; /* Cursor de texto para el contenedor de búsqueda */
+}
+
+/* Estilo del input de búsqueda */
+.search-input {
+    border-radius: 10px;
+    font-size: 1rem;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.search-container {
+    display: flex;
+    justify-content: center; /* centra horizontalmente */
+    margin-bottom: 5px; /* opcional */
+    margin-top: 5px;
+    padding: 5px;
+    padding-top: 8px
+}
+
+.search {
+    width: 91%;  /* ajusta aquí el ancho deseado */
+    min-width: 300px; /* opcional: evita que sea demasiado pequeño */
+}
+
+.search-icon-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: #6c757d;
+    font-size: 1rem;
+}
+
+.search-icon-btn:hover {
+    color: #000;
+}
+
+#search {
+    padding-right: 40px !important; /* espacio para la lupa */
+}
+
+
+.btn-Volver {
+     background-color: none;
+    color: #555;
+    font-weight: 600;
+    border: #555 2px solid; 
+    border-radius: 10px;
+    padding: 0.4rem 0.8rem;
+    margin-right: 65px;
+    margin-bottom: 5px;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    cursor: help !important; 
+}
+
+.btn-Volver:hover,
+.btn-Volver:focus {
+    background-color: none;
+    color: #555;
+    text-decoration: none;
+    cursor: pointer !important; 
+}
+
+
+/* Solo efecto al hacer clic */
+.btn-Volver:active {
+    transform: scale(1.05);
+}
+
+/* Paginación */
+.pagination .page-link {
+    color: #182A6E;
+}
+
+.pagination .page-item.active .page-link {
+    background: #182A6E;
+    border-color: #182A6E;
+}
+
+/* Paginación numérica */
+.lc-pagination {
+    user-select: none;
+}
+
+.lc-pagination a {
+    text-decoration: none;
+}
+
+.lc-pagination a.page-nav {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid #182A6E;
+    color: #182A6E;
+    margin: 0 .2rem;
+    transition: all .15s ease;
+}
+
+.lc-pagination a.page-nav:hover {
+    background: #182A6E;
+    color: #fff;
+}
+
+.lc-pagination a.page-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 .6rem;
+    margin: 0 .15rem;
+    border-radius: 8px;
+    border: 1px solid #182A6E;
+    color: #182A6E;
+    font-weight: 600;
+    transition: all .15s ease;
+}
+
+.lc-pagination a.page-num:hover {
+    background: #182A6E;
+    color: #fff;
+}
+
+.lc-pagination a.page-num.current {
+    background: #182A6E;
+    color: #fff;
+}
+
+.lc-pagination .ellipsis {
+    padding: 0 .4rem;
+    color: #6b7280;
+    font-weight: 700;
+}
+
+.lc-pagination a.disabled {
+    opacity: .45;
+    pointer-events: none;
+}
+
+/* Controles de paginación */
+.lc-pagination-controls {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 1.5rem;
+    margin-top: 2rem;
+    width: 99%;
+    margin-right: 10px;
+}
+
+.lc-pagination-row {
+    min-height: 40px;
+    gap: 1rem;
+}
+
+.lc-pagination-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.1rem;
+}
+
+.lc-pagination-spacer {
+    flex: 1;
+    min-width: 0;
+}
+
+.lc-page-size-selector {
+    flex: 1;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.lc-page-size-selector label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-weight: 500;
+    margin-bottom: 0;
+    margin-right: 0.5rem;
+}
+
+.lc-page-size-selector select {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background-color: white;
+    min-width: 70px;
+    width: auto;
+}
+.cc-content-wrapper {
+    min-height: calc(100vh - 160px);
+    display: flex;
+    flex-direction: column;
+}
+
+.cc-content-wrapper > .conteiner-paginacion {
+    margin-top: auto;
+}
+
+

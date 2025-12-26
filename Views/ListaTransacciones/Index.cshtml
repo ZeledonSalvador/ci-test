@@ -1,0 +1,162 @@
+@using FrontendQuickpass.Controllers
+@{
+    ViewData["Title"] = "Lista de Transacciones";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var pager = ViewBag.Pager as FrontendQuickpass.Models.ListaTransaccionesPager ?? new FrontendQuickpass.Models.ListaTransaccionesPager();
+    var filters = ViewBag.Filters as FrontendQuickpass.Models.TransaccionesFilters ?? new FrontendQuickpass.Models.TransaccionesFilters();
+    var products = ViewBag.Products as List<ProductFilter> ?? new List<ProductFilter>();
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/lista-transacciones.css">
+}
+
+<!-- Banner Principal -->
+<section class="lt-banner">
+    <h1>Lista de transacciones</h1>
+</section>
+
+<!-- Contenedor Principal -->
+<div class="container-fluid mt-3">
+    <!-- Barra de Búsqueda y Filtros (Arriba de todo) -->
+    <div class="lt-search-bar mb-3">
+        <div class="row">
+            <div class="col-md-9 mb-2">
+                <input type="text"
+                       id="searchInput"
+                       class="form-control rounded-xl"
+                       placeholder="Buscar #Envío, Transacción, Código de Generación o Tarjeta..." />
+            </div>
+            <div class="col-md-3 mb-2">
+                <button class="btn btn-primary btn-block rounded-md" id="toggleFiltersBtn">
+                    <i class="fas fa-filter"></i> Filtros
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Columna de Filtros (Izquierda - Se oculta completamente) -->
+        <div class="col-lg-3 col-md-4 mb-3 lt-filters-column" id="filtersColumn" style="display: none;">
+            <div class="lt-filters-sidebar">
+                <!-- Filtro Estado -->
+                <div class="lt-filter-group mb-3">
+                    <label class="lt-filter-label">
+                        <i class="fas fa-check-circle"></i> Estado
+                    </label>
+                    <select class="form-control" id="estadoFilter">
+                        <option value="">Seleccione</option>
+                        <option value="3">Creada</option>
+                        <option value="11">En Proceso</option>
+                        <option value="12">Terminada</option>
+                    </select>
+                </div>
+
+                <!-- Filtro Producto -->
+                <div class="lt-filter-group mb-3">
+                    <label class="lt-filter-label">
+                        <i class="fas fa-box"></i> Producto
+                    </label>
+                    <select class="form-control" id="productoFilter">
+                        <option value="">Seleccione</option>
+                        @foreach (var product in products)
+                        {
+                            <option value="@product.Code">@(product.Name.Replace("_", " "))</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Filtro Fecha Inicio -->
+                <div class="lt-filter-group mb-3">
+                    <label class="lt-filter-label">
+                        <i class="far fa-calendar-alt"></i> Fecha Inicio
+                    </label>
+                    <input type="date" class="form-control" id="fechaInicioFilter">
+                </div>
+
+                <!-- Filtro Fecha Fin -->
+                <div class="lt-filter-group mb-3">
+                    <label class="lt-filter-label">
+                        <i class="far fa-calendar-alt"></i> Fecha Fin
+                    </label>
+                    <input type="date" class="form-control" id="fechaFinFilter">
+                </div>
+
+                <!-- Botón Aplicar -->
+                <div class="lt-filter-group">
+                    <button class="btn btn-primary btn-block rounded-md" id="applyFiltersBtn">
+                        Aplicar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna de Tabla (Derecha - Cambia de tamaño dinámicamente) -->
+        <div class="col-12" id="tableColumn">
+
+            <!-- Contenedor de Tabla con Scroll Horizontal -->
+            <div class="lt-table-container">
+                <div class="lt-table-scroll">
+                    <table class="lt-table">
+                        <thead class="lt-table-header">
+                            <tr>
+                                <th>Fecha entrada</th>
+                                <th>Transacción</th>
+                                <th>Producto</th>
+                                <th>Cliente</th>
+                                <th>Tarjeta</th>
+                                <th>Actividad</th>
+                                <th>Placa Camión</th>
+                                <th>Placa Remolque</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="lt-table-body">
+                            <!-- Los datos se cargarán dinámicamente con JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Mensaje de Cargando -->
+            <div id="loadingMessage" class="lt-loading">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Cargando...</span>
+                </div>
+            </div>
+
+            <!-- Mensaje de Sin Resultados -->
+            <div id="noDataMessage" class="lt-no-data" style="display: none;">
+                <i class="fas fa-inbox fa-3x"></i>
+                <p>No se encontraron transacciones.</p>
+            </div>
+
+            <!-- Controles de Paginación -->
+            <div class="lt-pagination-controls" id="paginationContainer">
+                <div class="lt-pagination-row d-flex justify-content-between align-items-center flex-wrap">
+                    <div class="lt-pagination-info" id="paginationInfo">
+                        Mostrando 10 - 20 de 1002
+                    </div>
+
+                    <div class="lt-pagination lt-pagination-nav d-flex justify-content-center align-items-center" id="paginationNav">
+                        <!-- Los controles de paginación se generarán dinámicamente -->
+                    </div>
+
+                    <div class="lt-page-size-selector d-flex align-items-center">
+                        <label for="pageSizeSelect" class="mb-0 mr-2 text-muted small">Registros:</label>
+                        <select id="pageSizeSelect" class="form-control form-control-sm">
+                            <option value="10" selected>10</option>
+                            <option value="20">20</option>
+                            <option value="30">30</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/lista-transacciones.js"></script>
+}

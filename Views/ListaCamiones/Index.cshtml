@@ -1,0 +1,430 @@
+@model List<FrontendQuickpass.Models.ListaCamiones>
+
+@{
+    ViewData["Title"] = "Lista de Camiones";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var pager = ViewBag.Pager as FrontendQuickpass.Models.ListaCamionesPager ?? new FrontendQuickpass.Models.ListaCamionesPager();
+    var filters = ViewBag.Filters ?? new { page = 1, size = 10, startDate = "", endDate = "", search = "" };
+
+    string startDate = (string)(filters.GetType().GetProperty("startDate")?.GetValue(filters) ?? "");
+    string endDate   = (string)(filters.GetType().GetProperty("endDate")?.GetValue(filters) ?? "");
+    string search    = (string)(filters.GetType().GetProperty("search")?.GetValue(filters) ?? "");
+
+    int sizeVal = pager.Size > 0 ? pager.Size : 10;
+    var sizeProp = filters.GetType().GetProperty("size")?.GetValue(filters);
+    int sTmp = 0;
+    if (sizeProp != null && int.TryParse(sizeProp?.ToString(), out sTmp) && sTmp > 0) sizeVal = sTmp;
+    
+    var totalItems      = pager.TotalItems > 0 ? pager.TotalItems : (Model?.Count ?? 0);
+    var computedPages   = totalItems == 0 ? 1 : (int)Math.Ceiling(totalItems / (double)sizeVal);
+    var totalPages      = pager.TotalPages > 0 ? pager.TotalPages : computedPages;
+    var currentPage     = pager.Page > 0 ? pager.Page : 1;
+
+    var pagesToShow = new List<int>();
+    void AddP(int p){ if(p>=1 && p<=totalPages && !pagesToShow.Contains(p)) pagesToShow.Add(p); }
+    AddP(1); AddP(2);
+    for (int p = currentPage - 1; p <= currentPage + 1; p++) AddP(p);
+    AddP(totalPages - 1); AddP(totalPages);
+    pagesToShow.Sort();
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/lista-camiones.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/dropzone.min.css" />
+}
+
+<section class="custom-banner lc-banner">
+    <h1>Lista de Camiones</h1>
+</section>
+
+<div class="container-fluid mt-3">
+
+    <!-- Filtros -->
+    <form id="lc-filter-form" method="get" class="lc-filter-form">
+        <div class="form-row align-items-end">
+            <div class="col-md-5 mb-2">
+                <label for="search"><i class="fas fa-search"></i> Buscar</label>
+                <input type="text" class="form-control rounded-xl" id="search" name="search" value="@search" placeholder="Código, motorista, placa, cliente, producto...">
+            </div>
+
+            <div class="col-md-2 mb-2">
+                <label for="startDate"><i class="far fa-calendar-alt"></i> Desde</label>
+                <input type="date" class="form-control rounded-xl" id="startDate" name="startDate" value="@startDate">
+            </div>
+
+            <div class="col-md-2 mb-2">
+                <label for="endDate"><i class="far fa-calendar-check"></i> Hasta</label>
+                <input type="date" class="form-control rounded-xl" id="endDate" name="endDate" value="@endDate">
+            </div>
+
+            <input type="hidden" name="excludeStatus" value="1" />
+            <input type="hidden" name="size" value="@sizeVal" />
+
+            <div class="col-md-3 mb-2">
+                <button type="submit" class="btn btn-primary btn-block lc-btn-filter rounded-md">
+                    <i class="fas fa-filter"></i> Aplicar Filtros
+                </button>
+            </div>
+        </div>
+    </form>
+
+    @if (!string.IsNullOrWhiteSpace(ViewBag.Error as string))
+    {
+        <div class="alert alert-danger mt-3">@ViewBag.Error</div>
+    }
+
+    <!-- Grid de tarjetas -->
+    <div class="row mt-3" id="lc-cards-container">
+        @if (Model != null && Model.Any())
+        {
+            foreach (var item in Model)
+            {
+                var trailer = (item?.Vehicle?.TrailerPlate ?? "").ToUpper();
+                var cliente = (item?.Ingenio?.Name ?? "").Replace("_", " ").ToUpper();
+                var producto = (item?.NameProduct ?? "").Replace("_", " ").ToUpper();
+                var fecha = item?.DateTimePrecheckeo;
+
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12 mb-4">
+                    <div class="lc-card border rounded-4 card-clickable" 
+                         data-driver-name="@item?.Driver?.Name"
+                         data-driver-license="@item?.Driver?.License"
+                         data-truck-plate="@item?.Vehicle?.Plate"
+                         data-trailer-plate="@item?.Vehicle?.TrailerPlate"
+                         data-transporter="@item?.Transporter"
+                         data-client="@cliente"
+                         data-product="@producto"
+                         data-shipment-id="@item?.Id"
+                         style="cursor: pointer;">
+                        <div class="lc-card-banner">@trailer</div>
+
+                        <div class="lc-card-body p-3">
+                            <p class="lc-field-title"><i class="fas fa-user text-primary"></i> <strong>Motorista:</strong></p>
+                            <p class="lc-field-value">@item?.Driver?.Name</p>
+
+                            <p class="lc-field-title"><i class="far fa-id-card text-primary"></i> <strong>Licencia:</strong></p>
+                            <p class="lc-field-value">@item?.Driver?.License</p>
+
+                            <p class="lc-field-title"><i class="fas fa-list-ol text-primary"></i> <strong>Placa Cabezal:</strong></p>
+                            <p class="lc-field-value">@item?.Vehicle?.Plate</p>
+
+                            <p class="lc-field-title"><i class="fas fa-truck text-primary"></i> <strong>Placa Remolque:</strong></p>
+                            <p class="lc-field-value">@item?.Vehicle?.TrailerPlate</p>
+
+                            <p class="lc-field-title"><i class="fas fa-flag text-primary"></i> <strong>Cliente:</strong></p>
+                            <p class="lc-field-value">@cliente</p>
+
+                            <p class="lc-field-title"><i class="fas fa-boxes text-primary"></i> <strong>Producto:</strong></p>
+                            <p class="lc-field-value">@producto</p>
+
+                            <hr class="lc-sep" />
+
+                            <p class="lc-field-title"><i class="far fa-calendar-alt text-primary"></i> <strong>Fecha Ingreso:</strong></p>
+                            <p class="lc-field-value">
+                                @(fecha.HasValue ? ToLocal(fecha.Value).ToString("dd/MM/yyyy HH:mm") : "N/D")
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="alert alert-info">No hay resultados para los filtros aplicados.</div>
+            </div>
+        }
+    </div>
+
+    <!-- Controles de paginación -->
+    <div class="lc-pagination-controls">
+        @if (totalPages > 1)
+        {
+            <div class="lc-pagination-row d-flex justify-content-between align-items-center flex-wrap">
+                <div class="lc-pagination-spacer"></div>
+                
+                <div class="lc-pagination lc-pagination-nav d-flex justify-content-center align-items-center">
+
+                    <a class="page-nav @(currentPage <= 1 ? "disabled" : "")"
+                       href="@(currentPage <= 1 ? "javascript:void(0)" : BuildPageUrl(currentPage - 1, sizeVal, startDate, endDate, search))"
+                       title="Anterior" aria-label="Página anterior">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+
+                    @for (int i = 0; i < pagesToShow.Count; i++)
+                    {
+                        var p = pagesToShow[i];
+                        var prev = i > 0 ? pagesToShow[i - 1] : (int?)null;
+                        if (prev.HasValue && p - prev.Value > 1)
+                        {
+                            <span class="ellipsis">…</span>
+                        }
+
+                        var isCurrent = (p == currentPage);
+                        <a class="page-num @(isCurrent ? "current" : "")"
+                           href="@(isCurrent ? "javascript:void(0)" : BuildPageUrl(p, sizeVal, startDate, endDate, search))"
+                           aria-current="@(isCurrent ? "page" : null)">
+                            @p
+                        </a>
+                    }
+
+                    <a class="page-nav @(currentPage >= totalPages ? "disabled" : "")"
+                       href="@(currentPage >= totalPages ? "javascript:void(0)" : BuildPageUrl(currentPage + 1, sizeVal, startDate, endDate, search))"
+                       title="Siguiente" aria-label="Página siguiente">
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                </div>
+
+                <div class="lc-page-size-selector d-flex align-items-center">
+                    <label for="pageSizeSelect" class="mb-0 mr-2 text-muted small">Registros:</label>
+                    <select id="pageSizeSelect" class="form-control form-control-sm">
+                        @{
+                            int[] sizes = new[] { 10, 20, 30, 50 };
+                            foreach (var s in sizes)
+                            {
+                                <option value="@s" selected="@(sizeVal == s)">@s</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex justify-content-end">
+                <div class="lc-page-size-selector d-flex align-items-center">
+                    <label for="pageSizeSelect" class="mb-0 mr-2 text-muted small">Registros:</label>
+                    <select id="pageSizeSelect" class="form-control form-control-sm">
+                        @{
+                            int[] sizes = new[] { 10, 20, 30, 50 };
+                            foreach (var s in sizes)
+                            {
+                                <option value="@s" selected="@(sizeVal == s)">@s</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+        }
+        
+        @if (!string.IsNullOrEmpty(pager.QueryDuration))
+        {
+            <p class="text-center text-muted small mt-2">
+                <i class="fas fa-clock"></i> Tiempo de consulta: @pager.QueryDuration
+            </p>
+        }
+    </div>
+</div>
+
+<!-- Modal para Registro de Incidente -->
+<div class="modal fade" id="incidentReportModal" tabindex="-1" role="dialog" aria-labelledby="incidentReportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="incidentReportModalLabel">
+                    Registro de incidente
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="incidentForm" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    
+                    <!-- Campos ocultos para conductor y datos adicionales -->
+                    <input type="hidden" id="driverName">
+                    <input type="hidden" id="driverLicense" name="license">
+                    <input type="hidden" id="shipmentId" name="shipmentId">
+                    <input type="hidden" id="trailerPlate">
+                    <input type="hidden" id="truckPlate">
+                    <input type="hidden" id="transportista">
+                    <input type="hidden" id="cliente">
+                    <input type="hidden" id="producto">
+
+                    <!-- Primera fila: Fecha/Hora y lugar del evento -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="reportDateTime" class="form-label">
+                                Fecha y hora del evento
+                            </label>
+                            <input type="datetime-local" class="form-control" id="reportDateTime" name="reportDateTime" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="eventLocation" class="form-label">
+                                Lugar del evento
+                            </label>
+                            <select class="form-control" id="eventLocation" name="eventLocation" required>
+                                <option value="">Seleccione</option>
+                                <option value="Sector Bascula 1">Sector Bascula 1</option>
+                                <option value="Sector Bascula 2">Sector Bascula 2</option>
+                                <option value="Sector Bascula 3">Sector Bascula 3</option>
+                                <option value="Sector bascula 4">Sector bascula 4</option>
+                                <option value="Sector bascula 5">Sector bascula 5</option>
+                                <option value="Sector bascula 6">Sector bascula 6</option>
+                                <option value="Sector calle banda 15/ARFS">Sector calle banda 15/ARFS</option>
+                                <option value="Sector calle Chevrón">Sector calle Chevrón</option>
+                                <option value="Sector calle ALCASA/ALMAPAC">Sector calle ALCASA/ALMAPAC</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Segunda fila: Tipo de evento y Tipo de falta -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="eventType" class="form-label">
+                                Tipo de evento
+                            </label>
+                            <select class="form-control" id="eventType" name="eventType" required>
+                                <option value="">Seleccione</option>
+                                <option value="DAÑOS A LA INFRAESTRUCTURA">Daños a la infraestructura</option>
+                                <option value="HURTOS O INTENTOS DE ROBO">Hurtos o intentos de robo</option>
+                                <option value="ACCIDENTES ENTRE UNIDADES DENTRO DE PLANTA">Accidentes entre unidades dentro de planta</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="faultType" class="form-label">
+                                Tipo de falta
+                            </label>
+                            <select class="form-control" id="faultType" name="faultType" required>
+                                <option value="">Primero seleccione el tipo de evento</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Tercera fila: Descripción y archivos -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="description" class="form-label">
+                                Descripción detallada
+                            </label>
+                            <textarea class="form-control" id="description" name="description" rows="5" required 
+                                      placeholder="Describa detalladamente el incidente..."></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="evidence-label-with-counter">
+                                <label class="form-label">
+                                    Evidencias adjuntas
+                                </label>
+                                <span id="fileCounter" class="file-counter-inline" style="display: none;">
+                                    <span id="fileCount">0</span>/10
+                                </span>
+                            </div>
+
+                            <!-- Dropzone para archivos con vista previa integrada -->
+                            <div id="evidence-dropzone" class="dropzone">
+                                <div class="dz-message">
+                                    <i class="fas fa-cloud-upload-alt fa-2x mb-1"></i>
+                                    <h4>Arrastra archivos aquí o haz click para seleccionar</h4>
+                                </div>
+                                <!-- Contenedor para las previsualizaciones (se llenará automáticamente) -->
+                                <div class="previews-container"></div>
+                            </div>
+                            <small class="text-muted d-block">(Máximo 10 archivos, 20MB cada uno)</small>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmReport">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para visualización de archivos -->
+<div class="modal fade" id="fileViewerModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="fileViewerModalLabel">Vista previa de archivo</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="file-viewer-content"></div>
+                <div class="file-controls">
+                    <button type="button" class="btn btn-secondary" id="prev-file" title="Anterior">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="next-file" title="Siguiente">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        window.API_TOKEN = '@(ViewBag.ApiToken ?? "")';
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/dropzone.min.js"></script>
+    <script src="~/js/lista-camiones.js"></script>
+    
+    <script>
+        // Script adicional para asegurar que las tarjetas son clickeables
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.card-clickable').forEach(card => {
+                card.addEventListener('click', function() {
+                    const driverName = this.getAttribute('data-driver-name');
+                    const driverLicense = this.getAttribute('data-driver-license');
+                    const shipmentId = this.getAttribute('data-shipment-id');
+                    const trailerPlate = this.getAttribute('data-trailer-plate');
+                    const truckPlate = this.getAttribute('data-truck-plate');
+                    const transportista = this.getAttribute('data-transporter');
+                    const cliente = this.getAttribute('data-client');
+                    const producto = this.getAttribute('data-product');
+                    
+                    document.getElementById('driverName').value = driverName || '';
+                    document.getElementById('driverLicense').value = driverLicense || '';
+                    document.getElementById('shipmentId').value = shipmentId || '';
+                    document.getElementById('trailerPlate').value = trailerPlate || '';
+                    document.getElementById('truckPlate').value = truckPlate || '';
+                    document.getElementById('transportista').value = transportista || '';
+                    document.getElementById('cliente').value = cliente || '';
+                    document.getElementById('producto').value = producto || '';
+                    
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    const hours = String(now.getHours()).padStart(2, '0');
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                    
+                    document.getElementById('reportDateTime').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+                    
+                    $('#incidentReportModal').modal('show');
+                });
+            });
+        });
+    </script>
+}
+
+@functions{
+    public DateTime ToLocal(DateTime utc)
+    {
+        if (utc.Kind == DateTimeKind.Unspecified)
+            utc = DateTime.SpecifyKind(utc, DateTimeKind.Utc);
+        return utc.ToLocalTime();
+    }
+
+    public string BuildPageUrl(int page, int size, string startDate, string endDate, string search)
+    {
+        var q = System.Web.HttpUtility.ParseQueryString(string.Empty);
+        q["page"] = page.ToString();
+        q["size"] = size.ToString();
+        if (!string.IsNullOrWhiteSpace(startDate)) q["startDate"] = startDate;
+        if (!string.IsNullOrWhiteSpace(endDate))   q["endDate"]   = endDate;
+        if (!string.IsNullOrWhiteSpace(search))    q["search"]    = search;
+        q["excludeStatus"] = "1";
+        return Url.Action("Index", "ListaCamiones") + "?" + q.ToString();
+    }
+}

@@ -1,0 +1,543 @@
+.conteiner {
+    background-color: #fff;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 77vh;
+}
+
+/* ---------------------------
+   Banner
+----------------------------*/
+.ln-banner {
+  display: flex;
+  align-items: center;
+  background:#182A6E;
+  color: #fff;
+  padding: .5rem 1rem;
+}
+.ln-banner h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+/* Botón agregar */
+.btn-agregar {
+    background-color: none;
+    color: #555;
+    font-weight: 600;
+    border: #555 2px solid; 
+    border-radius: 10px;
+    padding: 0.4rem 0.8rem;
+    margin-right: 65px;
+    margin-bottom: 5px;
+    transition: background-color 0.15s ease, color 0.15s ease
+}
+
+/* Solo efecto al hacer clic */
+.btn-agregar:active {
+    transform: scale(1.05);
+}
+
+
+/* ---------------------------
+   Filtros
+----------------------------*/
+
+
+/* Estilo del formulario */
+.search-container{
+    padding: 5px;
+    cursor: text; /* Cursor de texto para el contenedor de búsqueda */
+}
+
+/* Estilo del input de búsqueda */
+.search-input {
+    border-radius: 10px;
+    font-size: 1rem;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.search-container {
+    display: flex;
+    justify-content: center; /* centra horizontalmente */
+    margin-bottom: 5px; /* opcional */
+    margin-top: 5px;
+    padding: 5px;
+    padding-top: 8px
+}
+
+.search {
+    width: 91%;  /* ajusta aquí el ancho deseado */
+    min-width: 300px; /* opcional: evita que sea demasiado pequeño */
+}
+
+.search-icon-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: #6c757d;
+    font-size: 1rem;
+}
+
+.search-icon-btn:hover {
+    color: #000;
+}
+
+#search {
+    padding-right: 40px !important; /* espacio para la lupa */
+}
+
+
+
+/* MODAL*/
+.modal-header {
+    background: #182A6E;
+    color: white;
+    border-bottom: none;
+}
+.modal-header .close{
+    color: white;
+    opacity: 0.8;
+}
+
+.btn-confirmar{
+    background-color: #182A6E;
+    color: #fff;
+}
+
+.btn-confirmar-anular{
+    background-color: #182A6E;
+    color: #fff;
+}
+
+.btn-cancelar{
+    background-color: red;
+    color: #fff;
+}
+
+.btn-confirmar:hover{
+   background-color: #182A6E;
+    color: #fff;
+}
+
+.btn-cancelar:hover{
+    background-color: red;
+    color: #fff;
+}
+/* Asegura la separación vertical entre campos */
+.modal-columns .form-group {
+    margin-bottom: 18px;
+}
+
+/* Opcional: asegura que ambas columnas tengan el mismo padding */
+.modal-columns .col-md-6 {
+    padding-right: 16px;
+    padding-left: 16px;
+}
+
+/* Para pantallas pequeñas: columnas se apilan */
+@media (max-width: 768px) {
+    .modal-columns .col-md-6 {
+        margin-bottom: 20px;
+    }
+}
+
+/* === Contenedor de la tabla (card) - Estilo ListaTransacciones === */
+.lista-card {
+    background-color: #FFFFFF;
+    border-radius: 1px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+    border: none;
+}
+
+@media (max-width: 992px) {
+    .lista-card {
+        width: 95%;
+    }
+}
+
+.lista-card .card-body {
+    padding: 0;
+}
+
+.lista-card .table-responsive {
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+
+.tabla-correlativos .col-bascula      { width: 10%; }
+.tabla-correlativos .col-inicio       { width: 10%; }
+.tabla-correlativos .col-fin          { width: 10%;  }
+.tabla-correlativos .col-total        { width: 10%;  }
+.tabla-correlativos .col-disponibles  { width: 10%; }
+.tabla-correlativos .col-anulados     { width: 10%;  }
+.tabla-correlativos .col-caja         { width: 10%;  }
+.tabla-correlativos .col-fecha        { width: 15%; }
+.tabla-correlativos .col-opciones {
+  width: 190px;
+  text-align: center;
+}
+
+
+
+/* === Tabla de correlativos === */
+.tabla-correlativos {
+    width: 100%;
+    margin-bottom: 0;
+    border-collapse: collapse;
+    min-width: 1100px;
+}
+
+/* Encabezado - Estilo ListaTransacciones */
+.tabla-correlativos thead {
+    background-color: #f8f6f6;
+    border-bottom: 3px solid #F28C00; /* Línea naranja bajo el encabezado */
+}
+
+.tabla-correlativos thead th {
+    padding: 0.75rem 0.5rem;
+    text-align: left;
+    font-weight: 700;
+    color: #182A6E; /* Headers en azul corporativo */
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    vertical-align: middle;
+    border-top: none;
+    cursor: text; /* Cursor de texto en headers */
+}
+
+/* Filas del cuerpo - Estilo ListaTransacciones */
+.tabla-correlativos tbody tr {
+    background-color: #fff;
+    border-bottom: 1px solid #CDCAC7;
+    transition: all 0.3s ease;
+}
+
+.tabla-correlativos tbody tr:hover {
+    background-color: #dcdcdc;
+    box-shadow: inset 0 0 0 1px #182A6E;
+}
+
+.tabla-correlativos tbody tr:last-child {
+    border-bottom: none;
+}
+
+/* Filas clickeables - cursor pointer */
+.tabla-correlativos tbody .fila-comprobante {
+    cursor: pointer;
+}
+
+/* Excepción: columna de opciones NO debe activar cursor pointer */
+.tabla-correlativos tbody .fila-comprobante .opciones-cell {
+    cursor: default;
+}
+
+/* Celdas - Estilo ListaTransacciones */
+.tabla-correlativos tbody td {
+    padding: 0.75rem 0.5rem;
+    color: #242424;
+    font-size: 0.85rem;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-top: none;
+    text-transform: uppercase;
+}
+
+/* Disponibles en rojo cuando es bajo */
+.tabla-correlativos .disponibles-low {
+    color: #d32f2f; /* rojo similar al mockup */
+    font-weight: 600;
+}
+
+/* === Columna de opciones === */
+/* Contenedor de los iconos */
+.opciones-cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Botón de icono genérico */
+.opciones-cell .btn-icon {
+    border: none;
+    background: transparent;
+    padding: 0 12px;   /* espacio horizontal */
+    cursor: pointer;
+}
+
+.btn-icon:active {
+    transform: scale(1.05);
+}
+
+/* Agrega una línea antes de todo botón que tenga un botón antes (2.º y 3.º) */
+.opciones-cell .btn-icon + .btn-icon {
+    border-left: 1px solid #000;  /* color y grosor del separador */
+}
+
+/* Botones de icono */
+
+.btn-icon {
+    border: none;
+    background: none;
+    color: #495057;
+    font-size: 0.9rem;
+    margin: 0px;
+    padding: 0px;
+}
+
+.btn-icon:focus {
+    outline: none;
+}
+
+.btn-icon:hover {
+    color: #000;
+}
+
+/* Línea vertical separando el lápiz del resto */
+.btn-annul {
+    border-left: 1px solid #bdbdbd;
+    margin-left: 1px;
+    padding-left: 1px;
+}
+
+
+
+
+/* Paginación */
+.pagination .page-link {
+    color: #182A6E;
+}
+
+.pagination .page-item.active .page-link {
+    background: #182A6E;
+    border-color: #182A6E;
+}
+
+/* Paginación numérica */
+.lc-pagination {
+    user-select: none;
+}
+
+.lc-pagination a {
+    text-decoration: none;
+}
+
+.lc-pagination a.page-nav {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid #182A6E;
+    color: #182A6E;
+    margin: 0 .2rem;
+    transition: all .15s ease;
+}
+
+.lc-pagination a.page-nav:hover {
+    background: #182A6E;
+    color: #fff;
+}
+
+.lc-pagination a.page-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 .6rem;
+    margin: 0 .15rem;
+    border-radius: 8px;
+    border: 1px solid #182A6E;
+    color: #182A6E;
+    font-weight: 600;
+    transition: all .15s ease;
+}
+
+.lc-pagination a.page-num:hover {
+    background: #182A6E;
+    color: #fff;
+}
+
+.lc-pagination a.page-num.current {
+    background: #182A6E;
+    color: #fff;
+}
+
+.lc-pagination .ellipsis {
+    padding: 0 .4rem;
+    color: #6b7280;
+    font-weight: 700;
+}
+
+.lc-pagination a.disabled {
+    opacity: .45;
+    pointer-events: none;
+}
+
+/* Controles de paginación */
+.lc-pagination-controls {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 1.5rem;
+    margin-top: 2rem;
+    width: 99%;
+    margin-right: 10px;
+    cursor: text; /* Cursor de texto para el contenedor de paginación */
+}
+
+.lc-pagination-row {
+    min-height: 40px;
+    gap: 1rem;
+}
+
+.lc-pagination-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.1rem;
+}
+
+.lc-pagination-spacer {
+    flex: 1;
+    min-width: 0;
+}
+
+.lc-page-size-selector {
+    flex: 1;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.lc-page-size-selector label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-weight: 500;
+    margin-bottom: 0;
+    margin-right: 0.5rem;
+}
+
+.lc-page-size-selector select {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background-color: white;
+    min-width: 70px;
+    width: auto;
+}
+/* Contenedor que abarca tabla + paginación */
+.cc-content-wrapper {
+    min-height: calc(100vh - 160px); /* ajusta 160px según alto de header+footer */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Esta es la magia: empuja la paginación hacia abajo */
+.cc-content-wrapper > .conteiner-paginacion {
+    margin-top: auto;
+}
+
+/* ============================
+   BOTÓN ICONO DESHABILITADO
+   ============================ */
+
+.btn-icon-disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Asegurarse que no tenga efectos hover cuando está deshabilitado */
+.btn-icon-disabled:hover {
+    transform: none !important;
+    background-color: transparent !important;
+    opacity: 0.4 !important;
+}
+
+/* Si tu CSS tiene transiciones, deshabilitarlas también */
+.btn-icon-disabled {
+    transition: none !important;
+}
+
+/* Color gris opcional para que se vea más "apagado" */
+.btn-icon-disabled i {
+    color: #999 !important;
+}
+
+/* ============================
+   FILA CON RANGO DESHABILITADO (ELIMINADO)
+   ============================ */
+
+.fila-comprobante-disabled {
+    background-color: #f5f5f5 !important;
+    opacity: 0.7;
+}
+
+/* Mantener el fondo gris incluso en hover */
+.fila-comprobante-disabled:hover {
+    background-color: #e9e9e9 !important;
+}
+
+/* Opcional: hacer el texto un poco más gris también */
+.fila-comprobante-disabled td {
+    color: #666;
+}
+
+/* ============================
+   BOTÓN HABILITAR RANGO - DESTACADO EN FILAS DESHABILITADAS
+   ============================ */
+
+/* El botón de habilitar debe verse ACTIVO y destacado cuando la fila está deshabilitada */
+.fila-comprobante-disabled .btn-enable-range {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+/* Color OSCURO como los iconos normales activos - NO afectado por el gris de la fila */
+.fila-comprobante-disabled .btn-enable-range i {
+    color: #333 !important; /* Color oscuro/negro como los iconos activos normales */
+    opacity: 1 !important;
+}
+
+/* Efecto hover para que sea más interactivo */
+.fila-comprobante-disabled .btn-enable-range:hover {
+    transform: scale(1.1) !important;
+    transition: transform 0.2s ease !important;
+}
+
+.fila-comprobante-disabled .btn-enable-range:hover i {
+    color: #000 !important; /* Negro puro en hover para más contraste */
+}
+
+/* ============================
+   COLUMNA OPCIONES - RESPONSIVE
+   ============================ */
+
+/* Siempre mostrar "OPCIONES" completo */
+.col-opciones .opc-short { display: none; }
+.col-opciones .opc-full { display: inline; }
+
+/* Siempre mostrar botones individuales, nunca el menú kebab */
+.solo-desktop { display: flex; }
+.solo-mobile { display: none; }

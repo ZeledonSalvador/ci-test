@@ -1,0 +1,504 @@
+@{
+    var actividad = ViewBag.Actividad as string ?? "Detalle de Transacción";
+    var codeGen = ViewBag.CodeGen as string ?? "";
+    ViewData["Title"] = actividad;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    // Información General
+    var transaccion = ViewBag.Transaccion as string ?? "-";
+    var cliente = ViewBag.Cliente as string ?? "-";
+    var producto = ViewBag.Producto as string ?? "-";
+    var codigoGeneracion = ViewBag.CodigoGeneracion as string ?? "-";
+    var transportista = ViewBag.Transportista as string ?? "-";
+    var camion = ViewBag.Camion as string ?? "-";
+    var remolque = ViewBag.Remolque as string ?? "-";
+    var motorista = ViewBag.Motorista as string ?? "-";
+    var licencia = ViewBag.Licencia as string ?? "-";
+
+    // Control de Pesaje
+    double pesoBrutoAlmapac = ViewBag.PesoBrutoAlmapac ?? 0;
+    double pesoBrutoCliente = ViewBag.PesoBrutoCliente ?? 0;
+    double pesoNetoAlmapac = ViewBag.PesoNetoAlmapac ?? 0;
+    double pesoNetoCliente = ViewBag.PesoNetoCliente ?? 0;
+    double pesoTaraAlmapac = ViewBag.PesoTaraAlmapac ?? 0;
+    double pesoTaraCliente = ViewBag.PesoTaraCliente ?? 0;
+
+    // Diferencias desde la API
+    double difBruto = ViewBag.DifBruto ?? 0;
+    double difNeto = ViewBag.DifNeto ?? 0;
+    double difTara = ViewBag.DifTara ?? 0;
+
+    // Estado de la transacción
+    int currentStatus = ViewBag.CurrentStatus ?? 0;
+
+    // Control de Despacho
+    var tarjeta = ViewBag.Tarjeta as string ?? "";
+    double humedad = ViewBag.Humedad ?? 0;
+    var marchamo1 = ViewBag.Marchamo1 as string ?? "";
+    var marchamo2 = ViewBag.Marchamo2 as string ?? "";
+    var marchamo3 = ViewBag.Marchamo3 as string ?? "";
+    var marchamo4 = ViewBag.Marchamo4 as string ?? "";
+    var comprobante = ViewBag.Comprobante as string ?? "";
+
+    // Flags para saber si ya tiene marchamos/comprobante asignados
+    bool tieneMarchamos = ViewBag.TieneMarchamos ?? false;
+    bool tieneComprobante = ViewBag.TieneComprobante ?? false;
+    bool comprobanteImpreso = ViewBag.ComprobanteImpreso ?? false;
+
+    // Fechas para impresión
+    var fechaEntra = ViewBag.FechaEntra as string ?? "";
+    double pesoIn = ViewBag.PesoIn ?? 0;
+    var fechaSale = ViewBag.FechaSale as string ?? "";
+
+    // Bitácora
+    var bitacora = ViewBag.Bitacora as List<dynamic> ?? new List<dynamic>();
+
+    // Determinar tipo de producto para mostrar/ocultar campos
+    bool esMelaza = producto.ToUpper().Contains("MELAZA");
+}
+
+<input type="hidden" id="hdnCodeGen" value="@codeGen" />
+<input type="hidden" id="hdnCurrentStatus" value="@currentStatus" />
+<input type="hidden" id="hdnFechaEntra" value="@fechaEntra" />
+<input type="hidden" id="hdnPesoIn" value="@pesoIn" />
+<input type="hidden" id="hdnFechaSale" value="@fechaSale" />
+<input type="hidden" id="hdnTieneMarchamos" value="@(tieneMarchamos ? "true" : "false")" />
+<input type="hidden" id="hdnTieneComprobante" value="@(tieneComprobante ? "true" : "false")" />
+<input type="hidden" id="hdnComprobanteImpreso" value="@(comprobanteImpreso ? "true" : "false")" />
+<input type="hidden" id="hdnProducto" value="@producto" />
+
+<!-- Datos de pesajes y consolidado (JSON) -->
+<script type="application/json" id="pesajes-data">@Html.Raw(ViewBag.PesajesJson ?? "[]")</script>
+<script type="application/json" id="consolidado-data">@Html.Raw(ViewBag.ConsolidadoJson ?? "{\"detalle\":[],\"total\":0}")</script>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/detalle-transaccion.css">
+}
+
+<!-- Banner Principal -->
+<section class="lt-banner">
+    <h1>@actividad.ToUpper()</h1>
+</section>
+
+<!-- Contenedor Principal -->
+<div class="container-fluid dt-container">
+    @if (!string.IsNullOrEmpty(ViewBag.Error as string))
+    {
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle"></i> @ViewBag.Error
+        </div>
+    }
+
+    @if (ViewBag.IsInfo == true && !string.IsNullOrEmpty(ViewBag.InfoMessage as string))
+    {
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> @ViewBag.InfoMessage
+        </div>
+    }
+
+    <!-- DEBUG: Mostrar valores -->
+    <div style="display:none;">
+        Debug - Transaccion: @transaccion | Cliente: @cliente | CodeGen: @codeGen
+    </div>
+
+    <!-- Sección: Información General -->
+    <div class="dt-section">
+        <div class="dt-section-header" data-toggle="collapse" data-target="#infoGeneral">
+            <div class="dt-section-title">
+                <i class="far fa-file-alt"></i>
+                <span>Información General</span>
+            </div>
+            <i class="fas fa-chevron-up dt-collapse-icon"></i>
+        </div>
+        <div class="collapse show" id="infoGeneral">
+            <div class="dt-section-body">
+                <div class="row">
+                    <div class="col-md-4 mb-4">
+                        <label class="dt-label">Transacción</label>
+                        <div class="dt-value">@transaccion</div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <label class="dt-label">Cliente</label>
+                        <div class="dt-value">@cliente</div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <label class="dt-label">Producto</label>
+                        <div class="dt-value">@producto</div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-4">
+                        <label class="dt-label">Código de generación</label>
+                        <div class="dt-value">@codigoGeneracion</div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <label class="dt-label">Transportista</label>
+                        <div class="dt-value">@transportista</div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <label class="dt-label">Camión</label>
+                        <div class="dt-value">@camion</div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-4">
+                        <label class="dt-label">Remolque</label>
+                        <div class="dt-value">@remolque</div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <label class="dt-label">Motorista</label>
+                        <div class="dt-value">@motorista</div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <label class="dt-label">Licencia</label>
+                        <div class="dt-value">@licencia</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección: Control de Pesaje -->
+    <div class="dt-section">
+        <div class="dt-section-header" data-toggle="collapse" data-target="#controlPesaje">
+            <div class="dt-section-title">
+                <i class="fa-solid fa-scale-balanced"></i>
+                <span>Control de pesaje</span>
+            </div>
+            <i class="fas fa-chevron-up dt-collapse-icon"></i>
+        </div>
+        <div class="collapse show" id="controlPesaje">
+            <div class="dt-section-body">
+                <!-- Tabs de pesaje -->
+                <ul class="nav nav-tabs dt-nav-tabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="tab-historial-pesajes" data-toggle="tab" href="#historial-pesajes" role="tab">
+                            Historial de pesajes
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="tab-consolidado-pesos" data-toggle="tab" href="#consolidado-pesos" role="tab">
+                            Consolidado de pesos
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Contenido de tabs -->
+                <div class="tab-content dt-tab-content">
+                    <!-- Tab: Historial de pesajes -->
+                    <div class="tab-pane fade show active" id="historial-pesajes" role="tabpanel">
+                        <div id="pesajes-container">
+                            <!-- Los pesajes se cargarán dinámicamente desde JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Tab: Consolidado de pesos -->
+                    <div class="tab-pane fade" id="consolidado-pesos" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="dt-table">
+                                <thead>
+                                    <tr>
+                                        <th># Pesaje</th>
+                                        <th>Peso neto</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="consolidado-tbody">
+                                    <!-- Los datos se cargarán dinámicamente desde JavaScript -->
+                                </tbody>
+                                <tfoot>
+                                    <tr class="dt-row-bold">
+                                        <td>Total</td>
+                                        <td id="consolidado-total">0.00</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección: Control de Despacho -->
+    <div class="dt-section">
+        <div class="dt-section-header" data-toggle="collapse" data-target="#controlDespacho">
+            <div class="dt-section-title">
+                <i class="fa-solid fa-truck"></i>
+                <span>Control de despacho</span>
+            </div>
+            <i class="fas fa-chevron-up dt-collapse-icon"></i>
+        </div>
+        <div class="collapse show" id="controlDespacho">
+            <div class="dt-section-body">
+                @if (esMelaza)
+                {
+                    <!-- Layout para MELAZA: Solo Tarjeta, Marchamo 1 y Comprobante (sin Humedad ni Marchamos 2-4) -->
+                    <div class="row">
+                        <div class="col-md-6 col-lg-4 mb-3" style="max-width: 400px;">
+                            <label class="dt-label">Tarjeta</label>
+                            <div class="dt-input-group">
+                                <input type="text" class="form-control dt-input" id="txtTarjeta" value="@tarjeta" readonly>
+                                <span class="dt-input-spacer"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-4 mb-3" style="max-width: 400px;">
+                            <label class="dt-label">Marchamo 1</label>
+                            <div class="dt-input-group">
+                                <input type="text" class="form-control dt-input" id="txtMarchamo1" value="@marchamo1">
+                                <button type="button" class="btn btn-link dt-btn-anular">Anular</button>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-4 mb-3" style="max-width: 400px;">
+                            <label class="dt-label">Comprobante</label>
+                            <div class="dt-input-group">
+                                <input type="text" class="form-control dt-input" id="txtComprobante" value="@comprobante" readonly>
+                                <button type="button" class="btn btn-link dt-btn-anular">Anular</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Campos ocultos para mantener compatibilidad con JavaScript -->
+                    <input type="hidden" id="txtHumedad" value="0">
+                    <input type="hidden" id="txtMarchamo2" value="">
+                    <input type="hidden" id="txtMarchamo3" value="">
+                    <input type="hidden" id="txtMarchamo4" value="">
+                }
+                else
+                {
+                    <!-- Layout para AZÚCAR: Todos los campos (Tarjeta, Humedad, Comprobante, Marchamos 1-4) -->
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="dt-label">Tarjeta</label>
+                            <div class="dt-input-group">
+                                <input type="text" class="form-control dt-input" id="txtTarjeta" value="@tarjeta" readonly>
+                                <span class="dt-input-spacer"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="dt-label">Humedad</label>
+                            <div class="dt-input-group">
+                                <input type="number" step="0.001" class="form-control dt-input" id="txtHumedad" value="@humedad" @(comprobanteImpreso ? "readonly" : "")>
+                                <span class="dt-input-spacer"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="dt-label">Comprobante</label>
+                            <div class="dt-input-group">
+                                <input type="text" class="form-control dt-input" id="txtComprobante" value="@comprobante" readonly>
+                                <button type="button" class="btn btn-link dt-btn-anular">Anular</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="dt-label">Marchamo 1</label>
+                            <div class="dt-input-group">
+                                <input type="text" class="form-control dt-input" id="txtMarchamo1" value="@marchamo1">
+                                <button type="button" class="btn btn-link dt-btn-anular">Anular</button>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="dt-label">Marchamo 2</label>
+                            <div class="dt-input-group">
+                                <input type="text" class="form-control dt-input" id="txtMarchamo2" value="@marchamo2">
+                                <button type="button" class="btn btn-link dt-btn-anular">Anular</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="dt-label">Marchamo 3</label>
+                            <div class="dt-input-group">
+                                <input type="text" class="form-control dt-input" id="txtMarchamo3" value="@marchamo3">
+                                <button type="button" class="btn btn-link dt-btn-anular">Anular</button>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="dt-label">Marchamo 4</label>
+                            <div class="dt-input-group">
+                                <input type="text" class="form-control dt-input" id="txtMarchamo4" value="@marchamo4">
+                                <button type="button" class="btn btn-link dt-btn-anular">Anular</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección: Bitácora -->
+    <div class="dt-section">
+        <div class="dt-section-header" data-toggle="collapse" data-target="#bitacora">
+            <div class="dt-section-title">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span>Bitácora</span>
+            </div>
+            <div class="dt-header-actions">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="btnAgregarObservacion">
+                    + Agregar observación
+                </button>
+                <i class="fas fa-chevron-up dt-collapse-icon"></i>
+            </div>
+        </div>
+        <div class="collapse show" id="bitacora">
+            <div class="dt-section-body">
+                <div class="dt-timeline">
+                    @if (bitacora.Count > 0)
+                    {
+                        @foreach (var item in bitacora)
+                        {
+                            <div class="dt-timeline-item">
+                                <div class="dt-timeline-icon">
+                                    <i class="far fa-clock"></i>
+                                </div>
+                                <div class="dt-timeline-content">
+                                    <span class="dt-timeline-date">@item.Fecha</span>
+                                    <span class="dt-timeline-user">@item.Usuario</span>
+                                    <span class="dt-timeline-action">@item.Accion</span>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted">No hay registros en la bitácora</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Barra de Acciones -->
+<div class="dt-action-bar">
+    <!-- Extremo izquierdo - Agregar pesaje -->
+    <button type="button" class="btn dt-btn-pesaje" id="btnAgregarPesaje" disabled>
+        <i class="fas fa-plus-circle"></i> Agregar pesaje
+    </button>
+
+    <!-- Acciones principales -->
+    <button type="button" class="btn dt-btn-primary" id="btnGuardar">
+        <i class="fas fa-save"></i> Guardar
+    </button>
+    <button type="button" class="btn dt-btn-success" id="btnImprimir" disabled>
+        <i class="fas fa-print"></i> Imprimir
+    </button>
+    <button type="button" class="btn dt-btn-complete" id="btnCompletar" disabled>
+        <i class="fas fa-check-circle"></i> Completar
+    </button>
+    <button type="button" class="btn dt-btn-outline" id="btnCerrar">
+        <i class="fas fa-times-circle"></i> Cerrar
+    </button>
+</div>
+
+<!-- Modal Agregar Observación -->
+<div class="modal fade" id="modalObservacion" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Agregar Observación</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="txtObservacion">Observación</label>
+                    <textarea class="form-control" id="txtObservacion" rows="4" placeholder="Ingrese la observación..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarObservacion">Agregar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Anular Marchamo -->
+<div class="modal fade" id="modalAnularMarchamo" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tituloAnularMarchamo">Anular Marchamo</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="hdnMarchamoId" />
+                <div class="form-group">
+                    <label for="ddlMotivoMarchamo">Seleccione el motivo de anulación <span class="text-danger">*</span></label>
+                    <select class="form-control" id="ddlMotivoMarchamo">
+                        <option value="">Seleccione un motivo</option>
+                        <option value="Marchamo dañado">Marchamo dañado</option>
+                        <option value="Marchamo incorrecto">Marchamo incorrecto</option>
+                        <option value="Marchamo perdido">Marchamo perdido</option>
+                        <option value="Error de digitación">Error de digitación</option>
+                        <option value="Otro">Otro (especificar)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="grpOtroMotivoMarchamo" style="display: none;">
+                    <label for="txtOtroMotivoMarchamo">Especifique el motivo <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="txtOtroMotivoMarchamo" placeholder="Ingrese el motivo de anulación..." maxlength="100" />
+                </div>
+                <div class="form-group">
+                    <label for="txtObservacionMarchamo">Observaciones adicionales</label>
+                    <textarea class="form-control" id="txtObservacionMarchamo" rows="3" placeholder="Ingrese observaciones adicionales (opcional)..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarAnularMarchamo">
+                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    <span class="btn-text">Anular</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Anular Comprobante -->
+<div class="modal fade" id="modalAnularComprobante" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Anular Comprobante</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="ddlMotivoComprobante">Seleccione el motivo de anulación <span class="text-danger">*</span></label>
+                    <select class="form-control" id="ddlMotivoComprobante">
+                        <option value="">Seleccione un motivo</option>
+                        <option value="Comprobante incorrecto">Comprobante incorrecto</option>
+                        <option value="Error en el número">Error en el número</option>
+                        <option value="Duplicado">Duplicado</option>
+                        <option value="Error de digitación">Error de digitación</option>
+                        <option value="Otro">Otro (especificar)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="grpOtroMotivoComprobante" style="display: none;">
+                    <label for="txtOtroMotivoComprobante">Especifique el motivo <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="txtOtroMotivoComprobante" placeholder="Ingrese el motivo de anulación..." maxlength="100" />
+                </div>
+                <div class="form-group">
+                    <label for="txtObservacionComprobante">Observaciones adicionales</label>
+                    <textarea class="form-control" id="txtObservacionComprobante" rows="3" placeholder="Ingrese observaciones adicionales (opcional)..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarAnularComprobante">
+                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    <span class="btn-text">Anular</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/detalle-transaccion.js"></script>
+}

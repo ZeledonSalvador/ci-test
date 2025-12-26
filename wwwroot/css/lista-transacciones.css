@@ -1,0 +1,490 @@
+/* ==========================================
+   LISTA DE TRANSACCIONES - ESTILOS
+   ========================================== */
+
+/* Variables */
+:root {
+    --primary-blue: #182A6E;
+    --primary-orange: #FD7304;
+    --white: #FFFFFF;
+    --gray-light: #f8f6f6;
+    --gray-medium: #E9ECEF;
+    --gray-dark: #6C757D;
+    --border-color: #CDCAC7;
+    --text-dark: #242424;
+    --text-muted: #6C757D;
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s ease;
+}
+
+/* ==========================================
+   BANNER
+   ========================================== */
+.lt-banner {
+    display: flex;
+    align-items: center;
+    background-color: #182A6E;
+    color: #fff;
+    padding: 0.5rem 1rem;
+}
+
+.lt-banner h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+/* ==========================================
+   CONTENEDOR PRINCIPAL
+   ========================================== */
+/* Se usa container-fluid de Bootstrap, sin estilos adicionales necesarios */
+
+/* ==========================================
+   BARRA DE BÚSQUEDA (Arriba de la tabla)
+   ========================================== */
+.lt-search-bar {
+    /* Estilos básicos, usa Bootstrap grid internamente */
+}
+
+.lt-search-bar input[type="text"] {
+    color: var(--text-dark);
+    font-weight: 500;
+}
+
+.lt-search-bar input[type="text"]::placeholder {
+    color: #999;
+    font-weight: 400;
+}
+
+/* ==========================================
+   FILTROS SIDEBAR
+   ========================================== */
+.lt-filters-sidebar {
+    background-color: var(--white);
+    padding: 1.5rem;
+}
+
+.lt-filter-btn {
+    padding: 0.75rem 1.5rem;
+    background-color: var(--primary-blue);
+    color: var(--white);
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.lt-filter-btn:hover {
+    background-color: #0f1d4a;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    color: var(--white);
+}
+
+.lt-filter-btn:active {
+    transform: translateY(0);
+}
+
+/* ==========================================
+   COLUMNA DE FILTROS
+   ========================================== */
+.lt-filters-column {
+    transition: all 0.3s ease;
+}
+
+.lt-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.lt-filter-label {
+    font-weight: 600;
+    color: var(--text-dark);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.lt-filter-label i {
+    color: var(--primary-blue);
+}
+
+.lt-filter-select,
+.lt-filter-input,
+.form-control {
+    padding: 0.6rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: var(--transition);
+    outline: none;
+    background-color: var(--white);
+    color: var(--text-dark);
+    font-weight: 500;
+}
+
+.lt-filter-select:focus,
+.lt-filter-input:focus,
+.form-control:focus {
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(24, 42, 110, 0.1);
+}
+
+/* Estilos específicos para select */
+select.form-control {
+    appearance: auto;
+    cursor: pointer;
+    padding: 0 12px;
+    height: 44px;
+    line-height: 44px;
+    background: #fff;
+    outline: none;
+}
+
+select.form-control option {
+    color: var(--text-dark);
+    background-color: var(--white);
+    font-weight: 500;
+    padding: 8px 12px;
+    line-height: normal;
+}
+
+select.form-control option:checked,
+select.form-control option:hover {
+    background-color: var(--primary-blue);
+    color: var(--white);
+}
+
+/* Estilos para inputs de fecha */
+input[type="date"].form-control {
+    cursor: pointer;
+    color: var(--text-dark);
+    font-weight: 500;
+    padding: 0 12px;
+    height: 44px;
+    line-height: 44px;
+    background: #fff;
+    outline: none;
+}
+
+input[type="date"].form-control::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: invert(23%) sepia(53%) saturate(1687%) hue-rotate(207deg) brightness(95%) contrast(94%);
+}
+
+.btn-primary {
+    background-color: var(--primary-blue);
+    border-color: var(--primary-blue);
+    color: var(--white);
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.btn-primary:hover {
+    background-color: #0f1d4a;
+    border-color: #0f1d4a;
+    color: var(--white);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+/* ==========================================
+   TABLA
+   ========================================== */
+.lt-table-container {
+    background-color: var(--white);
+    border-radius: 1px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.lt-table-scroll {
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+.lt-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1100px;
+}
+
+.lt-table-header {
+    background-color: var(--gray-light);
+    border-bottom: 3px solid var(--border-color);
+}
+
+.lt-table-header th {
+    padding: 0.75rem 0.5rem;
+    text-align: left;
+    font-weight: 700;
+    color: #575754;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.lt-table-body tr {
+    border-bottom: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+
+.lt-table-body tr:hover {
+    background-color: #dcdcdc;
+    box-shadow: inset 0 0 0 1px var(--primary-blue);
+}
+
+.lt-row-clickable {
+    cursor: pointer;
+}
+
+.lt-row-clickable:active {
+    background-color: #c5c5c5;
+}
+
+.lt-table-body td {
+    padding: 0.75rem 0.5rem;
+    color: var(--text-dark);
+    font-size: 0.85rem;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.lt-table-body tr:last-child {
+    border-bottom: none;
+}
+
+/* ==========================================
+   MENSAJES
+   ========================================== */
+.lt-loading {
+    text-align: center;
+    padding: 3rem 0;
+}
+
+.lt-no-data {
+    text-align: center;
+    padding: 3rem 0;
+    color: var(--text-muted);
+}
+
+.lt-no-data i {
+    margin-bottom: 1rem;
+    color: var(--gray-dark);
+}
+
+.lt-no-data p {
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+/* ==========================================
+   PAGINACIÓN (Estilo Lista de Camiones)
+   ========================================== */
+.lt-pagination {
+    user-select: none;
+}
+
+.lt-pagination a {
+    text-decoration: none;
+}
+
+.lt-pagination a.page-nav {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid #182A6E;
+    color: #182A6E;
+    margin: 0 .2rem;
+    transition: all .15s ease;
+}
+
+.lt-pagination a.page-nav:hover {
+    background: #182A6E;
+    color: #fff;
+}
+
+.lt-pagination a.page-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 .6rem;
+    margin: 0 .15rem;
+    border-radius: 8px;
+    border: 1px solid #182A6E;
+    color: #182A6E;
+    font-weight: 600;
+    transition: all .15s ease;
+}
+
+.lt-pagination a.page-num:hover {
+    background: #182A6E;
+    color: #fff;
+}
+
+.lt-pagination a.page-num.current {
+    background: #182A6E;
+    color: #fff;
+}
+
+.lt-pagination .ellipsis {
+    padding: 0 .4rem;
+    color: #6b7280;
+    font-weight: 700;
+}
+
+.lt-pagination a.disabled {
+    opacity: .45;
+    pointer-events: none;
+}
+
+.lt-pagination-controls {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 1.5rem;
+    margin-top: 2rem;
+}
+
+.lt-pagination-row {
+    min-height: 40px;
+    gap: 1rem;
+}
+
+.lt-pagination-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.1rem;
+}
+
+.lt-pagination-info {
+    flex: 1;
+    white-space: nowrap;
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.lt-page-size-selector {
+    flex: 1;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.lt-page-size-selector label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-weight: 500;
+    margin-bottom: 0;
+    margin-right: 0.5rem;
+}
+
+.lt-page-size-selector select {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: #fff;
+    min-width: 70px;
+    width: auto;
+}
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+
+/* Tablets */
+@media (max-width: 768px) {
+    .lt-banner h1 {
+        font-size: 1.25rem;
+    }
+
+    .lt-filters-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .lt-pagination-row {
+        gap: 1rem;
+    }
+
+    .lt-page-size-selector {
+        justify-content: center;
+    }
+
+    .lt-table-header th {
+        font-size: 0.8rem;
+        padding: 0.75rem 0.5rem;
+    }
+
+    .lt-table-body td {
+        font-size: 0.85rem;
+        padding: 0.75rem 0.5rem;
+    }
+}
+
+/* Móviles */
+@media (max-width: 576px) {
+    .lt-banner h1 {
+        font-size: 1.1rem;
+    }
+
+    .lt-search-bar {
+        flex-direction: column;
+    }
+
+    .lt-search-input,
+    .lt-filter-btn {
+        width: 100%;
+    }
+
+    .lt-pagination a.page-nav,
+    .lt-pagination a.page-num {
+        padding: 0.4rem 0.6rem;
+        min-width: 35px;
+        font-size: 0.85rem;
+    }
+
+    .lt-pagination .ellipsis {
+        padding: 0 0.2rem;
+    }
+
+    .lt-page-size-selector label {
+        font-size: 0.75rem;
+    }
+
+    .lt-page-size-selector select {
+        font-size: 0.8rem;
+        padding: 0.2rem 0.4rem;
+        min-width: 60px;
+    }
+
+    .lt-table-header th {
+        font-size: 0.75rem;
+        padding: 0.6rem 0.4rem;
+    }
+
+    .lt-table-body td {
+        font-size: 0.8rem;
+        padding: 0.6rem 0.4rem;
+    }
+}

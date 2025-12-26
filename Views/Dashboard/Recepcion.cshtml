@@ -1,0 +1,25 @@
+@{
+    ViewData["Title"] = "Hoy";   // corto, día actual
+    Layout = "_Layout";
+}
+
+@section Styles {
+  <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync("_DashboardContent")
+@await Html.PartialAsync("_DashSwitcher")
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2"></script>
+    <script>
+        // Registrar el plugin de zoom/pan cuando se carga por CDN
+        (function () {
+            const zoomPlugin = window['chartjs-plugin-zoom'] || window.ChartZoom;
+            if (zoomPlugin) Chart.register(zoomPlugin);
+        })();
+    </script>
+    <script src="~/js/dash-core.js?v=20250828"></script>    
+    <script src="~/js/dash-hoy-horas.js?v=20250828"></script>
+}}

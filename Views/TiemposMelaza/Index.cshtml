@@ -1,0 +1,196 @@
+@model FrontendQuickpass.Models.TiemposMelazaViewModel
+@{
+    ViewData["Title"] = "Recepción Melaza";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/menu-navigation.css" />
+    <link rel="stylesheet" href="~/css/solicitud-unidades.css" />
+    <link rel="stylesheet" href="~/css/estaciones-melaza.css" />
+    <link rel="stylesheet" href="~/css/estaciones-melaza-states.css" />
+    <link rel="stylesheet" href="~/css/brix-unidades.css" />
+    <link rel="stylesheet" href="~/css/unidades-enfriamiento.css" />
+}
+
+<!-- Header con título -->
+<section class="custom-header">
+    <div class="header-content">
+        <h1>RECEPCIÓN DE MELAZA</h1>
+    </div>
+</section>
+
+@* Token anti-falsificación para peticiones AJAX *@
+@Html.AntiForgeryToken()
+
+<!-- Menú de navegación -->
+<nav class="bottom-menu" id="navigationMenu">
+    <ul>
+        <div class="menu-melaza-item" data-component="solicitud-unidades" data-index="0">
+            <a href="#">
+                <span class="menu-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" viewBox="0 0 24 24"><path fill="currentColor" d="M20 8h-5v6H2v3h1c0 1.7 1.3 3 3 3s3-1.3 3-3h6c0 1.7 1.3 3 3 3s3-1.3 3-3h2v-5zM6 18.5c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5s1.5.7 1.5 1.5s-.7 1.5-1.5 1.5m12 0c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5s1.5.7 1.5 1.5s-.7 1.5-1.5 1.5M17 12V9.5h2.5l2 2.5zm-3-2.5c0 1.9-1.6 3.5-3.5 3.5h-6C2.6 13 1 11.4 1 9.5S2.6 6 4.5 6H5V5H4V4h4v1H7v1h3.5C12.4 6 14 7.6 14 9.5"/></svg>
+                </span>
+                <span class="menu-label">Solicitar</span>
+            </a>
+        </div>
+        <div class="menu-melaza-item" data-component="descarga-unidades" data-index="1">
+            <a href="#">
+                <span class="menu-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" viewBox="0 0 24 24"><path fill="currentColor" d="M9 3V1h6v2zm2 11h2V8h-2zm1 8q-1.85 0-3.488-.712T5.65 19.35t-1.937-2.863T3 13t.713-3.488T5.65 6.65t2.863-1.937T12 4q1.55 0 2.975.5t2.675 1.45l1.4-1.4l1.4 1.4l-1.4 1.4Q20 8.6 20.5 10.025T21 13q0 1.85-.713 3.488T18.35 19.35t-2.863 1.938T12 22"/></svg>
+                </span>
+                <span class="menu-label">Descarga</span>
+            </a>
+        </div>
+        <div class="menu-melaza-item" data-component="brix-unidades" data-index="2">
+            <a href="#">
+                <span class="menu-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M14.495 3.25H8.5a.75.75 0 0 0 0 1.5h.26v5.087a7.25 7.25 0 0 1-1.256 4.078l-3.093 4.548a1.855 1.855 0 0 0 1.326 2.887l.087.01l.017.002c4.093.46 8.225.46 12.318 0l.018-.002l.086-.01a1.855 1.855 0 0 0 1.326-2.887l-3.093-4.548a7.25 7.25 0 0 1-1.256-4.078V4.75h.26a.75.75 0 0 0 0-1.5zm-4.666 9.3h4.342a8.8 8.8 0 0 1-.43-2.713V4.75H10.26v5.087a8.8 8.8 0 0 1-.431 2.713M10 17a1 1 0 1 0 0 2a1 1 0 0 0 0-2m2-1a1 1 0 1 1 2 0a1 1 0 0 1-2 0" clip-rule="evenodd"/></svg>
+                </span>
+                <span class="menu-label">Brix</span>
+            </a>
+        </div>
+        <div class="menu-melaza-item" data-component="enfriamiento-unidades" data-index="3">
+            <a href="#">
+                <span class="menu-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" viewBox="0 0 24 24"><path fill="currentColor" d="M13 3a1 1 0 1 0-2 0v2.586l-1.95-1.95A1 1 0 1 0 7.636 5.05L11 8.414V11H8.414L5.05 7.636A1 1 0 1 0 3.636 9.05L5.586 11H3a1 1 0 1 0 0 2h2.586l-1.95 1.95a1 1 0 1 0 1.414 1.414L8.414 13H11v2.586L7.636 18.95a1 1 0 1 0 1.414 1.414l1.95-1.95V21a1 1 0 1 0 2 0v-2.586l1.95 1.95a1 1 0 1 0 1.414-1.414L13 15.586V13h2.586l3.364 3.364a1 1 0 1 0 1.414-1.414L18.414 13H21a1 1 0 1 0 0-2h-2.586l1.95-1.95a1 1 0 1 0-1.414-1.414L15.586 11H13V8.414l3.364-3.364a1 1 0 0 0-1.414-1.414L13 5.586z"/></svg>
+                </span>
+                <span class="menu-label">Enfriamiento</span>
+            </a>
+        </div>
+
+        <!-- Indicador -->
+        <div class="indicator"></div>
+    </ul>
+</nav>
+
+<!-- Contenedor principal de componentes -->
+<main class="container mx-auto" id="rootTiemposMelaza">
+    <div id="componentesContainer">
+        <div id="component-solicitud-unidades" class="component-section hidden">
+            @await Html.PartialAsync("_SolicitudUnidades", Model)
+        </div>
+
+        <div id="component-descarga-unidades" class="component-section hidden">
+            @await Html.PartialAsync("_EstacionesMelaza", Model)
+        </div>
+
+        <div id="component-brix-unidades" class="component-section hidden">
+            @await Html.PartialAsync("_BrixUnidades", Model)
+        </div>
+
+        <div id="component-enfriamiento-unidades" class="component-section hidden">
+            @await Html.PartialAsync("_UnidadesEnfriamiento", Model)
+        </div>
+    </div>
+</main>
+
+<!-- Script inline para establecer estado inicial -->
+<script>
+(function () {
+    try {
+        // Array exacto que debe coincidir con JS
+        const components = ['solicitud-unidades', 'descarga-unidades', 'brix-unidades', 'enfriamiento-unidades'];
+
+        let currentComponent = localStorage.getItem('currentMenuComponent');
+        let currentIndex = components.indexOf(currentComponent);
+
+        // Validación estricta del índice
+        if (currentIndex === -1 || currentComponent === null) {
+            currentComponent = components[0]; // 'solicitud-unidades'
+            currentIndex = 0;
+            try {
+                localStorage.setItem('currentMenuComponent', currentComponent);
+            } catch (e) {
+                console.warn('No se pudo guardar en localStorage:', e);
+            }
+        }
+
+        // Debug: Verificar correspondencia
+        console.log('🔍 Estado inicial detectado:', {
+            currentComponent,
+            currentIndex,
+            componentsArray: components,
+            indexValidation: components[currentIndex] === currentComponent
+        });
+
+        // Guardar en window para sincronización
+        window._menuInitialState = {
+            currentComponent,
+            currentIndex,
+            components,
+            isReady: false
+        };
+
+        function setInitialState() {
+            const menu = document.getElementById('navigationMenu');
+            const menuItems = document.querySelectorAll('.menu-melaza-item');
+
+            if (!menu || !menuItems.length) {
+                setTimeout(setInitialState, 50);
+                return;
+            }
+
+            // Verificar que los elementos HTML coinciden con el array
+            const htmlComponents = Array.from(menuItems).map(item => item.getAttribute('data-component'));
+            console.log('🔍 Componentes en HTML:', htmlComponents);
+            console.log('🔍 Componentes en JS:', components);
+            console.log('🔍 Arrays coinciden:', JSON.stringify(htmlComponents) === JSON.stringify(components));
+
+            // Establecer atributos
+            menu.setAttribute('data-active', currentIndex.toString());
+            menu.setAttribute('data-initial-component', currentComponent);
+
+            // Activar item correcto
+            menuItems.forEach((item, index) => {
+                const comp = item.getAttribute('data-component');
+                const dataIndex = item.getAttribute('data-index');
+                item.classList.toggle('active', comp === currentComponent);
+                
+                // Debug adicional
+                if (comp === currentComponent) {
+                    console.log(`🎯 Item activo encontrado: ${comp} en posición ${index}, data-index: ${dataIndex}`);
+                }
+            });
+
+            // Mostrar sección correcta
+            components.forEach((name, index) => {
+                const el = document.getElementById(`component-${name}`);
+                if (!el) return;
+                const isActive = name === currentComponent;
+                el.classList.toggle('hidden', !isActive);
+                el.classList.toggle('active', isActive);
+                
+                if (isActive) {
+                    console.log(`📍 Componente activo: ${name} (índice: ${index})`);
+                }
+            });
+
+            // Marcar como listo
+            window._menuInitialState.isReady = true;
+
+            console.log('✅ Estado inicial establecido correctamente');
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setInitialState);
+        } else {
+            setInitialState();
+        }
+    } catch (error) {
+        console.error('❌ Error estableciendo estado inicial:', error);
+    }
+})();
+
+// Pasar datos iniciales al JavaScript
+window.initialUnidadesDescarga = @Html.Raw(Json.Serialize(Model.UnidadesPorPileta.Values.ToList()));
+console.log('Datos iniciales cargados:', window.initialUnidadesDescarga);
+</script>
+
+@section Scripts {
+    <script defer src="~/js/menu-navigation.js"></script>
+    <script defer src="~/js/solicitud-unidades.js"></script>
+    <script defer src="~/js/estaciones-melaza.js"></script>
+    <script defer src="~/js/brix-unidades.js"></script>
+    <script defer src="~/js/unidades-enfriamiento.js"></script>
+}

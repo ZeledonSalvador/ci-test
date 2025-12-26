@@ -1,0 +1,202 @@
+/* ====== COMPONENTE SOLICITUD DE UNIDADES - DISEÑO EXACTO ====== */
+
+.solicitud-container {
+    padding: 1rem;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    justify-content: center;
+}
+
+/* ====== LABELS DE SECCIÓN ====== */
+.section-label {
+    text-align: center;
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #333;
+    letter-spacing: 0.5px;
+    margin: 20px auto;
+}
+
+/* ====== SECCIÓN UNIDADES EN ESPERA ====== */
+.unidades-espera-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.unidades-espera-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.280);
+    border: 1px solid #e5e7eb;
+    padding: 1.5rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.unit-type-label {
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-size: 1.1rem;
+    color: #333;
+    font-weight: 600;
+}
+
+.unit-count {
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-size: 3rem;
+    color: #333;
+    font-weight: bold;
+    line-height: 1;
+}
+
+/* ====== SECCIÓN SOLICITAR UNIDADES ====== */
+.solicitar-unidades-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.solicitar-unidades-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    position: relative;
+    height: 8rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.280);
+}
+
+.counter-btn-side {
+    width: 60px;
+    height: 100%;
+    border: none;
+    background: #D9D9D9;
+    color: #000000;
+    font-size: 2rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.counter-btn-left {
+    border-radius: 12px 0 0 12px;
+}
+
+.counter-btn-right {
+    border-radius: 0 12px 12px 0;
+}
+
+.counter-btn-side:hover {
+    background: #707070;
+    color: #fff;
+}
+
+.counter-btn-side:active {
+    background: #808080;
+    color: #fff;
+}
+
+.counter-btn-side:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #D9D9D9 !important;
+    color: #000000 !important;
+}
+
+.center-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0 1rem;
+}
+
+.counter-value {
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 0.4rem 0.8rem;
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #333;
+    min-width: 50px;
+    text-align: center;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.counter-value:focus {
+    border-color: #FF7300;
+    box-shadow: 0 0 0 2px rgba(255, 115, 0, 0.2);
+}
+
+.counter-value.changed {
+    background: #fef3c7;
+    border-color: #f59e0b;
+}
+
+.counter-value:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: #f5f5f5;
+}
+
+/* ====== BOTÓN SOLICITAR ====== */
+.btn-solicitar-main {
+    background: #FF7300;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 2rem;
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-size: 1.3rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(255, 115, 0, 0.2);
+    align-self: center;
+}
+
+.btn-solicitar-main:hover:not(:disabled) {
+    background: #e85d00;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(255, 115, 0, 0.3);
+}
+
+.btn-solicitar-main:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.btn-solicitar-main:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background: #FF7300;
+}
+
+/* ====== UTILIDADES DE VISIBILIDAD ====== */
+.component-section {
+    display: none;
+}
+
+.component-section.active {
+    display: block;
+}
+
+.hidden {
+    display: none !important;
+}

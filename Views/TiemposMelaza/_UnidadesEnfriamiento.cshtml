@@ -1,0 +1,30 @@
+@model FrontendQuickpass.Models.TiemposMelazaViewModel
+
+<div id="component-enfriamiento-unidades" class="enfriamiento-container">
+    <h2 class="enfriamiento-title">UNIDADES EN ENFRIAMIENTO</h2>
+
+    <div id="enfriamientoList" class="enfriamiento-list">
+        <!-- Loading visible al inicio -->
+        <div class="melaza-loading" id="enfriamientoLoading">
+            <div class="spinner"></div>
+            <p>Cargando unidades...</p>
+        </div>
+
+        <!-- Contenido (oculto inicialmente) -->
+        <div id="enfriamientoContainer" style="display:none;"></div>
+
+        <!-- Estado vacío (oculto inicialmente) -->
+        <div class="melaza-empty-state" id="enfriamientoEmpty" style="display:none;">
+            <i class="fas fa-snowflake"></i>
+            <h3>Sin unidades en enfriamiento</h3>
+            <p>No hay unidades en proceso de enfriamiento en este momento.</p>
+        </div>
+
+        <!-- Estado de error (oculto inicialmente) -->
+        <div class="melaza-empty-state" id="enfriamientoError" style="display:none;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>Error</h3>
+            <p id="enfriamientoErrorMessage">Error al cargar las unidades</p>
+        </div>
+    </div>
+</div>

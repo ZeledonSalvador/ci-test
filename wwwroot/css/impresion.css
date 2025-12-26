@@ -1,0 +1,255 @@
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10px;
+    margin: 0;
+}
+
+.page {
+    width: 190mm;
+    margin: 0 auto;
+}
+
+/* ================= HEADER EN 4 PARTES IGUALES ================= */
+.header-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    /* 4 columnas iguales */
+    align-items: center;
+    margin-top: 16px;
+    margin-bottom: 20px;
+}
+
+/* Cada celda del header */
+.header-cell {
+    text-align: center;
+    /* por defecto centrado */
+}
+
+/* Logo principal (ALMAPAC) – de momento igual que los otros */
+.header-cell-main img {
+    max-height: 55px;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+/* Logos pequeños (Icontec / IQNet) */
+.header-cell img {
+    max-height: 40px;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+/* Texto de la planta en la 4ª columna */
+.header-plant-info {
+    text-align: right;
+    text-transform: uppercase;
+    font-size: 11px;
+    line-height: 1.3;
+    padding-right: 8px;
+}
+
+.header-plant-info .plant-name {
+    font-weight: 700;
+}
+
+.header-plant-info .label-numero {
+    font-weight: 600;
+}
+
+.header-plant-info .numero-comprobante {
+    font-weight: 700;
+    color: #f39c12;
+    /* luego lo afinamos si quieres otro tono */
+}
+
+
+/* ============ BLOQUE PRINCIPAL ============ */
+.box-main {
+    border: 1px solid #004b9b;
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-radius: 2px;
+    padding: 4mm 6mm;
+    box-sizing: border-box;
+}
+
+.box-main-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.box-main-table td {
+    vertical-align: top;
+    padding: 1px 0;
+}
+
+.col-labels {
+    width: 40%;
+    border-right: 1px solid #004b9b;
+    padding-right: 5mm;
+}
+
+.col-values {
+    width: 45%;
+    padding-left: 5mm;
+}
+
+.col-kilos {
+    width: 15%;
+    text-align: right;
+    padding-left: 2mm;
+}
+
+.field-label {
+    font-weight: 700;
+    color: #004b9b;
+    text-transform: uppercase;
+    letter-spacing: 0.25px;
+    line-height: 1.2;
+}
+
+.field-value,
+.field-kilos {
+    font-weight: 600;
+    color: #222;
+    text-transform: uppercase;
+    letter-spacing: 0.25px;
+    line-height: 1.2;
+}
+
+/* separadores entre bloques dentro del cuadro */
+.box-main-table tr.separator-row td {
+    height: 3mm;
+}
+
+/* ============ BLOQUE OBSERVACIONES ============ */
+.box-observaciones {
+    margin-top: 3mm;
+    border: 1px solid #004b9b;
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-radius: 2px;
+    padding: 2mm 4mm 9mm 4mm;
+    box-sizing: border-box;
+}
+
+.obs-title {
+    font-weight: 700;
+    color: #004b9b;
+    text-transform: uppercase;
+    margin-bottom: 1.5mm;
+}
+
+.obs-body {
+    min-height: 10mm;
+}
+
+/* ============ BLOQUE INFERIOR ============ */
+.box-bottom {
+    margin-top: 4mm;
+    display: grid;
+    grid-template-columns: 3.4fr 1.2fr;
+    column-gap: 3mm;
+    align-items: stretch;
+}
+
+.box-firmas {
+    border: 1px solid #004b9b;
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-radius: 2px;
+    padding: 3mm 5mm 7mm 5mm;
+    box-sizing: border-box;
+}
+
+.firmas-lines {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 8mm;
+    margin-top: 8mm;
+}
+
+.firma-line {
+    border-top: 1px solid #000;
+    text-align: center;
+    padding-top: 1mm;
+    font-size: 9px;
+    text-transform: uppercase;
+}
+
+.box-almapac {
+    border: 1px solid #004b9b;
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-radius: 2px;
+    padding: 3mm 4mm;
+    box-sizing: border-box;
+    font-size: 9px;
+    text-transform: uppercase;
+}
+
+.box-almapac-title {
+    font-weight: 700;
+    margin-bottom: 2mm;
+    text-align: center;
+}
+
+.check-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5mm;
+}
+
+.check-square {
+    width: 8px;
+    height: 8px;
+    border: 1px solid #004b9b;
+    margin-right: 3px;
+}
+
+/* ============ LEYENDA Y PIE ============ */
+.leyenda {
+    margin-top: 3mm;
+    font-size: 8px;
+    text-align: justify;
+    line-height: 1.25;
+}
+
+.pie-final {
+    margin-top: 3mm;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: flex-end;
+}
+
+.pie-original {
+    color: #c0392b;
+    font-weight: 700;
+    font-size: 9.5px;
+    text-transform: uppercase;
+    text-align: center;
+}
+
+.pie-codigo {
+    border: 1px solid #004b9b;
+    border-radius: 2px;
+    padding: 1.5mm 3mm;
+    font-size: 8px;
+}
+
+.pie-codigo-title {
+    font-weight: 700;
+    margin-bottom: 1mm;
+    text-align: center;
+}
+
+.pie-codigo-row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.pie-codigo-ed {
+    text-align: center;
+    margin-top: 1mm;
+    font-size: 9px;
+}

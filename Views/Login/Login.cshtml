@@ -1,0 +1,237 @@
+@{
+    Layout = "~/Views/Shared/_Login.cshtml";
+    ViewData["Title"] = "Login";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/login.css" />
+}
+
+<body>
+    <form asp-controller="Login" asp-action="Index" method="post" id="loginForm">
+        <div class="wrapper fadeInDown">
+            <div id="formContent" style="border: solid 0px">
+
+                <!-- Usuario -->
+                <div class="input-group">
+                    <div class="input-group-icon">
+                        <img src="~/assets/user-svgrepo-com.svg"
+                             alt="Usuario" width="30" height="30" style="filter: invert(100%);" />
+                    </div>
+                    <input type="text" class="form-control" placeholder="Usuario" name="Usuario" id="Usuario" />
+                </div>
+
+                <!-- Contraseña -->
+                <div class="input-group">
+                    <div class="input-group-icon">
+                        <img src="~/assets/key-svgrepo-com.svg"
+                             alt="Contraseña" width="30" height="30" />
+                    </div>
+                    <input type="password" class="form-control" placeholder="Contraseña" name="Clave" id="Clave"
+                           autocomplete="off" />
+                </div>
+
+                <!-- Báscula -->
+                <div class="input-group">
+                    <div class="input-group-icon">
+                        <img src="~/assets/industrial-scales-svgrepo-com.svg"
+                             alt="Báscula" width="30" height="30" style="filter: invert(100%)" />
+                    </div>
+                    <select name="Bascula" id="Bascula" class="form-control" style="height: 60px; color: #646C72; font-weight: normal;">
+                        <option value="0">-Seleccione la Báscula-</option>
+                        <option value="1">Báscula 1</option>
+                        <option value="2">Báscula 2</option>
+                        <option value="3">Báscula 3</option>
+                        <option value="4">Báscula 4</option>
+                        <option value="5">Báscula 5</option>
+                        <option value="6">Báscula 6</option>
+                    </select>
+                </div>
+
+                <!-- Turno -->
+                <div class="input-group">
+                    <div class="input-group-icon">
+                        <img src="~/assets/time-svgrepo-com.svg"
+                             alt="Turno" width="30" height="30" style="filter: invert(100%);" />
+                    </div>
+                    <select name="Turno" id="Turno" class="form-control" style="height: 60px; color: #646C72; font-weight: normal;">
+                        <option value="0">-Seleccione un Turno-</option>
+                        <option value="1">6:00 a 14:00</option>
+                        <option value="2">14:00 a 22:00</option>
+                        <option value="3">22:00 a 6:00</option>
+                    </select>
+                </div>
+
+                <!-- Botón Login -->
+                <button type="submit" class="fadeIn mt-4"
+                        style="animation: fadeIn 1s ease-out forwards;
+                               background-color: white; color: #333; font-size: 16px;
+                               font-weight: bold; padding: 12px 40px; border-radius: 8px;
+                               border: none; cursor: pointer; transition: background-color 0.3s ease;
+                               width: 40%; margin: 0 auto;"
+                        onmouseover="this.style.backgroundColor='#f1f1f1';"
+                        onmouseout="this.style.backgroundColor='white';">
+                    LOGIN
+                </button>
+            </div>
+        </div>
+    </form>
+</body>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            console.log('🚀 Inicializando página de login...');
+
+
+            window.AlmapacUtils.hideSpinner();
+
+            // ===== MANEJO DE MENSAJES DESDE TEMPDATA =====
+
+            // Mostrar mensaje de cierre de sesión (info)
+            @if (TempData["MensajeInfo"] != null)
+            {
+                <text>
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Sesión cerrada',
+                    text: @Json.Serialize(TempData["MensajeInfo"]),
+                    confirmButtonText: 'Entendido'
+                });
+                </text>
+            }
+            
+            // Mostrar mensajes de error desde TempData
+            @if (TempData["MensajeError"] != null)
+            {
+                <text>
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de autenticación',
+                    text: @Json.Serialize(TempData["MensajeError"]),
+                    confirmButtonText: 'Entendido'
+                });
+                </text>
+            }
+            
+            // Mostrar mensajes de advertencia desde TempData
+            @if (TempData["MensajeWarning"] != null)
+            {
+                <text>
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Advertencia',
+                    text: @Json.Serialize(TempData["MensajeWarning"]),
+                    confirmButtonText: 'Entendido'
+                });
+                </text>
+            }
+            
+            // ===== COMPATIBILIDAD CON PARÁMETROS URL (LEGACY) =====
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get("error") === "1") {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'La contraseña es incorrecta.',
+                    confirmButtonText: 'Entendido'
+                });
+            } else if (urlParams.get("error") === "2") {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Campos vacíos',
+                    text: 'Por favor, complete todos los campos.',
+                    confirmButtonText: 'Entendido'
+                });
+            }
+            
+            // ===== VALIDACIÓN Y ENVÍO DEL FORMULARIO =====
+            $("#loginForm").submit(function(e) {
+                return procesarLogin(e);
+            });
+            
+            // ===== ACTIVAR LOGIN CON ENTER EN TODOS LOS CAMPOS =====
+            $('#Usuario, #Clave, #Bascula, #Turno').on('keypress', function(e) {
+                if (e.which === 13) {
+                    e.preventDefault();
+                    procesarLogin(e);
+                }
+            });
+            
+            // ===== FOCUS AUTOMÁTICO =====
+            $("#Usuario").focus();
+            
+            // ===== CONFIGURAR TOGGLE DE CONTRASEÑA =====
+            setupPasswordToggle();
+        });
+        
+        // ===== FUNCIÓN CENTRALIZADA PARA PROCESAR EL LOGIN =====
+        function procesarLogin(e) {
+            var usuario  = $("#Usuario").val().trim();
+            var clave    = $("#Clave").val().trim();
+            var bascula  = $("#Bascula").val();
+            var turno    = $("#Turno").val();
+            
+            console.log('🔐 Validando campos de login...');
+            
+            // VALIDACIÓN DE CAMPOS OBLIGATORIOS
+            if (!usuario || !clave || bascula === "0" || turno === "0") {
+                if (e) e.preventDefault();
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Campos incompletos',
+                    text: 'Debe completar todos los campos para continuar.',
+                    confirmButtonColor: '#ffc107',
+                    confirmButtonText: 'Entendido'
+                });
+                
+                // Focus en el primer campo vacío
+                if (!usuario) $("#Usuario").focus();
+                else if (!clave) $("#Clave").focus();
+                else if (bascula === "0") $("#Bascula").focus();
+                else if (turno === "0") $("#Turno").focus();
+                
+                return false;
+            }
+            
+            console.log('✅ Campos validados correctamente, enviando formulario...');
+            // PERMITIR ENVÍO DEL FORMULARIO
+            return true;
+        }
+        
+        // ===== CONFIGURAR TOGGLE DE CONTRASEÑA =====
+        function setupPasswordToggle() {
+            const togglePassword = $(`
+                <button type="button" class="toggle-password" 
+                        style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); 
+                               background: transparent; border: none; color: #fff; cursor: pointer; 
+                               z-index: 10; outline: none;">
+                    <i class="fas fa-eye"></i>
+                </button>
+            `);
+            
+            const passwordField = $("#Clave");
+            if (passwordField.length) {
+                passwordField.parent().css('position', 'relative');
+                passwordField.parent().append(togglePassword);
+                
+                togglePassword.on('click', function() {
+                    const type = passwordField.attr('type') === 'password' ? 'text' : 'password';
+                    passwordField.attr('type', type);
+                    
+                    // Cambiar el ícono
+                    const icon = type === 'password' ? 'fa-eye' : 'fa-eye-slash';
+                    $(this).html(`<i class="fas ${icon}"></i>`);
+                    
+                    // Mantener el focus en el campo de contraseña
+                    passwordField.focus();
+                });
+            }
+        }
+
+        // Limpiar sessionStorage al cargar la página de login (cierre de sesión)
+        console.log('Limpiando sessionStorage en página de login...');
+        sessionStorage.clear();
+        console.log('✅ SessionStorage limpiado completamente');
+    </script>
+}

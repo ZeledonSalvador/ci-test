@@ -1,0 +1,311 @@
+@model List<FrontendQuickpass.Models.AutorizacionPortonModel>
+
+@{
+    ViewData["Title"] = "Autorización Portón";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var inconsistencias = ViewBag.Inconsistencias as List<FrontendQuickpass.Models.AutorizacionPortonModel> ?? new List<FrontendQuickpass.Models.AutorizacionPortonModel>();
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/autorizacion-porton.css" />
+}
+
+<!-- Banner -->
+<section class="custom-banner">
+    <h1>Chequeo de Entrada</h1>
+</section>
+
+<!-- Main Content -->
+<div class="container-fluid">
+    <!-- UNIDADES OPERATIVAS -->
+    <div class="row mt-3">
+        @foreach (var item in Model)
+        {
+            var tipo = item.Vehicle?.TruckType;
+            var tipoTexto = tipo == "V" ? "VOLTEO" : tipo == "R" ? "PLANA" : "PIPA";
+            var tipoClase = tipo == "V" ? "bg-dark" : tipo == "R" ? "bg-blue" : "bg-blue";
+            var fechaPrecheckeo = item.DateTimeCurrentStatus.HasValue
+                ? DateTime.SpecifyKind(item.DateTimeCurrentStatus.Value, DateTimeKind.Utc).ToLocalTime()
+                : (DateTime?)null;
+
+
+            <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                <div class="card border rounded-6 h-100 d-flex flex-column">
+
+                    <!-- Header de la tarjeta con etiqueta pequeña -->
+                    <div class="card-header-small">
+                        <span class="vehicle-type-badge-small @tipoClase">
+                            @tipoTexto
+                        </span>
+                    </div>
+
+                    <a href="#" class="btn card-clickable" data-toggle="modal" data-target="#rutaModal"
+                        data-trucktype="@item.Vehicle?.TruckType" data-codigo-generacion="@item.CodeGen"
+                        data-nombre-ingenio="@item.Ingenio?.Name" data-nombre-motorista="@item.Driver?.Name">
+
+                        <div class="card-body">
+                            <p class="text-start" style="font-size: 0.9rem;">
+                                <i class="fas fa-industry text-primary"></i> <strong>Ingenio:</strong>
+                            </p>
+                            <p class="text-muted mb-1 text-start name-wrap min-w-0" style="font-size: 0.85rem;"
+                                title='@item.Ingenio?.Name?.Replace("_", " ")'>
+                                @item.Ingenio?.Name?.Replace("_", " ")
+                            </p>
+
+                            <p class="text-start" style="font-size: 0.9rem;"><i class="fas fa-user text-primary"></i>
+                                <strong>Motorista:</strong>
+                            </p>
+                            <p class="text-muted mb-1 text-start name-wrap min-w-0" style="font-size: 0.85rem;"
+                                title="@item.Driver?.Name">
+                                @item.Driver?.Name
+                            </p>
+
+                            <p class="text-start" style="font-size: 0.9rem;"><i class="fas fa-id-card text-primary"></i>
+                                <strong>Licencia:</strong>
+                            </p>
+                            <p class="text-muted mb-1 text-start" style="font-size: 0.85rem;">
+                                @item.Driver?.License
+                            </p>
+
+                            <p class="text-start" style="font-size: 0.9rem;"><i class="fas fa-list-ol text-primary"></i>
+                                <strong>Placa Cabezal:</strong>
+                            </p>
+                            <p class="text-muted mb-1 text-start" style="font-size: 0.85rem;">
+                                @item.Vehicle?.Plate
+                            </p>
+
+                            <p class="text-start" style="font-size: 0.9rem;"><i class="fas fa-truck text-primary"></i>
+                                <strong>Placa Remolque:</strong>
+                            </p>
+                            <p class="text-muted mb-1 text-start" style="font-size: 0.85rem;">
+                                @item.Vehicle?.TrailerPlate
+                            </p>
+
+                            <hr style="border: 2px solid #ff7300; margin: 10px 0;" />
+
+                            <p class="text-start" style="font-size: 0.9rem;"><i class="fas fa-calendar text-primary"></i>
+                                <strong>Fecha Autorización:</strong>
+                            </p>
+                            <p class="text-muted mb-1 text-start" style="font-size: 0.85rem;">
+                                @fechaPrecheckeo?.ToString("dd/MM/yyyy HH:mm")
+                            </p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- UNIDADES CON INCONSISTENCIAS -->
+    @if (inconsistencias.Any())
+    {
+        <div class="inconsistencies-section">
+            <h2 class="section-title text-center mb-4" style="color: #FD6104;">
+                <i class="fas fa-exclamation-triangle"></i> UNIDADES CON INCONSISTENCIAS
+            </h2>
+
+            <div class="row mt-3">
+                @foreach (var item in inconsistencias)
+                {
+                    var tipo = item.Vehicle?.TruckType;
+                    var tipoTexto = tipo == "V" ? "VOLTEO" : tipo == "R" ? "PLANA" : "PIPA";
+                    var tipoClase = tipo == "V" ? "bg-dark" : tipo == "R" ? "bg-blue" : "bg-blue";
+                    var fechaPrecheckeo = item.DateTimeCurrentStatus.HasValue
+                        ? DateTime.SpecifyKind(item.DateTimeCurrentStatus.Value, DateTimeKind.Utc).ToLocalTime()
+                        : (DateTime?)null;
+
+
+                    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                        <div class="card border rounded-6 h-100 d-flex flex-column card-inconsistency">
+
+                            <!-- Header de la tarjeta con etiqueta pequeña -->
+                            <div class="card-header-small">
+                                <span class="vehicle-type-badge-small @tipoClase">
+                                    @tipoTexto
+                                </span>
+                            </div>
+
+                            <div class="card-body card-content-inconsistency">
+                                <!-- Contenido idéntico pero sin funcionalidad -->
+                                <p class="text-start" style="font-size: 0.9rem;">
+                                    <i class="fas fa-industry text-primary"></i> <strong>Ingenio:</strong>
+                                </p>
+                                <p class="text-muted mb-1 text-start name-wrap min-w-0" style="font-size: 0.85rem;"
+                                    title='@item.Ingenio?.Name?.Replace("_", " ")'>
+                                    @item.Ingenio?.Name?.Replace("_", " ")
+                                </p>
+
+                                <p class="text-start" style="font-size: 0.9rem;"><i class="fas fa-user text-primary"></i>
+                                    <strong>Motorista:</strong>
+                                </p>
+                                <p class="text-muted mb-1 text-start name-wrap min-w-0" style="font-size: 0.85rem;"
+                                    title="@item.Driver?.Name">
+                                    @item.Driver?.Name
+                                </p>
+
+                                <p class="text-start" style="font-size: 0.9rem;"><i class="fas fa-id-card text-primary"></i>
+                                    <strong>Licencia:</strong>
+                                </p>
+                                <p class="text-muted mb-1 text-start" style="font-size: 0.85rem;">
+                                    @item.Driver?.License
+                                </p>
+
+                                <p class="text-start" style="font-size: 0.9rem;"><i class="fas fa-list-ol text-primary"></i>
+                                    <strong>Placa Cabezal:</strong>
+                                </p>
+                                <p class="text-muted mb-1 text-start" style="font-size: 0.85rem;">
+                                    @item.Vehicle?.Plate
+                                </p>
+
+                                <p class="text-start" style="font-size: 0.9rem;"><i class="fas fa-truck text-primary"></i>
+                                    <strong>Placa Remolque:</strong>
+                                </p>
+                                <p class="text-muted mb-1 text-start" style="font-size: 0.85rem;">
+                                    @item.Vehicle?.TrailerPlate
+                                </p>
+
+                                <hr style="border: 2px solid #ff7300; margin: 10px 0;" />
+
+                                <p class="text-start" style="font-size: 0.9rem;"><i class="fas fa-calendar text-primary"></i>
+                                    <strong>Fecha Autorización:</strong>
+                                </p>
+                                <p class="text-muted mb-1 text-start" style="font-size: 0.85rem;">
+                                    @fechaPrecheckeo?.ToString("dd/MM/yyyy HH:mm")
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Modal Principal de Validación -->
+<div class="modal fade" id="rutaModal" tabindex="-1" role="dialog" aria-labelledby="rutaModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitulo">Validación de Marchamos</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Código de generación del envío -->
+                <input type="hidden" id="codigoGeneracionInput" />
+
+                <!-- Mantén el form por si en el futuro quieres enviar algo por submit -->
+                <form id="formRutaModal">
+                    <!-- Valores ocultos que usará el JS -->
+                    <input type="hidden" id="expectedSeals" value="0" />
+                    <input type="hidden" id="expectedSealCodes" value="" />
+
+                    <!-- Contenedor donde el JS inyectará N inputs -->
+                    <div id="sealsContainer" class="row gy-3"></div>
+                </form>
+
+                <span id="lblRuta"></span>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" id="btnReportarMarchamos">Reportar</button>
+                <button type="button" class="btn btn-primary" onclick="validarInformacion()">Confirmar</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal de Reporte de Inconsistencias de Marchamos -->
+<div class="modal fade" tabindex="-1" role="dialog" id="modalReportarMarchamos"
+    aria-labelledby="modalReportarMarchamosLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #182A6E; color: white;">
+                <h5 class="modal-title" style="color: white;">Reportar Inconsistencias</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: white;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formReportarMarchamos">
+                    <!-- Campo oculto para almacenar codigoGeneracion -->
+                    <input type="hidden" id="codigoGeneracionModalMarchamos" value="">
+
+                    <!-- Sección de datos con inconsistencias -->
+                    <div class="card mb-4" id="errorDetailsCardMarchamos" style="display: none;">
+                        <div class="card-header" style="background-color: #FD6104; color: white;">
+                            <h6 class="mb-0">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Datos a reportar como inconsistentes
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="reportedMarchamosList">
+                                <!-- Se llenará dinámicamente con los marchamos que tienen errores -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Campo de comentario -->
+                    <div class="form-group">
+                        <label for="comentarioMarchamos">
+                            <i class="fas fa-comment"></i> Comentario Adicional
+                        </label>
+                        <textarea class="form-control" id="comentarioMarchamos" rows="4"
+                            placeholder="Describe los detalles..."></textarea>
+                        <small class="form-text text-muted">
+                            Proporciona información adicional sobre el problema detectado.
+                        </small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="button" class="btn" onclick="guardarReporteMarchamos()"
+                    style="background-color: #FD6104; color: white; border: none;">
+                    Enviar Reporte
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    public string FormatTimeDifference(DateTime? fecha)
+    {
+        if (fecha == null) return "N/D";
+
+        // Asumir que la fecha siempre viene en UTC y convertir
+        var fechaUtc = DateTime.SpecifyKind(fecha.Value, DateTimeKind.Utc);
+        var fechaLocal = fechaUtc.ToLocalTime();
+
+        var diferencia = DateTime.Now - fechaLocal;
+        var totalMinutos = Math.Abs((int)diferencia.TotalMinutes);
+
+        if (totalMinutos == 0) return "Menos de 1 minuto";
+
+        var horas = totalMinutos / 60;
+        var minutos = totalMinutos % 60;
+
+        var resultado = new List<string>();
+
+        if (horas > 0)
+            resultado.Add($"{horas} {(horas == 1 ? "hora" : "horas")}");
+
+        if (minutos > 0)
+            resultado.Add($"{minutos} {(minutos == 1 ? "minuto" : "minutos")}");
+
+        return string.Join(" y ", resultado);
+    }
+}
+
+@section Scripts
+{
+    <script src="~/js/autorizacion-porton.js"></script>
+}

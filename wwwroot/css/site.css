@@ -1,0 +1,1049 @@
+/* ==========================================================================
+   HEADER Y NAVEGACIÓN PRINCIPAL
+   ========================================================================== */
+
+/* Variables CSS para consistencia de colores */
+:root {
+  --primary-orange: #FD7304;
+  --primary-orange-dark: #FD6104;
+  --primary-orange-light: rgba(255, 92, 0, 0.1);
+  --secondary-blue: #007BFF;
+  --secondary-blue-dark: #0056b3;
+  --secondary-blue-light: rgba(0, 123, 255, 0.1);
+  --success-green: #28a745;
+  --success-green-dark: #1e7e34;
+  --success-green-light: rgba(40, 167, 69, 0.1);
+  --text-dark: #333;
+  --text-muted: #495057;
+  --border-light: #dee2e6;
+  --bg-light: #f8f9fa;
+  --bg-section: #e9ecef;
+  --shadow-light: rgba(0, 0, 0, 0.1);
+  --shadow-medium: rgba(0, 0, 0, 0.15);
+  --white: #fff;
+  --black: #000;
+}
+
+/* ==========================================================================
+   FUENTES GILROY - cdnfonts.com
+   ========================================================================== */
+/*
+  Fuentes Gilroy disponibles desde CDN:
+  - font-family: 'Gilroy-Bold', sans-serif;
+  - font-family: 'Gilroy-Heavy', sans-serif;
+  - font-family: 'Gilroy-Light', sans-serif;
+  - font-family: 'Gilroy-Medium', sans-serif;
+  - font-family: 'Gilroy-Regular', sans-serif;
+*/
+
+body {
+  padding-top: 65px;
+  padding-bottom: 50px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Header global */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 5px;
+  background-color: var(--white);
+  box-shadow: 0 2px 4px var(--shadow-light);
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 160;
+  height: 65px;
+  font-family: "Roboto", "Helvetica Neue", Arial, sans-serif;
+}
+
+.header a {
+  text-decoration: none;
+  font-family: "Roboto", "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Logo */
+.logo img {
+  max-height: 35px;
+  transition: transform 0.2s ease;
+}
+
+.logo:hover img {
+  transform: scale(1.05);
+}
+
+/* Botón de login */
+.login-button {
+  border: 2px solid var(--primary-orange);
+  padding: 10px 20px;
+  border-radius: 5px;
+  color: var(--primary-orange);
+  font-weight: bold;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  text-decoration: none !important;
+}
+
+.login-button i {
+  margin-right: 8px;
+}
+
+.login-button:hover {
+  background-color: var(--primary-orange);
+  color: var(--white) !important;
+  text-decoration: none !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(255, 92, 0, 0.3);
+}
+
+/* ==========================================================================
+   NAVEGACIÓN CENTRAL
+   ========================================================================== */
+
+.header nav {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  font-family: "Roboto", "Helvetica Neue", Arial, sans-serif;
+}
+
+.header .btn-header {
+  white-space: nowrap;
+  border: none;
+  color: var(--text-dark);
+  font-weight: 500;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  background: none;
+  border-radius: 5px;
+  font-family: "Roboto", "Helvetica Neue", Arial, sans-serif;
+}
+
+.header .btn:hover {
+  color: var(--primary-orange);
+  background-color: var(--primary-orange-light);
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   DROPDOWN MEJORADO
+   ========================================================================== */
+
+.dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+/* Botones específicos por color */
+.dropdown-container button.bg-primary {
+  background-color: var(--secondary-blue) !important;
+  color: var(--white);
+  border-radius: 5px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.dropdown-container button.bg-primary:hover {
+  background-color: var(--secondary-blue-dark) !important;
+  border-color: var(--secondary-blue-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.dropdown-container button.bg-success {
+  background-color: var(--success-green) !important;
+  border: 2px solid var(--success-green);
+  color: var(--white);
+  border-radius: 5px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.dropdown-container button.bg-success:hover {
+  background-color: var(--success-green-dark) !important;
+  border-color: var(--success-green-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  border: none;
+  box-shadow: 0 4px 12px var(--shadow-medium);
+  border-radius: 8px;
+  padding: 8px 0;
+  min-width: 220px;
+  background-color: var(--white);
+  z-index: 200;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+}
+
+/* Mostrar dropdown con animación */
+.dropdown-container:hover .dropdown-menu,
+.dropdown-container.active .dropdown-menu {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Zona de tolerancia para evitar cierre accidental */
+.dropdown-container::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: -10px;
+  right: -10px;
+  height: 10px;
+  background: transparent;
+}
+
+.dropdown-item {
+  display: block;
+  padding: 12px 20px;
+  transition: all 0.3s ease;
+  border-radius: 0;
+  color: var(--text-dark);
+  text-decoration: none;
+  white-space: nowrap;
+  position: relative;
+}
+
+.dropdown-item i {
+  width: 18px;
+  text-align: center;
+  margin-right: 10px;
+}
+
+.dropdown-item:hover {
+  background-color: var(--secondary-blue-light);
+  color: var(--secondary-blue);
+  text-decoration: none;
+  transform: translateX(3px);
+}
+
+/* ==========================================================================
+   BOTÓN HAMBURGUESA
+   ========================================================================== */
+
+#menu-toggle {
+  background: transparent !important;
+  border: 2px solid var(--primary-orange) !important;
+  color: var(--primary-orange) !important;
+  border-radius: 5px;
+  transition: all 0.3s ease;
+  display: none;
+  position: relative;
+  width: 45px;
+  height: 40px;
+  padding: 0;
+  cursor: pointer;
+  z-index: 200;
+}
+
+#menu-toggle:hover {
+  background-color: var(--primary-orange);
+  color: var(--white);
+  transform: scale(1.05);
+}
+
+#menu-toggle:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 92, 0, 0.2);
+}
+
+#menu-toggle i {
+  transition: all 0.3s ease;
+  font-size: 16px;
+}
+
+#menu-toggle.active i {
+  transform: rotate(90deg);
+}
+
+/* Asegurar visibilidad del botón hamburguesa cuando el menú está abierto */
+#menu-toggle.active {
+  background: transparent !important;
+  border: 2px solid var(--primary-orange) !important;
+  color: var(--primary-orange) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 200;
+}
+
+/* ==========================================================================
+   MENÚ MÓVIL
+   ========================================================================== */
+
+#mobile-menu {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  width: 100%;
+  height: calc(100vh - 60px);
+  background-color: var(--bg-light);
+  z-index: 150;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease-in-out;
+  overflow-y: auto;
+  box-shadow: 2px 0 10px var(--shadow-light);
+}
+
+#mobile-menu.active {
+  transform: translateX(0);
+}
+
+/* Scrollbar personalizado para menú móvil */
+#mobile-menu::-webkit-scrollbar {
+  width: 4px;
+}
+
+#mobile-menu::-webkit-scrollbar-track {
+  background: var(--bg-light);
+}
+
+#mobile-menu::-webkit-scrollbar-thumb {
+  background: var(--primary-orange);
+  border-radius: 2px;
+}
+
+/* Secciones del menú móvil */
+.mobile-menu-section {
+  margin-bottom: 10px;
+}
+
+.mobile-menu-header {
+  font-weight: bold;
+  color: var(--text-muted);
+  padding: 15px 20px 10px;
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: 5px;
+  background-color: var(--bg-section);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+}
+
+.mobile-menu-item {
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border-left: 3px solid transparent;
+  position: relative;
+}
+
+.mobile-menu-item i {
+  width: 20px;
+  text-align: center;
+  margin-right: 15px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.mobile-menu-item:hover,
+.mobile-menu-item:active {
+  background-color: var(--primary-orange-light);
+  color: var(--primary-orange);
+  border-left-color: var(--primary-orange);
+  text-decoration: none;
+}
+
+.mobile-menu-item:active {
+  background-color: rgba(255, 92, 0, 0.2);
+  transform: scale(0.98);
+}
+
+/* Botón de cerrar sesión móvil */
+.mobile-menu-login {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: var(--white);
+  border-top: 2px solid var(--border-light);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mobile-menu-login .mobile-menu-item {
+  background-color: transparent;
+  color: var(--primary-orange);
+  font-weight: bold;
+  border: 2px solid var(--primary-orange);
+  border-radius: 8px;
+  padding: 12px 24px;
+  margin: 0;
+  width: auto;
+  max-width: 200px;
+  min-width: 160px;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(255, 92, 0, 0.1);
+}
+
+.mobile-menu-login .mobile-menu-item:hover,
+.mobile-menu-login .mobile-menu-item:active {
+  background-color: var(--primary-orange);
+  color: var(--white);
+  border-color: var(--primary-orange);
+  transform: scale(0.98);
+  box-shadow: 0 4px 8px rgba(255, 92, 0, 0.2);
+}
+
+.mobile-menu-login .mobile-menu-item i {
+  margin-right: 10px;
+  width: auto;
+}
+
+/* Separador entre secciones */
+.mobile-menu-separator {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--primary-orange), transparent);
+  margin: 20px 15px;
+  border-radius: 1px;
+}
+
+/* ==========================================================================
+   ESTILOS PARA ELEMENTOS ACTIVOS DEL MENÚ
+   ========================================================================== */
+
+/* Desktop - Dropdown Monitoreo activo */
+.active-button,
+.active-button.active-button i {
+  background-color: var(--secondary-blue) !important;
+  border-color: var(--secondary-blue-light) !important;
+  color: #FFFFFF !important;
+}
+
+/* Desktop - Botones individuales activos */
+.header .btn.active-menu {
+  background-color: var(--primary-orange) !important;
+  color: var(--white) !important;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(255, 92, 0, 0.3);
+}
+
+.header .btn.active-menu:hover {
+  background-color: var(--primary-orange-dark) !important;
+  transform: translateY(-1px);
+}
+
+/* Desktop - Items del dropdown activos */
+.dropdown-item.active {
+  background-color: var(--secondary-blue) !important;
+  color: var(--white) !important;
+  font-weight: bold;
+  position: relative;
+}
+
+.dropdown-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: var(--white);
+  border-radius: 0 2px 2px 0;
+}
+
+.dropdown-item.active i {
+  color: var(--white) !important;
+}
+
+.dropdown-item.active:hover {
+  background-color: var(--secondary-blue-dark) !important;
+  color: var(--white) !important;
+  transform: translateX(3px);
+}
+
+/* Mobile - Header de sección activo */
+.mobile-menu-header.active-header {
+  background-color: var(--primary-orange) !important;
+  color: var(--white) !important;
+  border-bottom-color: var(--primary-orange-dark);
+}
+
+.mobile-menu-header.active-header i {
+  color: var(--white) !important;
+}
+
+/* Mobile - Items del menú activos */
+.mobile-menu-item.active {
+  background-color: rgba(255, 92, 0, 0.15) !important;
+  color: var(--primary-orange) !important;
+  border-left-color: var(--primary-orange) !important;
+  border-left-width: 5px !important;
+  font-weight: bold;
+  position: relative;
+}
+
+.mobile-menu-item.active i {
+  color: var(--primary-orange) !important;
+  transform: scale(1.1);
+}
+
+.mobile-menu-item.active::after {
+  content: '';
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  background-color: var(--primary-orange);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.mobile-menu-item.active:hover {
+  background-color: rgba(255, 92, 0, 0.25) !important;
+  transform: scale(1.02);
+}
+
+/* Animación para indicador activo */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 92, 0, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(255, 92, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 92, 0, 0);
+  }
+}
+
+/* ==========================================================================
+   RESPONSIVE BREAKPOINTS
+   ========================================================================== */
+
+/* Pantallas muy grandes - 4K y similares */
+@media (min-width: 1400px) {
+  .logo img {
+    max-height: 42px;
+  }
+  .dropdown-menu {
+    min-width: 260px;
+  }
+  body {
+    padding-top: 70px;
+  }
+}
+
+/* Desktop Grande - 1200px a 1399px */
+@media (max-width: 1399px) and (min-width: 1200px) {
+  .logo img {
+    max-height: 38px;
+  }
+  .login-button {
+    padding: 12px 24px;
+    font-size: 16px;
+  }
+  .dropdown-menu {
+    min-width: 240px;
+  }
+  body {
+    padding-top: 65px;
+  }
+}
+
+/* Tablet Landscape Grande - 1024px a 1199px */
+@media (max-width: 1199px) and (min-width: 1024px) {
+  .header .btn {
+    font-size: 15px;
+  }
+  .dropdown-menu {
+    min-width: 220px;
+  }
+  .logo img {
+    max-height: 35px;
+  }
+  body {
+    padding-top: 60px;
+  }
+}
+
+/* Tablet Landscape - 768px a 1023px */
+@media (max-width: 1023px) and (min-width: 768px) {
+
+  .header .btn {
+    font-size: 14px;
+  }
+  .dropdown-menu {
+    min-width: 200px;
+  }
+  .logo img {
+    max-height: 33px;
+  }
+  .login-button {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+  body {
+    padding-top: 58px;
+  }
+}
+
+/* Tablet Portrait y Mobile - Menú hamburguesa */
+@media (max-width: 767px) {
+  .header {
+    padding: 8px 20px;
+    height: 55px;
+  }
+  
+  .header nav {
+    display: none !important;
+  }
+  
+  #menu-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 42px;
+  }
+  
+  .logo img {
+    max-height: 32px;
+  }
+  
+  .login-button {
+    display: none !important;
+  }
+  
+  #mobile-menu {
+    top: 55px;
+    height: calc(100vh - 55px);
+  }
+  
+  .mobile-menu-item {
+    padding: 16px 20px;
+    font-size: 16px;
+  }
+  
+  .mobile-menu-header {
+    padding: 16px 20px 12px;
+    font-size: 15px;
+  }
+  
+  .mobile-menu-login {
+    padding: 25px;
+  }
+  
+  .mobile-menu-login .mobile-menu-item {
+    padding: 14px 28px;
+    font-size: 16px;
+    min-width: 180px;
+    max-width: 220px;
+  }
+  
+  body {
+    padding-top: 55px;
+  }
+}
+
+/* Mobile Grande - 576px a 767px */
+@media (max-width: 767px) and (min-width: 576px) {
+  .header {
+    padding: 8px 18px;
+    height: 52px;
+  }
+  
+  #menu-toggle {
+    width: 46px;
+    height: 40px;
+  }
+  
+  .logo img {
+    max-height: 30px;
+  }
+  
+  #mobile-menu {
+    top: 52px;
+    height: calc(100vh - 52px);
+  }
+  
+  .mobile-menu-item {
+    padding: 14px 18px;
+    font-size: 15px;
+  }
+  
+  .mobile-menu-header {
+    padding: 14px 18px 10px;
+    font-size: 14px;
+  }
+  
+  .mobile-menu-login {
+    padding: 20px;
+  }
+  
+  .mobile-menu-login .mobile-menu-item {
+    padding: 12px 24px;
+    font-size: 15px;
+    min-width: 160px;
+  }
+  
+  body {
+    padding-top: 52px;
+  }
+}
+
+/* Mobile Mediano - 400px a 575px */
+@media (max-width: 575px) and (min-width: 400px) {
+  .header {
+    padding: 6px 15px;
+    height: 48px;
+  }
+  
+  #menu-toggle {
+    width: 42px;
+    height: 36px;
+  }
+  
+  .logo img {
+    max-height: 28px;
+  }
+  
+  #mobile-menu {
+    top: 48px;
+    height: calc(100vh - 48px);
+  }
+  
+  .mobile-menu-item {
+    padding: 12px 15px;
+    font-size: 15px;
+  }
+  
+  .mobile-menu-header {
+    padding: 12px 15px 8px;
+    font-size: 13px;
+  }
+  
+  .mobile-menu-login {
+    padding: 18px;
+  }
+  
+  .mobile-menu-login .mobile-menu-item {
+    padding: 10px 20px;
+    font-size: 15px;
+    min-width: 150px;
+  }
+  
+  .mobile-menu-item.active::after {
+    width: 6px;
+    height: 6px;
+    right: 12px;
+  }
+  
+  body {
+    padding-top: 48px;
+  }
+}
+
+/* Mobile Pequeño - hasta 399px */
+@media (max-width: 399px) {
+  .header {
+    padding: 4px 10px;
+    height: 44px;
+  }
+  
+  #menu-toggle {
+    width: 38px;
+    height: 34px;
+  }
+  
+  .logo img {
+    max-height: 25px;
+  }
+  
+  #mobile-menu {
+    top: 44px;
+    height: calc(100vh - 44px);
+  }
+  
+  .mobile-menu-item {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  
+  .mobile-menu-header {
+    padding: 10px 12px 6px;
+    font-size: 12px;
+  }
+  
+  .mobile-menu-login {
+    padding: 15px;
+  }
+  
+  .mobile-menu-login .mobile-menu-item {
+    padding: 8px 16px;
+    font-size: 14px;
+    min-width: 130px;
+  }
+  
+  .mobile-menu-item.active::after {
+    width: 5px;
+    height: 5px;
+    right: 10px;
+  }
+  
+  body {
+    padding-top: 44px;
+  }
+}
+
+/* Orientación específica para tablets */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+  .header nav {
+    display: flex !important;
+  }
+
+  #menu-toggle {
+    display: none !important;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 1024px) and (orientation: portrait) {
+  .header nav {
+    display: none !important;
+  }
+
+  #menu-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-menu-section {
+    margin-bottom: 15px;
+  }
+
+  .mobile-menu-separator {
+    margin: 25px 20px;
+    height: 3px;
+  }
+}
+
+/* Tablets Android - usar pointer para detectar touch devices */
+@media (min-width: 768px) and (max-width: 1024px) and (pointer: coarse) {
+  .header nav {
+    display: none !important;
+  }
+
+  #menu-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .login-button {
+    display: none !important;
+  }
+}
+
+/* Estilos específicos para el botón de login móvil */
+.login-button-mobile {
+  border: 2px solid var(--primary-orange);
+  padding: 8px 12px;
+  border-radius: 5px;
+  color: var(--primary-orange);
+  font-weight: bold;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  text-decoration: none !important;
+  font-size: 14px;
+}
+
+.login-button-mobile i {
+  margin-right: 6px;
+  font-size: 14px;
+}
+
+.login-button-mobile:hover {
+  background-color: var(--primary-orange);
+  color: var(--white) !important;
+  text-decoration: none !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(255, 92, 0, 0.3);
+}
+
+.login-text {
+  display: inline;
+}
+
+/* Responsive para el texto del botón de login móvil */
+@media (max-width: 575px) {
+  .login-button-mobile {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  .login-button-mobile i {
+    margin-right: 4px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 399px) {
+  .login-button-mobile {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  
+  .login-text {
+    display: none;
+  }
+  
+  .login-button-mobile i {
+    margin-right: 0;
+    font-size: 14px;
+  }
+}
+
+/* ==========================================================================
+   FOOTER Y ELEMENTOS GLOBALES
+   ========================================================================== */
+
+footer {
+  background-color: #242424;
+  padding: 10px 0;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--white);
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  z-index: 100;
+}
+
+/* ==========================================================================
+   SPINNER Y ANIMACIONES
+   ========================================================================== */
+
+        /* Fondo oscuro con centrado total */
+        #spinner-overlay
+        {
+            display: none; /* Oculto por defecto */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1050;
+            overflow: hidden;
+        }
+
+        /* Cuando esté visible */
+        #spinner-overlay.show {
+            display: flex;
+        }
+
+        /* Contenedor de los elementos alineados */
+        .animation-container 
+        {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 300px;
+            height: 300px;
+            overflow: hidden;
+        }
+
+        /* Contenedor del camión */
+        .truck-container 
+        {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: truck-shake 0.2s ease-in-out infinite;
+        }
+
+        /* Camión */
+        .truck-icon 
+        {
+            width: 275px; /* Ajusta el tamaño según necesites */
+            height: auto;
+            position: relative;
+            z-index: 1; /* Mantiene la imagen en el fondo */
+            margin-top: 20px; /* Ajusta la posición */
+        }
+
+        /* Contenedor de ruedas */
+        .truck-wheels 
+        {
+            position: absolute;
+            bottom: 80px; /* Ajustar posición */
+            left: 58%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 55px;
+            z-index: 2; /* Ruedas sobre el camión */
+        }
+
+        /* Nube principal (ya existente) */
+        .cloud1 
+        {
+            font-size: 75px; /* Aumenta el tamaño */
+            color: #ffffff;
+            position: absolute;
+            bottom: 185px;
+            animation: moveLeft 12s linear infinite;
+            transform: scaleX(2); /* Aumenta aún más el ancho */
+        }
+
+        /* Segunda nube con diferente tamaño, velocidad y dirección */
+        .cloud2 
+        {
+            font-size: 50px; /* Un poco más pequeña */
+            color: #ffffff;
+            position: absolute;
+            bottom: 220px; /* Más arriba para variar posiciones */
+            opacity: 0.8; /* Un poco más transparente */
+            animation: moveLeftReverse 12s linear infinite;
+        }
+
+        /* Animación de movimiento de la nube de derecha a izquierda */
+        @keyframes moveLeft 
+        {
+            0% { transform: translateX(50px); }  
+            100% { transform: translateX(-50px); } 
+        }
+        /* Movimiento opuesto y más lento para la segunda nube */
+        @keyframes moveLeftReverse 
+        {
+            0% { transform: translateX(-50px); }
+            100% { transform: translateX(50px); }
+        }
+        @keyframes truck-move 
+        {
+            0% { transform: translateX(-100px); }  /* Inicia fuera de la pantalla */
+            50% { transform: translateX(100px); } /* Se mueve hacia la derecha */
+            100% { transform: translateX(-100px); } /* Regresa a la posición inicial */
+        }
+        @keyframes truck-shake
+        {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-2px); } /* Mueve el camión ligeramente hacia arriba */
+            100% { transform: translateY(0px); }
+        }

@@ -1,0 +1,37 @@
+@model FrontendQuickpass.Models.TiemposMelazaViewModel
+
+<section class="estaciones-wrapper">
+    <h2 class="estaciones-title">ESTACIONES DE MELAZA</h2>
+
+    <div id="estacionesList" class="estaciones-list">
+        <!-- Loading visible al inicio -->
+        <div class="melaza-loading" id="estacionesLoading">
+            <div class="spinner"></div>
+            <p>Cargando estaciones...</p>
+        </div>
+
+        <!-- Contenido (oculto inicialmente) -->
+        <div id="estacionesContainer" style="display:none;"></div>
+
+        <!-- Estado vacío (oculto inicialmente) -->
+        <div class="melaza-empty-state" id="estacionesEmpty" style="display:none;">
+            <i class="fas fa-truck-loading"></i>
+            <h3>Sin unidades en descarga</h3>
+            <p>No hay unidades disponibles para descarga en este momento.</p>
+        </div>
+
+        <!-- Estado de error (oculto inicialmente) -->
+        <div class="melaza-empty-state" id="estacionesError" style="display:none;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>Error</h3>
+            <p id="estacionesErrorMessage">Error al cargar las estaciones</p>
+        </div>
+    </div>
+</section>
+
+<script>
+    // Pasar datos limpios al JavaScript
+    window.initialUnidadesDescarga = @Html.Raw(ViewBag.InitialUnidadesDescarga ?? "[]");
+    window.serverRendered = false; // Forzar render del cliente
+    console.log('Datos iniciales cargados:', window.initialUnidadesDescarga?.length || 0, 'unidades');
+</script>

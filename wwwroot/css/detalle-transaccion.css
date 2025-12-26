@@ -1,0 +1,903 @@
+/* ==========================================
+   DETALLE DE TRANSACCIÓN - ESTILOS
+   ========================================== */
+
+:root {
+    --dt-blue: #182A6E;
+    --dt-blue-dark: #0f1d4a;
+    --dt-blue-hover: #1a3280;
+    --dt-gray-light: #f5f5f5;
+    --dt-gray-bg: #ffffff;
+    --dt-gray-border: #dee2e6;
+    --dt-text-dark: #212529;
+    --dt-text-muted: #6c757d;
+    --dt-danger: #dc3545;
+    --dt-white: #fff;
+
+    /* Paleta de colores profesionales para botones de la vista */
+    --dt-primary: #2c3e50;          /* Azul oscuro profesional - Guardar */
+    --dt-primary-hover: #1a252f;
+    --dt-success: #27ae60;          /* Verde profesional - Imprimir */
+    --dt-success-hover: #229954;
+    --dt-complete: #3498db;         /* Azul claro profesional - Completar */
+    --dt-complete-hover: #2980b9;
+    --dt-warning: #34495e;          /* Gris azulado profesional - Agregar */
+    --dt-warning-hover: #2c3e50;
+    --dt-secondary: #95a5a6;        /* Gris neutral */
+    --dt-secondary-hover: #7f8c8d;
+    --dt-outline: #bdc3c7;          /* Gris claro - Cerrar */
+    --dt-outline-hover: #95a5a6;
+    --dt-outline-text: #2c3e50;
+}
+
+/* ==========================================
+   BANNER PRINCIPAL
+   ========================================== */
+.lt-banner {
+    display: flex;
+    align-items: center;
+    background-color: #182A6E;
+    color: #fff;
+    padding: 1.2rem 1.2rem;
+}
+
+.lt-banner h1 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+/* ==========================================
+   CONTENEDOR PRINCIPAL
+   ========================================== */
+.dt-container {
+    padding: 1rem;
+    max-width: 100%;
+    background-color: #f8f9fa;
+}
+
+/* ==========================================
+   SECCIONES COLAPSABLES
+   ========================================== */
+.dt-section {
+    background: var(--dt-gray-bg);
+    border: 1px solid var(--dt-gray-border);
+    border-radius: 8px;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.dt-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s;
+    border-bottom: 1px solid var(--dt-gray-border);
+    background-color: white;
+}
+
+.dt-section-header:hover {
+    background-color: #fafafa;
+}
+
+.dt-section-header.collapsed {
+    border-bottom: none;
+}
+
+.dt-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 600;
+    color: var(--dt-text-dark);
+    font-size: 0.95rem;
+}
+
+.dt-section-title i {
+    color: var(--dt-text-dark);
+    font-size: 1rem;
+}
+
+.dt-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.dt-collapse-icon {
+    color: var(--dt-text-muted);
+    transition: transform 0.3s;
+    font-size: 0.875rem;
+}
+
+.dt-section-header.collapsed .dt-collapse-icon {
+    transform: rotate(180deg);
+}
+
+.collapse .dt-section-body,
+.collapsing .dt-section-body {
+    border-top: 1px solid var(--dt-gray-border);
+}
+
+.dt-section-body {
+    padding: 1.5rem;
+    background-color: white;
+}
+
+.collapse.show .dt-section-body {
+    display: block !important;
+    visibility: visible !important;
+}
+
+.collapse.show .dt-section-body * {
+    visibility: visible !important;
+}
+
+/* ==========================================
+   CAMPOS DE INFORMACIÓN
+   ========================================== */
+.dt-label {
+    font-size: 0.95rem;
+    color: var(--dt-text-muted);
+    margin-bottom: 0.5rem;
+    display: block;
+    font-weight:600;
+}
+
+.dt-value {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--dt-text-dark);
+    line-height: 1.5;
+}
+
+.dt-value-small {
+    font-size: 0.875rem;
+    font-weight: 700;
+    word-break: break-all;
+}
+
+/* ==========================================
+   TABLA DE PESAJE
+   ========================================== */
+.dt-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--dt-white);
+    border: none;
+    table-layout: fixed;
+}
+
+.dt-table thead {
+    background-color: #fafafa;
+}
+
+/* Anchos fijos para columnas de pesajes */
+#historial-pesajes .dt-table th:nth-child(1),
+#historial-pesajes .dt-table td:nth-child(1) {
+    width: 10%;
+}
+
+#historial-pesajes .dt-table th:nth-child(2),
+#historial-pesajes .dt-table td:nth-child(2) {
+    width: 25%;
+}
+
+#historial-pesajes .dt-table th:nth-child(3),
+#historial-pesajes .dt-table td:nth-child(3),
+#historial-pesajes .dt-table th:nth-child(4),
+#historial-pesajes .dt-table td:nth-child(4) {
+    width: 20%;
+}
+
+#historial-pesajes .dt-table th:nth-child(5),
+#historial-pesajes .dt-table td:nth-child(5) {
+    width: 25%;
+}
+
+.dt-table th,
+.dt-table td {
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+    font-size: 0.875rem;
+    border: none;
+}
+
+.dt-table th {
+    font-weight: 600;
+    color: #545454;
+    text-transform: none;
+    border-bottom: 2px solid #9CA3AF;
+}
+
+.dt-table td {
+    background-color: var(--dt-white);
+    font-weight: 600;
+    border-bottom: 1px solid #9CA3AF;
+}
+
+/* Peso bruto (primera fila) */
+.dt-table tbody tr:nth-child(1) td {
+    color: #82807F;
+}
+
+/* Peso neto (segunda fila) */
+.dt-table tbody tr:nth-child(2) td {
+    color: #495057;
+}
+
+/* Peso tara (tercera fila) */
+.dt-table tbody tr:nth-child(3) td {
+    color: #82807F;
+}
+
+/* Última fila sin borde inferior */
+.dt-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.dt-table td:first-child,
+.dt-table th:first-child {
+    text-align: left;
+    font-weight: 600;
+    padding-left: 1rem;
+}
+
+.dt-table td:last-child,
+.dt-table th:last-child {
+    padding-right: 1rem;
+}
+
+.dt-row-bold td {
+    font-weight: 600;
+}
+
+/* Fila total en consolidado */
+#consolidado-pesos .dt-table tfoot .dt-row-bold td {
+    border-top: 2px solid #9CA3AF;
+    border-bottom: 2px solid #9CA3AF;
+}
+
+.dt-text-danger {
+    color: var(--dt-danger) !important;
+    font-weight: 600;
+}
+
+/* ==========================================
+   TABS DE PESAJE
+   ========================================== */
+.dt-nav-tabs {
+    border-bottom: 2px solid var(--dt-gray-border);
+    margin-bottom: 1.5rem;
+}
+
+.dt-nav-tabs .nav-item {
+    margin-bottom: -2px;
+}
+
+.dt-nav-tabs .nav-link {
+    color: var(--dt-text-muted);
+    font-weight: 500;
+    font-size: 0.9rem;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    transition: all 0.2s ease;
+}
+
+.dt-nav-tabs .nav-link:hover {
+    color: var(--dt-primary);
+    border-bottom-color: var(--dt-gray-border);
+}
+
+.dt-nav-tabs .nav-link.active {
+    color: var(--dt-primary);
+    font-weight: 600;
+    border-bottom-color: var(--dt-primary);
+    background: transparent;
+}
+
+.dt-tab-content {
+    padding: 0;
+}
+
+/* Contenedor de pesajes individuales */
+#pesajes-container .pesaje-item {
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--dt-gray-border);
+}
+
+#pesajes-container .pesaje-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+#pesajes-container .pesaje-numero {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--dt-text-dark);
+    margin-bottom: 1rem;
+    padding-left: 1rem;
+}
+
+.pesaje-numero-cell {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--dt-text-dark);
+    vertical-align: middle;
+    text-align: center;
+    background-color: var(--dt-gray-light);
+}
+
+/* ==========================================
+   INPUTS Y CONTROLES
+   ========================================== */
+.dt-input {
+    background-color: var(--dt-white);
+    border: 1px solid var(--dt-gray-border);
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--dt-text-dark);
+    height: 38px;
+    width: 100%;
+}
+
+.dt-input:focus {
+    background-color: var(--dt-white);
+    border-color: var(--dt-blue);
+    box-shadow: 0 0 0 0.2rem rgba(24, 42, 110, 0.1);
+    outline: none;
+}
+
+.dt-input[readonly] {
+    background-color: #f8f9fa;
+    cursor: not-allowed;
+    border: 1px solid var(--dt-gray-border);
+}
+
+.dt-input-group {
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 38px;
+}
+
+.dt-input-group .form-control,
+.dt-input-group .dt-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: calc(100% - 70px);
+}
+
+/* Wrapper para inputs sin botón - mantiene la misma altura */
+.dt-input-wrapper {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    min-height: 38px;
+}
+
+.dt-input-wrapper .form-control,
+.dt-input-wrapper .dt-input {
+    width: 100%;
+    height: 100%;
+    flex: 1;
+}
+
+/* Espaciador para mantener consistencia con inputs que tienen botón anular */
+.dt-input-spacer {
+    width: 70px;
+    visibility: hidden;
+}
+
+.dt-btn-anular {
+    color: var(--dt-blue);
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+    white-space: nowrap;
+    text-decoration: none;
+    font-weight: 400;
+}
+
+.dt-btn-anular:hover {
+    color: var(--dt-blue-dark);
+    text-decoration: underline;
+}
+
+/* ==========================================
+   TIMELINE / BITÁCORA
+   ========================================== */
+.dt-timeline {
+    position: relative;
+    padding-left: 0;
+}
+
+.dt-timeline-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding-left: 2.5rem;
+    min-height: 2rem;
+    margin-bottom: 0.75rem;
+}
+
+/* Línea conectora entre iconos (no en el último item) */
+.dt-timeline-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 0.55rem;
+    top: 1.75rem;
+    height: calc(100% + 0.75rem - 1.75rem);
+    width: 2px;
+    background: #e0e0e0;
+}
+
+.dt-timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+.dt-timeline-icon {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.25rem;
+    height: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    background: #fff;
+}
+
+.dt-timeline-icon i {
+    font-size: 1.1rem;
+    color: #888;
+}
+
+.dt-timeline-content {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+}
+
+.dt-timeline-header {
+    display: contents;
+}
+
+.dt-timeline-date {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--dt-text-dark);
+    white-space: nowrap;
+    min-width: 150px;
+}
+
+.dt-timeline-user {
+    font-size: 0.9rem;
+    color: var(--dt-blue);
+    font-weight: 600;
+    white-space: nowrap;
+    min-width: 130px;
+}
+
+.dt-timeline-action {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #666;
+    flex: 1;
+}
+
+/* ==========================================
+   BARRA DE ACCIONES
+   ========================================== */
+.dt-action-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--dt-white);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    border-top: 1px solid var(--dt-gray-border);
+    z-index: 1000;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Botón de agregar pesaje al extremo izquierdo */
+.dt-action-bar #btnAgregarPesaje {
+    margin-right: auto;
+}
+
+.dt-btn-secondary {
+    background-color: var(--dt-gray-light);
+    color: var(--dt-text-dark);
+    padding: 0.45rem 1.25rem;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid var(--dt-gray-border);
+}
+
+.dt-btn-secondary i {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+.dt-btn-secondary:hover {
+    background-color: var(--dt-secondary-hover);
+    color: var(--dt-white);
+}
+
+/* Botón Pesaje - Agregar pesaje (Gris azulado profesional) */
+.dt-btn-pesaje {
+    background-color: var(--dt-warning);
+    color: var(--dt-white);
+    padding: 0.45rem 1.25rem;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: none;
+    box-shadow: 0 2px 4px rgba(52, 73, 94, 0.2);
+    transition: all 0.2s ease;
+}
+
+.dt-btn-pesaje i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    line-height: 1;
+    vertical-align: middle;
+}
+
+.dt-btn-pesaje:hover:not(:disabled) {
+    background-color: var(--dt-warning-hover);
+    box-shadow: 0 4px 8px rgba(52, 73, 94, 0.3);
+    transform: translateY(-1px);
+}
+
+/* Botón Primary - Guardar (Azul oscuro profesional) */
+.dt-btn-primary {
+    background-color: var(--dt-primary);
+    color: var(--dt-white);
+    padding: 0.45rem 1.25rem;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: none;
+    box-shadow: 0 2px 4px rgba(44, 62, 80, 0.2);
+    transition: all 0.2s ease;
+}
+
+.dt-btn-primary i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    line-height: 1;
+    vertical-align: middle;
+}
+
+.dt-btn-primary:hover:not(:disabled) {
+    background-color: var(--dt-primary-hover);
+    box-shadow: 0 4px 8px rgba(44, 62, 80, 0.3);
+    transform: translateY(-1px);
+}
+
+/* Botón Success - Imprimir (Verde profesional) */
+.dt-btn-success {
+    background-color: var(--dt-success);
+    color: var(--dt-white);
+    padding: 0.45rem 1.25rem;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: none;
+    box-shadow: 0 2px 4px rgba(39, 174, 96, 0.2);
+    transition: all 0.2s ease;
+}
+
+.dt-btn-success i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    line-height: 1;
+    vertical-align: middle;
+}
+
+.dt-btn-success:hover:not(:disabled) {
+    background-color: var(--dt-success-hover);
+    box-shadow: 0 4px 8px rgba(39, 174, 96, 0.3);
+    transform: translateY(-1px);
+}
+
+/* Botón Complete - Completar (Azul claro profesional) */
+.dt-btn-complete {
+    background-color: var(--dt-complete);
+    color: var(--dt-white);
+    padding: 0.45rem 1.25rem;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: none;
+    box-shadow: 0 2px 4px rgba(52, 152, 219, 0.2);
+    transition: all 0.2s ease;
+}
+
+.dt-btn-complete i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    line-height: 1;
+    vertical-align: middle;
+}
+
+.dt-btn-complete:hover:not(:disabled) {
+    background-color: var(--dt-complete-hover);
+    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+    transform: translateY(-1px);
+}
+
+/* Botón Outline - Cerrar (Borde gris del sistema) */
+.dt-btn-outline {
+    background-color: var(--dt-white);
+    color: var(--dt-outline-text);
+    padding: 0.45rem 1.25rem;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 2px solid var(--dt-outline);
+    transition: all 0.2s ease;
+}
+
+.dt-btn-outline i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    line-height: 1;
+    vertical-align: middle;
+}
+
+.dt-btn-outline:hover:not(:disabled) {
+    background-color: var(--dt-gray-light);
+    border-color: var(--dt-outline-hover);
+}
+
+/* Estilos para botones deshabilitados */
+.dt-btn-primary:disabled,
+.dt-btn-success:disabled,
+.dt-btn-complete:disabled,
+.dt-btn-pesaje:disabled,
+.dt-btn-secondary:disabled,
+.dt-btn-outline:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+    box-shadow: none;
+    transform: none;
+}
+
+/* ==========================================
+   BOTÓN AGREGAR OBSERVACIÓN
+   ========================================== */
+#btnAgregarObservacion {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.875rem;
+    border-radius: 4px;
+    border-color: var(--dt-gray-border);
+    color: var(--dt-text-dark);
+}
+
+#btnAgregarObservacion:hover {
+    background-color: var(--dt-gray-light);
+    border-color: var(--dt-gray-border);
+    color: var(--dt-text-dark);
+}
+
+/* ==========================================
+   FORMULARIOS
+   ========================================== */
+.form-control {
+    border-radius: 4px;
+    border: 1px solid var(--dt-gray-border);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.form-control:focus {
+    border-color: var(--dt-blue);
+    box-shadow: 0 0 0 0.2rem rgba(24, 42, 110, 0.1);
+}
+
+select.form-control {
+    background-color: var(--dt-white);
+}
+
+/* ==========================================
+   MODALES
+   ========================================== */
+.modal-header {
+    background-color: var(--dt-white);
+    border-bottom: 1px solid var(--dt-gray-border);
+    padding: 1rem 1.5rem;
+}
+
+.modal-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--dt-text-dark);
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-body .form-group {
+    margin-bottom: 1.25rem;
+}
+
+.modal-body .form-group:last-child {
+    margin-bottom: 0;
+}
+
+.modal-body label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--dt-text-dark);
+    margin-bottom: 0.5rem;
+}
+
+.modal-footer {
+    border-top: 1px solid var(--dt-gray-border);
+    padding: 1rem 1.5rem;
+    gap: 0.75rem;
+}
+
+.modal-footer .btn {
+    padding: 0.45rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 4px;
+}
+
+.modal-footer .btn-secondary {
+    background-color: var(--dt-gray-light);
+    border: 1px solid var(--dt-gray-border);
+    color: var(--dt-text-dark);
+}
+
+.modal-footer .btn-secondary:hover {
+    background-color: #e0e0e0;
+}
+
+.modal-footer .btn-primary {
+    background-color: var(--dt-blue);
+    border: none;
+    color: var(--dt-white);
+}
+
+.modal-footer .btn-primary:hover {
+    background-color: var(--dt-blue-dark);
+}
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+@media (max-width: 768px) {
+    .lt-banner h1 {
+        font-size: 1.25rem;
+    }
+
+    .dt-container {
+        padding: 0 1rem 120px 1rem;
+    }
+
+    .dt-action-bar {
+        padding: 0.75rem 1rem;
+        flex-wrap: wrap;
+    }
+
+    .dt-action-bar .btn {
+        flex: 1;
+        min-width: 100px;
+    }
+
+    .dt-table th,
+    .dt-table td {
+        padding: 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    .dt-timeline-item {
+        padding-left: 2.25rem;
+    }
+
+    .dt-timeline-content {
+        gap: 1rem;
+    }
+
+    .dt-timeline-date,
+    .dt-timeline-user,
+    .dt-timeline-action {
+        font-size: 0.85rem;
+    }
+
+    .dt-section-body {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .lt-banner h1 {
+        font-size: 1.1rem;
+    }
+
+    .dt-section-title {
+        font-size: 0.875rem;
+    }
+
+    .dt-input-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .dt-btn-anular {
+        text-align: right;
+    }
+
+    .dt-timeline-item {
+        padding-left: 2rem;
+        min-height: 1.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .dt-timeline-content {
+        flex-direction: column;
+        gap: 0.15rem;
+        align-items: flex-start;
+    }
+
+    .dt-timeline-date,
+    .dt-timeline-user,
+    .dt-timeline-action {
+        font-size: 0.8rem;
+        min-width: auto;
+    }
+}
+

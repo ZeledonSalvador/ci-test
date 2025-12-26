@@ -1,0 +1,478 @@
+/* ====== ESTILOS PARA UNIDADES EN ENFRIAMIENTO ====== */
+
+.unidades-enfriamiento-section {
+    margin-bottom: 2rem;
+}
+
+/* Grid vertical para 3 columnas */
+.unidades-cola-vertical-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin: 0 1rem;
+}
+
+.enfriamiento-title {
+    text-align: center;
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #333;
+    letter-spacing: 0.5px;
+    margin: 20px auto;
+}
+
+/* Tarjetas de enfriamiento */
+.unidad-enfriamiento-vertical-card {
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 2px solid #cbd5e1;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    min-height: auto;
+    height: fit-content;
+}
+
+/* Header de la tarjeta */
+.card-header-vertical.enfriamiento-header {
+    background: linear-gradient(135deg, #0ea5e9, #0284c7);
+    color: white;
+    padding: 1rem;
+    text-align: center;
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-size: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.card-header-vertical i {
+    font-size: 1.2rem;
+    margin-bottom: 0.25rem;
+}
+
+/* Contador de temperaturas */
+.temperature-counter {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Contador de tiempo para próxima temperatura */
+.temperature-countdown {
+    background: #f1f5f9;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.75rem;
+    text-align: center;
+    font-family: 'Gilroy-Bold', sans-serif;
+}
+
+.countdown-label {
+    font-size: 0.8rem;
+    color: #000000;
+    margin-bottom: 0.25rem;
+}
+
+.countdown-timer {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #1e293b;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    padding: 0.5rem;
+    border-radius: 6px;
+    display: inline-block;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.countdown-timer.countdown-expired {
+    color: #dc2626;
+    background: #fef2f2;
+    animation: pulseRed 2s ease-in-out infinite;
+    transform-origin: center;
+    will-change: transform;
+    backface-visibility: hidden;
+}
+
+.countdown-display .expired-text {
+    color: #dc2626;
+    animation: pulseText 2s ease-in-out infinite;
+    will-change: opacity;
+}
+
+@keyframes pulseRed {
+    0% {
+        background-color: #fef2f2;
+        transform: scale(1);
+    }
+    50% {
+        background-color: #fee2e2;
+        transform: scale(1.02);
+    }
+    100% {
+        background-color: #fef2f2;
+        transform: scale(1);
+    }
+}
+
+@keyframes pulseText {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Contenido de la tarjeta de enfriamiento */
+.card-content-vertical-enfriamiento {
+    padding: 1rem;
+    background-color: #FFFF;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-content-vertical-enfriamiento .info-row .label {
+    color: #000000;
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.card-content-vertical-enfriamiento .info-row .value {
+    color: #000000;
+    font-family: 'Gilroy-Light', sans-serif;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+/* Fila label/value para enfriamiento */
+.info-row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 0.25rem 0.75rem;
+    font-size: 0.9rem;
+    padding: 0.1rem 0;
+}
+
+/* Línea divisoria */
+.divider-line {
+    height: 1px;
+    background: linear-gradient(to right, transparent, #e5e7eb, transparent);
+    margin: 0.75rem 0 0.5rem 0;
+}
+
+/* Historial de temperaturas - espaciado optimizado */
+.temperature-history-vertical {
+    margin-top: 0;
+    flex-shrink: 0;
+}
+
+.temp-history-header-enfriamiento {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-size: 0.8rem;
+    color: #000000;
+    margin-bottom: 0.5rem;
+}
+
+.temp-history-list {
+    max-height: 100px;
+    overflow-y: auto;
+    background: #f8fafc;
+    border-radius: 6px;
+    padding: 0.4rem;
+    border: 1px solid #e5e7eb;
+}
+
+.temp-history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.2rem 0;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 0.8rem;
+}
+
+.temp-history-item:last-child {
+    border-bottom: none;
+}
+
+.temp-value {
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-weight: bold;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.temp-value.temp-normal {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.temp-value.temp-high {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.temp-date {
+    font-family: 'Gilroy-Light', sans-serif;
+    color: #6b7280;
+    font-size: 0.75rem;
+}
+
+/* Mensaje de acción para tomar temperatura */
+.temperature-action-message {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #b45309;
+    padding: 0.75rem;
+    text-align: center;
+    font-family: 'Gilroy-Bold', sans-serif;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-top: 1px solid #f59e0b;
+    margin-top: auto;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.pulsing-icon {
+    animation: pulseYellow 1.5s infinite;
+    color: #dc2626;
+}
+
+@keyframes pulseYellow {
+    0% { 
+        color: #dc2626;
+        transform: scale(1);
+    }
+    50% { 
+        color: #ef4444;
+        transform: scale(1.2);
+    }
+    100% { 
+        color: #dc2626;
+        transform: scale(1);
+    }
+}
+
+/* Tarjeta que necesita temperatura */
+.unidad-enfriamiento-vertical-card.time-for-temperature {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2), 0 4px 16px rgba(239, 68, 68, 0.3);
+    animation: cardPulse 2s infinite;
+}
+
+@keyframes cardPulse {
+    0% { 
+        box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2), 0 4px 16px rgba(239, 68, 68, 0.3);
+    }
+    50% { 
+        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.4), 0 6px 20px rgba(239, 68, 68, 0.4);
+    }
+    100% { 
+        box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2), 0 4px 16px rgba(239, 68, 68, 0.3);
+    }
+}
+
+.countdown-display, .countdown-timer {
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* Estado vacío simple */
+.unidades-cola-empty-simple {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+    padding: 2rem;
+}
+
+.empty-simple-card {
+    background-color: #f8fafc;
+    color: #6b7280;
+    padding: 2rem;
+    border-radius: 8px;
+    text-align: center;
+    border: 2px solid #e5e7eb;
+    max-width: 400px;
+    width: 100%;
+}
+
+.empty-simple-card h4 {
+    font-family: 'Gilroy-Bold', sans-serif;
+    color: #374151;
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.empty-simple-card p {
+    font-family: 'Gilroy-Light', sans-serif;
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+}
+
+.empty-simple-card small {
+    color: #9ca3af;
+}
+
+/* Estilos para alertas SweetAlert de temperatura */
+.temperatura-popup {
+    border-radius: 10px !important;
+}
+
+.temperatura-popup .swal2-input {
+    font-size: 1.1rem !important;
+    text-align: center !important;
+    font-weight: 600 !important;
+    border: 2px solid #FF7300 !important;
+}
+
+.temperatura-popup .swal2-input:focus {
+    border-color: #E85D00 !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 115, 0, 0.25) !important;
+}
+
+.countdown-warning {
+    color: #FF7300 !important;
+    font-weight: bold !important;
+}
+
+/* ====== RESPONSIVE PARA ENFRIAMIENTO ====== */
+@media (max-width: 1200px) {
+    .unidades-cola-vertical-grid { 
+        grid-template-columns: repeat(3, 1fr); 
+        margin: 0 0.5rem;
+    }
+}
+
+@media (max-width: 992px) {
+    .unidades-cola-vertical-grid { 
+        grid-template-columns: repeat(2, 1fr); 
+        margin: 0 0.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Responsive para unidades en enfriamiento - una columna en mobile */
+    .unidades-cola-vertical-grid {
+        grid-template-columns: 1fr !important;
+        margin: 0 1rem;
+        gap: 1rem;
+    }
+
+    /* Ajuste: tamaños del layout label/value */
+    .info-row { 
+        font-size: 0.9rem; 
+    }
+    
+    .info-row .label { 
+        font-size: 0.85rem; 
+    }
+    
+    .info-row .value { 
+        font-size: 0.9rem; 
+    }
+}
+
+@media (max-width: 576px) {
+    .unidades-cola-vertical-grid {
+        margin: 0 0.5rem;
+    }
+    
+    /* Ajuste: tamaños del layout label/value */
+    .info-row { 
+        font-size: 0.85rem; 
+    }
+    
+    .info-row .label { 
+        font-size: 0.8rem; 
+    }
+    
+    .info-row .value { 
+        font-size: 0.85rem; 
+    }
+    
+    .temp-history-list {
+        max-height: 100px;
+    }
+}
+
+@media (max-width: 430px) {
+    .unidades-cola-vertical-grid {
+        margin: 0 0.25rem;
+    }
+    
+    /* Ajuste: tamaños del layout label/value */
+    .info-row { 
+        font-size: 0.8rem; 
+        gap: 0.2rem 0.5rem; 
+    }
+    
+    .info-row .label { 
+        font-size: 0.75rem; 
+    }
+    
+    .info-row .value { 
+        font-size: 0.8rem; 
+    }
+    
+    .card-content-vertical-enfriamiento {
+        padding: 0.75rem;
+    }
+    
+    .temp-history-list {
+        max-height: 80px;
+    }
+    
+    .temperature-countdown {
+        padding: 0.5rem;
+    }
+    
+    .countdown-timer {
+        font-size: 1rem;
+    }
+}
+
+/* Animaciones adicionales */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}

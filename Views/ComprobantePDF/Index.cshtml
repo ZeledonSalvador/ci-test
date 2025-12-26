@@ -1,0 +1,847 @@
+@model FrontendQuickpass.Models.ListaComprobanteItem
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Comprobante @(Model != null ? Model.NumeroComprobante.ToString() : "903517")</title>
+
+    <style>
+        /* ========= RESET SENCILLO ========= */
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 9pt;
+            line-height: 1.25;
+        }
+
+        /* ========= ÁREA A4 ========= */
+        .page {
+            width: 210mm;            /* A4 */
+            margin: 0 auto;
+            padding: 5mm 10mm 6mm 10mm; /* top, right, bottom, left */
+        }
+
+        /* ========= HEADER ========= */
+        .header-table {
+            width: 190mm;
+            margin: 0 auto -8mm auto;  /* Ajustado de -15mm a -8mm para evitar solapamiento */
+            border-collapse: collapse;
+            table-layout: fixed; /* CLAVE: fuerza los anchos definidos */
+        }
+
+        .header-table td {
+            vertical-align: top;  /* Cambiado de middle a top para alinear arriba */
+            padding: 0;
+        }
+
+        /* Logo ALMAPAC más pequeño y armonizado */
+        .header-logo {
+            width: 100mm;
+        }
+
+        .logo-almapac {
+            max-height: 40mm !important;
+            max-width: 97mm !important;
+            margin-top: 2mm;
+            width: auto !important;
+            height: auto !important;
+            display: block;
+            object-fit: contain;
+        }
+
+        /* Certificaciones compactas - ahora horizontal */
+        .header-cert {
+            width: 40mm;
+            text-align: center;
+        }
+
+        .header-cert table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .header-cert td {
+            text-align: center;
+        }
+
+        /* Certificación ISO 9001 - clase individual */
+        .cert-iso {
+            display: block;
+            max-height: 27mm !important;
+            max-width: 19mm !important;
+            width: auto !important;
+            height: auto !important;
+            object-fit: contain;
+        }
+
+        .cert-iso {
+                filter: hue-rotate(15deg) saturate(130%);
+            }
+
+        /* Certificación IQNet - clase individual */
+        .cert-iqnet {
+            display: block;
+            max-height: 27mm !important;
+            max-width: 19mm !important;
+            margin-top: 3mm;
+            width: auto !important;
+            height: auto !important;
+            object-fit: contain;
+        }
+
+        /* Texto PLANTA / NO. */
+        .header-info {
+            width: 70mm;
+            text-align: left;
+            text-transform: uppercase;
+            font-size: 16pt;
+        }
+
+        .plant-name {
+            font-weight: 400;
+            color: #003d8f;
+            margin-top: 3mm;
+            margin-left: 4mm;
+        }
+
+        .numero-row {
+            margin-top: 1mm;
+            margin-left: 4mm;
+        }
+
+        .numero{
+             text-transform: none;
+        }
+
+        .label-numero {
+            font-weight: 700;
+            color: #003d8f;
+        }
+
+        .numero-comprobante {
+            font-weight: 700;
+            color: #f39c12;
+            margin-left: 1mm;
+        }
+
+        .header-spacer {
+            display: none;
+        }
+
+        /* ========= CUADRO PRINCIPAL ========= */
+        .box-main {
+            width: 190mm;
+            margin-top: 10mm !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            margin-bottom: 0 !important;
+            border: 1px solid #003d7a;
+            border-left-width: 4px;
+            border-right-width: 4px;
+            border-radius: 4mm;
+            padding: 2mm 3mm;
+    
+        }
+
+        .box-main-table {
+            width: 100%;
+            height: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        /* Fila separadora entre secciones */
+        .section-separator td {
+            padding-top: 2mm;
+            padding-bottom: 2mm;
+        }
+
+
+        .box-main-table td {
+            vertical-align: top;
+    
+            line-height: 0.9;    /* antes 1.5 */
+        }
+
+
+
+        .box-main-table tr + tr {
+            border-top: 0.3mm solid transparent;
+        }
+
+        .col-labels {
+            width: 35%;
+            height: 100%;
+            border-right: 0.2mm solid #003d7a;
+            padding-right: 2mm;
+            text-transform: uppercase;
+            font-size: 9pt;
+            color: #003d7a;
+            font-weight: 500;
+            line-height: 1;    /* antes 1.5 */
+        }
+
+        .col-labels-transaccion {
+            width: 35%;
+            height: 100%;
+            border-right: 0.2mm solid #003d7a;
+            padding-right: 2mm;
+            text-transform: none;
+            font-size: 9pt;
+            color: #003d7a;
+            font-weight: 500;
+            line-height: 1;    /* antes 1.5 */
+        }
+
+        .col-values {
+            width: 59%;
+            padding-left: 2.5mm;
+            font-size: 11pt;
+            text-transform: uppercase;
+            font-family: "Courier New", Courier, monospace;
+            font-weight: 700;
+            color: #352b2b;
+            line-height: 1;    /* antes 1.5 */
+        }
+
+        .col-kilos {
+            width: 20%;
+            text-align: right;
+            color: #352b2b;
+            font-size: 11pt;
+            font-family: "Courier New", Courier, monospace;
+            font-weight: 700;
+        }
+
+        /* ========= BLOQUE OBSERVACIONES ========= */
+        .box-observaciones {
+            width: 190mm;
+            margin: 3mm auto 0 auto;
+            padding: 1mm 1mm 6mm 1mm;
+        }
+
+        .obs-title {
+            text-transform: uppercase;
+            font-size: 8pt;
+            font-weight: 500;
+            color: #004b9b;
+            margin-bottom: 1mm;
+        }
+
+        .obs-body {
+            min-height: 12mm;
+        }
+
+        /* ========= BLOQUE FIRMAS + ALMAPAC ========= */
+        .box-firmas {
+            width: 190mm;
+            margin: 8mm auto 0 auto;
+            border: 1px solid #003d7a;
+            border-left-width: 4px;
+            border-right-width: 4px;
+            border-radius: 4mm;
+            padding: 3mm 4mm 4mm 4mm;
+            position: relative;
+            min-height: 35mm;
+        }
+
+        .almapac-header {
+            position: absolute;
+            top: 3mm;
+            right: 4mm;
+            text-align: right;
+        }
+
+        .almapac-title {
+            font-weight: 700;
+            font-size: 11pt;
+            color: #003d7a;
+            letter-spacing: 2pt;
+            display: block;
+            margin-bottom: 2mm;
+        }
+
+        .checkboxes-container {
+            display: inline-block;
+            text-align: left;
+        }
+
+        .checkbox-item {
+            margin-bottom: 2mm;
+            display: flex;
+            align-items: center;
+        }
+
+        .checkbox {
+            width: 6mm;
+            height: 6mm;
+            border: 0.3mm solid #003d7a;
+            margin-right: 2mm;
+            display: inline-block;
+        }
+
+        .checkbox-label {
+            font-size: 9pt;
+            font-weight: 700;
+            color: #003d7a;
+            text-transform: uppercase;
+        }
+
+        .firmas-table {
+            margin-top: 22mm;
+            margin-left: 4mm;
+            margin-bottom: 2mm;
+            border-collapse: collapse;
+        }
+
+        .firmas-table td {
+            text-align: center;
+            margin-top: 6mm;
+            padding-right: 8mm;
+        }
+
+        .firmas-table td:last-child {
+            padding-right: 0;
+        }
+
+        .firma-linea {
+            width: 60mm;
+            height: 0;
+            border-top: 0.4mm solid #003d7a;
+            margin-bottom: 2mm;
+        }
+
+        .firma-label {
+            font-size: 8pt;
+            font-weight: 400;
+            color: #003d7a;
+            text-transform: uppercase;
+            letter-spacing: 0.5pt;
+        }
+
+        /* ========= LEYENDA LEGAL ========= */
+        .leyenda-legal {
+            width: 190mm;
+            color: #003d7a;
+            font-weight: 700;
+            border: 1px solid #003d7a;
+            border-radius: 2mm;
+            padding: 1mm 2mm;
+            font-size: 5pt;
+            text-transform: uppercase;
+            text-align: justify;
+            line-height: 1.2;
+        }
+
+        /* ========= PIE: ORIGINAL + CÓDIGOS ========= */
+        .pie-final {
+            width: 190mm;
+            margin: 0 auto 0 auto;
+            position: relative;
+            min-height: 25mm;
+        }
+
+        .pie-original {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            text-align: center;
+            text-transform: uppercase;
+            font-size: 8pt;
+            font-weight: 700;
+            color: #c0392b;
+        }
+
+        .pie-codigos {
+            position: absolute;
+            right: 0;
+            top: 0;
+            text-align: right;
+            color: #003d7a;
+        }
+
+        .pie-codigo-box {
+            display: inline-block;
+            border: 1px solid #003d7a;
+            color: #003d7a;
+            border-radius: 4mm;
+            font-size: 7pt;
+            text-transform: uppercase;
+            width: 25mm;
+            vertical-align: bottom;
+            margin-right: 0;
+        }
+
+        .pie-codigo-title {
+            text-align: center;
+            font-weight: 700;
+            border-bottom: 1px solid #003d7a;
+            padding: 0.5mm 0;
+        }
+
+        .pie-codigo-list {
+            text-align: center;
+            line-height: 1.2;
+            padding: 1mm 0 1mm 0;
+        }
+
+        .pie-ed-box {
+            display: inline-block;
+            border: 1px solid #003d7a;
+            border-radius: 3mm;
+            width: 15mm;
+            height: 13mm;
+            text-align: center;
+            text-transform: uppercase;
+            font-size: 7pt;
+            margin-left: 0;
+            vertical-align: bottom;
+        }
+
+        .pie-ed-label {
+            font-weight: 700;
+            border-bottom: 1px solid #003d7a;
+            padding-bottom: 0.5mm;
+        }
+
+        .pie-ed-num {
+            font-size: 16pt;
+            font-weight: 700;
+            margin-top: 0.5mm;
+        }
+
+        /* ========= ESTILOS PARA IMPRESIÓN ========= */
+            @@media screen {
+                body {
+                    background: white;
+                    margin: 0;
+                    padding: 0;
+                    overflow: auto;
+                }
+
+                .page {
+                    display: block;   /* Queremos ver la página dentro del iframe */
+                }
+
+                body::before {
+                    content: none;    /* Quitamos el texto "Preparando impresión..." */
+                }
+            }
+
+
+        /* ========= OCULTAR CONTENIDO EN PANTALLA ========= */
+        @@media screen {
+            body {
+                background: white;
+                overflow: hidden;
+            }
+
+            .page {
+                display: none;
+            }
+
+            body::before {
+                content: "Preparando impresión...";
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                font-family: Arial, sans-serif;
+                font-size: 18px;
+                color: #666;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+
+        <!-- HEADER -->
+        <table class="header-table">
+            <tr>
+                <td class="header-logo">
+                    <img src="~/assets/almapac.png" asp-append-version="true" alt="ALMAPAC" class="logo-almapac" />
+                </td>
+                <td class="header-cert">
+                    <table>
+                        <tr>
+                            <td>
+                                <img src="~/assets/iso9002.png" asp-append-version="true" alt="ISO 9001" class="cert-iso" />
+                            </td>
+                            <td>
+                                <img src="~/assets/iqnet.png" asp-append-version="true" alt="IQNet" class="cert-iqnet" />
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                <td class="header-info">
+                    <div class="plant-name">Planta Acajutla</div>
+                    <div class="numero-row">
+                        <span class="label-numero numero">No.</span>
+                        <span class="numero-comprobante">
+                            @(Model != null ? Model.NumeroComprobante.ToString() : "903517")
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <div class="header-spacer"></div>
+
+        <!-- CUADRO PRINCIPAL -->
+                <!-- CUADRO PRINCIPAL -->
+        <div class="box-main">
+            @{
+                // ======= Cálculos previos =======
+                var fechaEntrada = Model?.FechaEntrada;
+                var horaEntrada = Model?.HoraEntrada ?? string.Empty;
+                string textoEntrada;
+                if (fechaEntrada.HasValue)
+                {
+                    var horaE = !string.IsNullOrWhiteSpace(horaEntrada)
+                        ? horaEntrada
+                        : fechaEntrada.Value.ToString("HH:mm:ss");
+                    textoEntrada = $"{fechaEntrada.Value:dd/MM/yyyy} {horaE}";
+                }
+                else
+                {
+                    textoEntrada = "";
+                }
+
+                var pesoEntrada = Model?.PesoEntrada ?? 0m;
+
+                var fechaSalida = Model?.FechaSalida;
+                var horaSalida = Model?.HoraSalida ?? string.Empty;
+                string textoSalida;
+                if (fechaSalida.HasValue)
+                {
+                    var horaS = !string.IsNullOrWhiteSpace(horaSalida)
+                        ? horaSalida
+                        : fechaSalida.Value.ToString("HH:mm:ss");
+                    textoSalida = $"{fechaSalida.Value:dd/MM/yyyy} {horaS}";
+                }
+                else
+                {
+                    textoSalida = "";
+                }
+
+                var bruto = Model?.PesoBruto ?? 0m;
+                var tara = Model?.PesoTara ?? 0m;
+                var neto = Model?.PesoNeto ?? 0m;
+
+                string FormatKg(decimal v) => v > 0 ? $"{v:0} KGS" : "0 KGS";
+
+                var placa = Model?.Placa ?? "";
+                var placaRem = Model?.PlacaRemolque ?? "";
+                var placas = string.IsNullOrWhiteSpace(placaRem)
+                    ? placa
+                    : $"{placa} / {placaRem}";
+
+                var producto = Model?.Producto ?? "";
+                var transaccion = Model != null && Model.TransaccionNavId > 0
+                    ? Model.TransaccionNavId.ToString()
+                    : "";
+
+                //para que la humedad se muestre en porcentaje
+                var humedad = Model?.PorcentajeHumedad;
+                string textoHumedad = humedad.HasValue
+                    ? $"{humedad.Value:0.#} %"
+                    : "";
+            }
+
+            <table class="box-main-table">
+                <colgroup>
+                    <col style="width: 26%;">
+                    <col style="width: 59%;">
+                    <col style="width: 15%;">
+                </colgroup>
+
+                <!-- ================= SECCIÓN 1: ENTRADA + CLIENTE ================= -->
+
+                <!-- ENTRADA -->
+                <tr>
+                    <td class="col-labels">ENTRADA (HORA, FECHA, PESO)</td>
+                    <td class="col-values">@textoEntrada</td>
+                    <td class="col-kilos">&nbsp;</td>
+                </tr>
+
+                <!-- CLIENTE -->
+                <tr>
+                    <td class="col-labels">CLIENTE</td>
+                    <td class="col-values">@(Model?.Cliente ?? "")</td>
+                    <td class="col-kilos">&nbsp;</td>
+                </tr>
+
+                <!-- SEPARADOR SECCIÓN 1 / 2 -->
+                <tr class="section-separator">
+                    <td class="col-labels">&nbsp;</td>
+                    <td class="col-values">&nbsp;</td>
+                    <td class="col-kilos">&nbsp;</td>
+                </tr>
+
+                <!-- ================= SECCIÓN 2: TRANSPORTE / MOTORISTA / PLACA / BUQUE / BODEGA ================= -->
+
+                <!-- TRANSPORTE -->
+                <tr>
+                    <td class="col-labels">TRANSPORTE</td>
+                    <td class="col-values">@(Model?.Transporte ?? "")</td>
+                    <td class="col-kilos">&nbsp;</td>
+                </tr>
+
+                <!-- MOTORISTA -->
+                <tr>
+                    <td class="col-labels">MOTORISTA</td>
+                    <td class="col-values">@(Model?.Motorista ?? "")</td>
+                    <td class="col-kilos">&nbsp;</td>
+                </tr>
+
+                <!-- PLACA -->
+                <tr>
+                    <td class="col-labels">PLACA</td>
+                    <td class="col-values">@placas</td>
+                    <td class="col-kilos">&nbsp;</td>
+                </tr>
+
+                <!-- BUQUE -->
+                <tr>
+                    <td class="col-labels">BUQUE</td>
+                    <td class="col-values">&nbsp;</td>
+                    <td class="col-kilos">&nbsp;</td>
+                </tr>
+
+                <!-- BODEGA -->
+                <tr>
+                    <td class="col-labels">BODEGA</td>
+                    <td class="col-values">&nbsp;</td>
+                    <td class="col-kilos">&nbsp;</td>
+                </tr>
+
+                <!-- SEPARADOR SECCIÓN 2 / 3 -->
+            <tr class="section-separator">
+                <td class="col-labels">&nbsp;</td>
+                <td class="col-values">&nbsp;</td>
+                <td class="col-kilos">&nbsp;</td>
+            </tr>
+
+                <!-- ================= SECCIÓN 3: SALIDA / TARA / PRODUCTO / ... / HUMEDAD ================= -->
+
+                <!-- SALIDA PESO/BRUTO -->
+                <tr>
+                    <td class="col-labels">SALIDA PESO/BRUTO</td>
+                    <td class="col-values">@textoSalida</td>
+                    <td class="col-kilos">@FormatKg(bruto)</td>
+                </tr>
+
+                <!-- TARA -->
+                <tr>
+                    <td class="col-labels">TARA</td>
+                    <td class="col-values">&nbsp;</td>
+                    <td class="col-kilos">@FormatKg(tara)</td>
+                </tr>
+
+                <!-- PRODUCTO/P. NETO -->
+                <tr>
+                    <td class="col-labels">PRODUCTO/P. NETO</td>
+                    <td class="col-values">@(string.IsNullOrWhiteSpace(producto) ? "" : producto.Replace("_", " "))</td>
+                    <td class="col-kilos">@FormatKg(neto)</td>
+                </tr>
+
+                <!-- FACTOR DE CONVERSIÓN -->
+                <tr>
+                    <td class="col-labels">FACTOR DE CONVERSIÓN</td>
+                    <td class="col-values">&nbsp;</td>
+                    <td class="col-kilos">&nbsp;</td>
+                </tr>
+
+                <!-- EQUIVALENCIA -->
+                <tr>
+                    <td class="col-labels">EQUIVALENCIA</td>
+                    <td class="col-values">&nbsp;</td>
+                    <td class="col-kilos">&nbsp;</td>
+                </tr>
+
+                <!-- PRODUCTO/SUB-TOTAL -->
+                <tr>
+                    <td class="col-labels">PRODUCTO/SUB-TOTAL</td>
+                    <td class="col-values">&nbsp;</td>
+                    <td class="col-kilos">&nbsp;</td>
+                </tr>
+
+                <!-- TRANSACCIÓN NO. -->
+                <tr>
+                    <td class="col-labels-transaccion">TRANSACCIÓN No. </td>
+                    <td class="col-values">@transaccion</td>
+                    <td class="col-kilos">&nbsp;</td>
+                </tr>
+
+                <!-- PORCENTAJE DE HUMEDAD -->
+                <tr>
+                    <td class="col-labels">PORCENTAJE DE HUMEDAD</td>
+                    <td class="col-values">@textoHumedad</td>
+                    <td class="col-kilos">&nbsp;</td>
+                </tr>
+
+                <!-- SEPARADOR SECCIÓN 3 / 4 -->
+            <tr class="section-separator">
+                <td class="col-labels">&nbsp;</td>
+                <td class="col-values">&nbsp;</td>
+                <td class="col-kilos">&nbsp;</td>
+            </tr>   
+
+                <!-- ================= SECCIÓN 4: ENVÍO / LICENCIA / MARCHAMOS ================= -->
+
+                <!-- ENVÍO INGENIO (N°) -->
+                <tr>
+                    <td class="col-labels">ENVIO INGENIO (N°)</td>
+                    <td class="col-values">
+                        @(string.IsNullOrWhiteSpace(Model?.NumeroEnvio) ? "" : Model.NumeroEnvio)
+                    </td>
+                    <td class="col-kilos">&nbsp;</td>
+                </tr>
+
+                <!-- LICENCIA -->
+                <tr>
+                    <td class="col-labels">LICENCIA</td>
+                    <td class="col-values">@(Model?.Licencia ?? "")</td>
+                    <td class="col-kilos">&nbsp;</td>
+                </tr>
+
+                <!-- MARCHAMOS (PREPARADO, POR AHORA VACÍO) -->
+                <!-- MARCHAMOS -->
+                <tr>
+                    <td class="col-labels">MARCHAMOS</td>
+                    <td class="col-values">
+                        @(string.IsNullOrWhiteSpace(Model?.Marchamos) ? "" : Model.Marchamos)
+                    </td>
+                    <td class="col-kilos">&nbsp;</td>
+                </tr>
+            </table>
+        </div>
+
+
+
+        <!-- OBSERVACIONES -->
+        <div class="box-observaciones">
+            <div class="obs-title">Observaciones:</div>
+            <div class="obs-body"></div>
+        </div>
+
+        <!-- FIRMAS -->
+        <div class="box-firmas">
+            <div class="almapac-header">
+                <span class="almapac-title">ALMAPAC</span>
+                <div class="checkboxes-container">
+                    <div class="checkbox-item">
+                        <div class="checkbox"></div>
+                        <span class="checkbox-label">RECIBO</span>
+                    </div>
+                    <div class="checkbox-item">
+                        <div class="checkbox"></div>
+                        <span class="checkbox-label">ENVIO</span>
+                    </div>
+                </div>
+            </div>
+
+            <table class="firmas-table">
+                <tr>
+                    <td>
+                        <div class="firma-linea"></div>
+                        <div class="firma-label">PESADOR</div>
+                    </td>
+                    <td>
+                        <div class="firma-linea"></div>
+                        <div class="firma-label">TRANSPORTISTA</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- LEYENDA LEGAL -->
+        <div class="leyenda-legal">
+            LA MERCADERIA QUE RECIBA ALMAPAC, DEBERÁ ESTAR ASEGURADA POR CUENTA DEL PROPIETARIO
+            CONTRA TODO RIESGO. ALMAPAC NO SERÁ RESPONSABLE POR LAS MERMAS ORIGINADAS POR EL MANEJO
+            Y PERÍODO DE ALMACENAMIENTO QUE SUFRA LA MERCADERIA MIENTRAS SE ENCUENTRE DEPOSITADA
+            EN NUESTRAS INSTALACIONES NI POR CUALQUIER DAÑO O DESTRUCCIÓN, INCLUSIVE LOS PRODUCTOS
+            POR CASO FORTUITO O FUERZA MAYOR.
+        </div>
+
+        <!-- PIE -->
+        <div class="pie-final">
+            <div class="pie-original">
+                COPIA - CLIENTE
+            </div>
+            <div class="pie-codigos">
+                <div class="pie-codigo-box">
+                    <div class="pie-codigo-title">Codigo</div>
+                    <div class="pie-codigo-list">
+                        <div>RP-02.08</div>
+                        <div>RP-03.06</div>
+                        <div>RP-05.02</div>
+                        <div>RP-06.01</div>
+                    </div>
+                </div>
+                <div class="pie-ed-box">
+                    <div class="pie-ed-label">ED</div>
+                    <div class="pie-ed-num">1</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <script>
+        // Esperar a que las imágenes y todo el contenido cargue antes de imprimir
+        window.addEventListener('load', function () {
+            // Pequeño delay para asegurar que todo esté renderizado
+            setTimeout(function () {
+                try {
+                    window.print();
+                } catch (e) {
+                    console.warn("Error al intentar imprimir:", e);
+                }
+            }, 500);
+        });
+
+        // Cuando termina el diálogo de impresión (aceptar o cancelar)
+        window.addEventListener('afterprint', function () {
+            try
+            {
+                // Si estamos embebidos en un iframe, avisar al padre
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage(
+                        { type: 'comprobante-print-finished' },
+                        window.location.origin   // mismo origen
+                    );
+                }
+                else {
+                    // Comportamiento legacy: ventana independiente
+                    window.close();
+                }
+            }
+            catch (e)
+            {
+                console.warn("Error al notificar fin de impresión:", e);
+                try { window.close(); } catch { }
+            }
+        });
+    </script>
+
+</body>
+</html>
