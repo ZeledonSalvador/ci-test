@@ -1,0 +1,42 @@
+name: CI - FrontEnd (.NET)
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build (Release)
+        run: dotnet build -c Release --no-restore
+        
+      - name: Test (Release)
+        run: dotnet test -c Release --no-build
+
+      - name: Publish (Release)
+        run: dotnet publish -c Release -o publish --no-build
+
+      - name: Zip publish output
+        run: |
+          powershell Compress-Archive -Path publish\* -DestinationPath frontend_publish.zip -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend_publish
+          path: frontend_publish.zip
+          retention-days: 14
