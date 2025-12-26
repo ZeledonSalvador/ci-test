@@ -1,42 +1,130 @@
-name: CI - FrontEnd (.NET)
+# Nombre que verás en la pestaña Actions de GitHub
+name: CI - FrontEnd (.NET 8)
 
+# Cuándo se ejecuta este workflow
 on:
+  # Cada push a la rama main (para la prueba)
   push:
     branches: [ "main" ]
+
+  # Permite ejecutarlo manualmente desde la pestaña Actions
   workflow_dispatch:
 
 jobs:
+  # Job principal: compila, prueba, publica y genera artefacto
   build:
+    # Runner donde se ejecuta (Windows porque usaremos PowerShell para zip fácilmente)
     runs-on: windows-latest
 
     steps:
-      - name: Checkout
+      # 1) Descarga el código del repo al runner
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup .NET
+      # 2) Instala/configura el SDK de .NET (tu proyecto es net8.0)
+      - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
 
-      - name: Restore
+      # 3) Cache de NuGet: acelera restores posteriores
+      #    (Si cambian dependencias, la cache se invalida automáticamente)
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/packages.lock.json', '**/global.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      # 4) Restaura dependencias
+      - name: Restore dependencies
         run: dotnet restore
 
+      # 5) Compila en Release
       - name: Build (Release)
         run: dotnet build -c Release --no-restore
-        
+
+      # 6) Ejecuta pruebas (si no tienes proyectos de test y te falla, lo comentamos)
       - name: Test (Release)
         run: dotnet test -c Release --no-build
 
+      # 7) Publica el proyecto (genera la carpeta lista para desplegar en IIS)
+      #    Si tu repo tiene varios proyectos, cambia este comando para apuntar al .csproj exacto:
+      #    dotnet publish path/to/tuProyecto.csproj -c Release -o publish --no-build
       - name: Publish (Release)
         run: dotnet publish -c Release -o publish --no-build
 
+      # 8) Empaqueta la salida de publish en un ZIP (artefacto)
       - name: Zip publish output
         run: |
           powershell Compress-Archive -Path publish\* -DestinationPath frontend_publish.zip -Force
 
-      - name: Upload artifact
+      # 9) Sube el ZIP como "Artifact" del run (NO se guarda en el repo)
+      #    Se descarga desde Actions -> run -> Artifacts
+      - name: Upload artifact (publish zip)
         uses: actions/upload-artifact@v4
         with:
           name: frontend_publish
           path: frontend_publish.zip
           retention-days: 14
+
+  # Job de notificación por correo (se ejecuta aunque falle el build)
+  notify:
+    # Depende del job build; así sabemos si fue success/failure
+    needs: [build]
+
+    # Runner Linux es suficiente para enviar correo
+    runs-on: ubuntu-latest
+
+    # always() hace que este job corra aunque build falle
+    if: always()
+
+    steps:
+      # Envía correo si el build fue exitoso
+      - name: Email - success
+        if: needs.build.result == 'success'
+        uses: dawidd6/action-send-mail@v6
+        with:
+          # Datos SMTP (desde Secrets)
+          server_address: ${{ secrets.SMTP_SERVER }}   # smtp.gmail.com
+          server_port: ${{ secrets.SMTP_PORT }}       # 587
+          username: ${{ secrets.SMTP_USERNAME }}      # tu gmail
+          password: ${{ secrets.SMTP_PASSWORD }}      # App Password de Gmail
+
+          # Datos del correo
+          subject: "✅ CI OK - ${{ github.repository }}"
+          to: ${{ secrets.MAIL_TO }}                  # tu correo empresarial (Outlook)
+          from: ${{ secrets.SMTP_USERNAME }}
+
+          # Contenido del correo
+          body: |
+            El pipeline CI terminó correctamente.
+
+            Repo: ${{ github.repository }}
+            Rama: ${{ github.ref_name }}
+            Commit: ${{ github.sha }}
+            Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      # Envía correo si el build falló
+      - name: Email - failure
+        if: needs.build.result != 'success'
+        uses: dawidd6/action-send-mail@v6
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+
+          subject: "❌ CI FALLÓ - ${{ github.repository }}"
+          to: ${{ secrets.MAIL_TO }}
+          from: ${{ secrets.SMTP_USERNAME }}
+
+          body: |
+            El pipeline CI falló.
+
+            Repo: ${{ github.repository }}
+            Rama: ${{ github.ref_name }}
+            Commit: ${{ github.sha }}
+            Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
