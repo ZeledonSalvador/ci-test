@@ -33,11 +33,11 @@ namespace FrontendQuickpass.Controllers
 
         // GET /Reportes/Consultar?mode=1|2&from=YYYY-MM-DD&to=YYYY-MM-DD[&onlyCompleted=true]
         [HttpGet("Consultar")]
-        public async Task<IActionResult> Consultar(int mode = 2, string from = null, string to = null, bool? onlyCompleted = null)
+        public async Task<IActionResult> Consultar(int mode = 2, string? from = null, string? to = null, bool? onlyCompleted = null)
         {
             var baseUrl = _api.BaseUrl?.TrimEnd('/') + "/shipping/report?onlyCompleted=true";
 
-            var qs = new Dictionary<string, string>();
+            var qs = new Dictionary<string, string?>();
             qs["mode"] = mode.ToString();
             if (!string.IsNullOrWhiteSpace(from)) qs["from"] = from;
             if (!string.IsNullOrWhiteSpace(to)) qs["to"] = to;
@@ -61,12 +61,12 @@ namespace FrontendQuickpass.Controllers
         // GET /Reportes/Export?mode=2&from=...&to=...&format=pdf|excel
         // GET /Reportes/Export?mode=1|2&from=...&to=...&format=pdf|excel
         [HttpGet("Export")]
-        public async Task<IActionResult> Export(int mode, string from, string to, string format)
+        public async Task<IActionResult> Export(int mode, string? from, string? to, string? format)
         {
             format = (format ?? "pdf").ToLowerInvariant();
 
             var baseUrl = _api.BaseUrl?.TrimEnd('/') ?? "";
-            var qs = new Dictionary<string, string>
+            var qs = new Dictionary<string, string?>
             {
                 ["mode"] = mode.ToString(),
                 ["from"] = from ?? "",
@@ -99,7 +99,7 @@ namespace FrontendQuickpass.Controllers
                     : "application/pdf");
 
             // 2) Intentar obtener filename desde Content-Disposition
-            string fileName = null;
+            string? fileName = null;
             var cdHeader = resp.Content.Headers.ContentDisposition;
             if (cdHeader != null)
             {
@@ -107,7 +107,7 @@ namespace FrontendQuickpass.Controllers
             }
             else if (resp.Content.Headers.TryGetValues("Content-Disposition", out var cdValues))
             {
-                var raw = cdValues.FirstOrDefault();
+                var raw = cdValues?.FirstOrDefault();
                 if (!string.IsNullOrWhiteSpace(raw))
                 {
                     var parsed = System.Net.Http.Headers.ContentDispositionHeaderValue.Parse(raw);

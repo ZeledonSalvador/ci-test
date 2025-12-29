@@ -1,4 +1,4 @@
-name: CI - FrontEnd (.NET 8) - Minimal
+name: CI - FrontEnd (.NET 8) 
 
 on:
   push:

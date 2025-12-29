@@ -306,7 +306,7 @@ namespace FrontendQuickpass.Controllers
         {
             if (request == null)
             {
-                _logService.LogActivityAsync("", request, Usuario, 0);
+                _logService.LogActivityAsync("", request ?? new object(), Usuario, 0);
                 return JsonError("Request no puede ser null");
             }
 
@@ -342,7 +342,7 @@ namespace FrontendQuickpass.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error inesperado en SolicitarUnidad");
-                _logService.LogActivityAsync("", request, Usuario, 0);
+                _logService.LogActivityAsync("", request ?? new object(), Usuario, 0);
                 return JsonError("Error inesperado al solicitar unidad.", ex.Message);
             }
         }
@@ -352,7 +352,7 @@ namespace FrontendQuickpass.Controllers
         {
             if (request == null)
             {
-                _logService.LogActivityAsync("", request, Usuario, 0);
+                _logService.LogActivityAsync("", request ?? new object(), Usuario, 0);
                 return JsonError("Request no puede ser null");
             }
 
@@ -383,7 +383,7 @@ namespace FrontendQuickpass.Controllers
 
             if (request == null)
             {
-                _logService.LogActivityAsync("", request, Usuario, 0);
+                _logService.LogActivityAsync("", request ?? new object(), Usuario, 0);
                 return JsonError("Request no puede ser null");
             }
 
@@ -406,11 +406,11 @@ namespace FrontendQuickpass.Controllers
 
                 if (response.IsSuccessStatusCode)
                 {
-                    _logService.LogActivityAsync(codeGen, request, Usuario, 8);
+                    _logService.LogActivityAsync(codeGen ?? "", request ?? new object(), Usuario, 8);
                 }
                 else
                 {
-                    _logService.LogActivityAsync(codeGen, request, Usuario, (int)response.StatusCode);
+                    _logService.LogActivityAsync(codeGen ?? "", request ?? new object(), Usuario, (int)response.StatusCode);
                 }
 
                 return await HandleApiResponseAsync(response, "Error al registrar sweepinglog");
@@ -418,7 +418,7 @@ namespace FrontendQuickpass.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error inesperado en sweepinglog");
-                _logService.LogActivityAsync(codeGen, request, Usuario, 0);
+                _logService.LogActivityAsync(codeGen ?? "", request ?? new object(), Usuario, 0);
                 return JsonError("Error inesperado al registrar sweepinglog.", ex.Message);
             }
         }
@@ -431,7 +431,7 @@ namespace FrontendQuickpass.Controllers
 
             if (request == null)
             {
-                _logService.LogActivityAsync("", request, Usuario, 0);
+                _logService.LogActivityAsync("", request ?? new object(), Usuario, 0);
                 return JsonError("Request no puede ser null");
             }
 
@@ -443,13 +443,13 @@ namespace FrontendQuickpass.Controllers
 
             if (request.ShipmentId <= 0)
             {
-                _logService.LogActivityAsync(codeGen, request, Usuario, 0);
+                _logService.LogActivityAsync(codeGen ?? "", request ?? new object(), Usuario, 0);
                 return JsonError("ID de shipment es requerido");
             }
 
             if (string.IsNullOrEmpty(request.TruckType))
             {
-                _logService.LogActivityAsync(codeGen, request, Usuario, 0);
+                _logService.LogActivityAsync(codeGen ?? "", request ?? new object(), Usuario, 0);
                 return JsonError("Tipo de camión es requerido");
             }
 
@@ -488,11 +488,11 @@ namespace FrontendQuickpass.Controllers
 
                 if (response.IsSuccessStatusCode)
                 {
-                    _logService.LogActivityAsync(codeGen, request, Usuario, 8);
+                    _logService.LogActivityAsync(codeGen ?? "", request ?? new object(), Usuario, 8);
                 }
                 else
                 {
-                    _logService.LogActivityAsync(codeGen, request, Usuario, (int)response.StatusCode);
+                    _logService.LogActivityAsync(codeGen ?? "", request ?? new object(), Usuario, (int)response.StatusCode);
                 }
 
                 return await HandleApiResponseAsync(response, "Error al registrar tiempo de operación");
@@ -500,7 +500,7 @@ namespace FrontendQuickpass.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error inesperado en TiempoAzucar para codeGen: {CodeGen}", request.CodigoGeneracion);
-                _logService.LogActivityAsync(codeGen, request, Usuario, 0);
+                _logService.LogActivityAsync(codeGen ?? "", request ?? new object(), Usuario, 0);
                 return JsonError("Error inesperado al registrar tiempo de operación.", ex.Message);
             }
         }
@@ -512,7 +512,7 @@ namespace FrontendQuickpass.Controllers
 
             if (request == null)
             {
-                _logService.LogActivityAsync("", request, Usuario, 0);
+                _logService.LogActivityAsync("", request ?? new object(), Usuario, 0);
                 return JsonError("Request no puede ser null");
             }
 
@@ -537,11 +537,11 @@ namespace FrontendQuickpass.Controllers
 
                 if (response.IsSuccessStatusCode)
                 {
-                    _logService.LogActivityAsync(codeGen, request, Usuario, request.PredefinedStatusId);
+                    _logService.LogActivityAsync(codeGen ?? "", request, Usuario, request.PredefinedStatusId);
                 }
                 else
                 {
-                    _logService.LogActivityAsync(codeGen, request, Usuario, (int)response.StatusCode);
+                    _logService.LogActivityAsync(codeGen ?? "", request, Usuario, (int)response.StatusCode);
                 }
 
                 return await HandleApiResponseAsync(
@@ -552,7 +552,7 @@ namespace FrontendQuickpass.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error inesperado en ChangeTransactionStatus");
-                _logService.LogActivityAsync(codeGen, request, Usuario, 0);
+                _logService.LogActivityAsync(codeGen ?? "", request, Usuario, 0);
                 return JsonError("Error inesperado al cambiar el estado.", ex.Message);
             }
         }

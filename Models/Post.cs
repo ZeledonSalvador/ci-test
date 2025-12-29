@@ -59,7 +59,7 @@ namespace FrontendQuickpass.Models
     {
         public int id { get; set; }
         public string ingenioCode { get; set; } = string.Empty;
-        public string ingenioNavCode { get; set; }
+        public string ingenioNavCode { get; set; } = string.Empty;
         public string name { get; set; } = string.Empty;
         public DateTime createdAt { get; set; }
         public DateTime updatedAt { get; set; }
@@ -78,6 +78,6 @@ namespace FrontendQuickpass.Models
     public class shipmentSeals
     {
         public int id { get; set; }
-        public string sealCode { get; set; }
+        public string sealCode { get; set; } = string.Empty;
     }
 }

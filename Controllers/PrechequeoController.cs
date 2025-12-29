@@ -356,7 +356,7 @@ namespace FrontendQuickpass.Controllers
                         html,
                         "href\\s*=\\s*\"(?<u>https?://admin\\.factura\\.gob\\.sv[^\"]+)\"",
                         RegexOptions.IgnoreCase);
-                    string targetUrl = href.Success ? href.Groups["u"].Value : null;
+                    string? targetUrl = href.Success ? href.Groups["u"].Value : null;
 
                     if (string.IsNullOrEmpty(targetUrl))
                     {
@@ -419,7 +419,7 @@ namespace FrontendQuickpass.Controllers
                     html,
                     "href\\s*=\\s*\"(?<u>https?://admin\\.factura\\.gob\\.sv[^\"]+)\"",
                     RegexOptions.IgnoreCase);
-                string targetUrl = href.Success ? href.Groups["u"].Value : null;
+                string? targetUrl = href.Success ? href.Groups["u"].Value : null;
 
                 if (string.IsNullOrEmpty(targetUrl))
                 {

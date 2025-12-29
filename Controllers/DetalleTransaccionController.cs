@@ -182,11 +182,11 @@ namespace FrontendQuickpass.Controllers
                     if (data.navRecord != null && data.navRecord is Newtonsoft.Json.Linq.JObject)
                     {
                         var navRecordObj = (Newtonsoft.Json.Linq.JObject)data.navRecord;
-                        pesoBrutoCliente = ToDouble(navRecordObj["pesoin"]);
-                        pesoTaraCliente = ToDouble(navRecordObj["pesoout"]);
-                        pesoNetoCliente = ToDouble(navRecordObj["pesoneto"]) > 0
-                            ? ToDouble(navRecordObj["pesoneto"])
-                            : ToDouble(data.productQuantityKg);
+                        pesoBrutoCliente = ToDouble(navRecordObj["pesoin"] ?? 0);
+                        pesoTaraCliente = ToDouble(navRecordObj["pesoout"] ?? 0);
+                        pesoNetoCliente = ToDouble(navRecordObj["pesoneto"] ?? 0) > 0
+                            ? ToDouble(navRecordObj["pesoneto"] ?? 0)
+                            : ToDouble(data.productQuantityKg ?? 0);
                     }
                     else
                     {
@@ -414,7 +414,7 @@ namespace FrontendQuickpass.Controllers
 
                 var jsonGet = await responseGet.Content.ReadAsStringAsync();
                 var shipmentData = JsonConvert.DeserializeObject<dynamic>(jsonGet);
-                int idShipment = shipmentData.id;
+                int idShipment = shipmentData?.id ?? 0;
 
                 // 2. Obtener id_bascula del usuario logueado
                 var sessionHelper = new Helpers.SessionHelper(_loginService, HttpContext);
@@ -679,7 +679,7 @@ namespace FrontendQuickpass.Controllers
         /// Agregar observación a la bitácora
         /// </summary>
         [HttpPost]
-        public async Task<IActionResult> AgregarObservacion([FromBody] DetalleObservacionRequest request)
+        public IActionResult AgregarObservacion([FromBody] DetalleObservacionRequest request)
         {
             try
             {

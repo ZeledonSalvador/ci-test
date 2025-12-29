@@ -30,19 +30,19 @@ namespace FrontendQuickpass.Models
     public class Status
     {
         public int id { get; set; }
-        public string status { get; set; }
+        public string status { get; set; } = string.Empty;
         public DateTime createdAt { get; set; }
-        public string date { get; set; }
-        public string time { get; set; }
+        public string date { get; set; } = string.Empty;
+        public string time { get; set; } = string.Empty;
     }
 
     public class ShipmentAttachment
     {
         public int id { get; set; }
-        public string fileUrl { get; set; }
-        public string fileName { get; set; }
-        public string fileType { get; set; }
-        public string attachmentType { get; set; }
+        public string fileUrl { get; set; } = string.Empty;
+        public string fileName { get; set; } = string.Empty;
+        public string fileType { get; set; } = string.Empty;
+        public string attachmentType { get; set; } = string.Empty;
         public DateTime createdAt { get; set; }
         public DateTime updatedAt { get; set; }
     }

@@ -83,7 +83,7 @@ namespace FrontendQuickpass.Controllers
                 bool useRecepcion = hourFrom.HasValue || hourTo.HasValue;
 
                 // Si es Index (por fechas), calcula start/end por día completo como antes
-                string startIso = null, endIso = null;
+                string? startIso = null, endIso = null;
                 if (!useRecepcion)
                 {
                     DateTime dFrom = ParseDateOrToday(from);
@@ -129,10 +129,10 @@ namespace FrontendQuickpass.Controllers
                 else
                 {
                     // --- INDEX: usar endpoints por fechas ---
-                    tResumen = ApiGet($"/dashboard/resumen-estatus?start={Uri.EscapeDataString(startIso)}&end={Uri.EscapeDataString(endIso)}{Opt(productId, "product")}{Opt(ingenioId, "ingenioId")}");
-                    tProm = ApiGet($"/dashboard/promedios-atencion?start={Uri.EscapeDataString(startIso)}&end={Uri.EscapeDataString(endIso)}{Opt(productId, "product")}{Opt(ingenioId, "ingenioId")}");
-                    tDesc = ApiGet($"/dashboard/promedio-descarga-historico?start={Uri.EscapeDataString(startIso)}&end={Uri.EscapeDataString(endIso)}{Opt(productId, "product")}{Opt(ingenioId, "ingenioId")}");
-                    tPesos = ApiGet($"/dashboard/pesos-por-status?start={Uri.EscapeDataString(startIso)}&end={Uri.EscapeDataString(endIso)}{Opt(productId, "product")}{Opt(ingenioId, "ingenioId")}&minStatus=9");
+                    tResumen = ApiGet($"/dashboard/resumen-estatus?start={Uri.EscapeDataString(startIso ?? "")}&end={Uri.EscapeDataString(endIso ?? "")}{Opt(productId, "product")}{Opt(ingenioId, "ingenioId")}");
+                    tProm = ApiGet($"/dashboard/promedios-atencion?start={Uri.EscapeDataString(startIso ?? "")}&end={Uri.EscapeDataString(endIso ?? "")}{Opt(productId, "product")}{Opt(ingenioId, "ingenioId")}");
+                    tDesc = ApiGet($"/dashboard/promedio-descarga-historico?start={Uri.EscapeDataString(startIso ?? "")}&end={Uri.EscapeDataString(endIso ?? "")}{Opt(productId, "product")}{Opt(ingenioId, "ingenioId")}");
+                    tPesos = ApiGet($"/dashboard/pesos-por-status?start={Uri.EscapeDataString(startIso ?? "")}&end={Uri.EscapeDataString(endIso ?? "")}{Opt(productId, "product")}{Opt(ingenioId, "ingenioId")}&minStatus=9");
                 }
 
                 await Task.WhenAll(tResumen, tProm, tDesc, tPesos);
@@ -827,23 +827,23 @@ namespace FrontendQuickpass.Controllers
         // ============================
         class ResumenEstatusApi
         {
-            public SectionApi EnTransito { get; set; }
-            public SectionApi Prechequeado { get; set; }
-            public SectionApi Autorizado { get; set; }
-            public SectionApi EnProceso { get; set; }
-            public SectionApi Finalizado { get; set; }
-            public SectionApi EnEnfriamiento { get; set; }
+            public SectionApi EnTransito { get; set; } = new();
+            public SectionApi Prechequeado { get; set; } = new();
+            public SectionApi Autorizado { get; set; } = new();
+            public SectionApi EnProceso { get; set; } = new();
+            public SectionApi Finalizado { get; set; } = new();
+            public SectionApi EnEnfriamiento { get; set; } = new();
         }
         class SectionApi
         {
             public int? Total { get; set; }
-            public List<ResDia> Dias { get; set; }
+            public List<ResDia> Dias { get; set; } = new();
         }
         class ResDia
         {
-            public string Fecha { get; set; }  // "dd-MM-yy"
+            public string Fecha { get; set; } = string.Empty;  // "dd-MM-yy"
             public int? Total { get; set; }
-            public TruckTypeCounts TruckType { get; set; }
+            public TruckTypeCounts TruckType { get; set; } = new();
         }
         class TruckTypeCounts
         {
@@ -855,53 +855,53 @@ namespace FrontendQuickpass.Controllers
 
         class PromediosAtencionApi
         {
-            public PromoGroup PromedioEspera { get; set; }
-            public PromoGroup PromedioAtencion { get; set; }
+            public PromoGroup PromedioEspera { get; set; } = new();
+            public PromoGroup PromedioAtencion { get; set; } = new();
         }
         class PromoGroup
         {
-            public PromoGlobal Global { get; set; }
-            public List<PromoDia> Dias { get; set; }
+            public PromoGlobal Global { get; set; } = new();
+            public List<PromoDia> Dias { get; set; } = new();
         }
         class PromoGlobal
         {
             [JsonProperty("total_pares")] public int TotalPares { get; set; }
             [JsonProperty("promedio_seg")] public double PromedioSeg { get; set; }
-            [JsonProperty("promedio_hhmmss")] public string PromedioHHMMSS { get; set; }
+            [JsonProperty("promedio_hhmmss")] public string PromedioHHMMSS { get; set; } = string.Empty;
         }
         class PromoDia
         {
-            public string fecha { get; set; }
+            public string fecha { get; set; } = string.Empty;
             public int cantidad { get; set; }
             [JsonProperty("promedio_seg")] public double PromedioSeg { get; set; }
-            [JsonProperty("promedio_hhmmss")] public string PromedioHHMMSS { get; set; }
+            [JsonProperty("promedio_hhmmss")] public string PromedioHHMMSS { get; set; } = string.Empty;
         }
 
         class PromDescargaHistApi
         {
-            public PromDescSection PromedioDescarga { get; set; }
+            public PromDescSection PromedioDescarga { get; set; } = new();
         }
         class PromDescSection
         {
             public int Total { get; set; }
-            public List<PromDescDia> Dias { get; set; }
+            public List<PromDescDia> Dias { get; set; } = new();
         }
         class PromDescDia
         {
-            public string Fecha { get; set; } // "dd-MM-yy"
+            public string Fecha { get; set; } = string.Empty; // "dd-MM-yy"
             public int Total { get; set; }
-            public TruckTypeTimes TruckType { get; set; }
+            public TruckTypeTimes TruckType { get; set; } = new();
         }
         class TruckTypeTimes
         {
-            public string Planas { get; set; }
-            public string Volteo { get; set; }
-            public string Pipa { get; set; }
+            public string Planas { get; set; } = string.Empty;
+            public string Volteo { get; set; } = string.Empty;
+            public string Pipa { get; set; } = string.Empty;
         }
 
         class PesosPorStatusApi
         {
-            public PesosSection PesosPorStatus { get; set; }
+            public PesosSection PesosPorStatus { get; set; } = new();
         }
 
         class PesosSection
@@ -910,24 +910,24 @@ namespace FrontendQuickpass.Controllers
             public double TotalKg { get; set; }
 
             // Histórico por día
-            public List<PesoDia> Dias { get; set; }
+            public List<PesoDia> Dias { get; set; } = new();
 
             // Día actual por hora
-            public List<PesoHora> Horas { get; set; }
+            public List<PesoHora> Horas { get; set; } = new();
         }
 
         class PesoDia
         {
-            public string Fecha { get; set; } // "dd-MM-yy"
+            public string Fecha { get; set; } = string.Empty; // "dd-MM-yy"
             public int TotalRegistros { get; set; }
             public double TotalKg { get; set; }
-            public string Product { get; set; }  // por producto
+            public string Product { get; set; } = string.Empty;  // por producto
         }
 
         // Coincide con JSON ("Hora": "HH:00")
         class PesoHora
         {
-            public string Hora { get; set; }           // "HH:00"
+            public string Hora { get; set; } = string.Empty;           // "HH:00"
             public int TotalRegistros { get; set; }
             public double TotalKg { get; set; }
         }
@@ -937,10 +937,10 @@ namespace FrontendQuickpass.Controllers
         // ============================
         class ResumenEstatusV2
         {
-            public string Producto { get; set; }
-            public string Ingenio { get; set; }
-            public RangoV2 Rango { get; set; }
-            public EstatusV2 Estatus { get; set; }
+            public string Producto { get; set; } = string.Empty;
+            public string Ingenio { get; set; } = string.Empty;
+            public RangoV2 Rango { get; set; } = new();
+            public EstatusV2 Estatus { get; set; } = new();
             public List<RowV2> Rows { get; set; } = new();
         }
         class RangoV2
@@ -963,10 +963,10 @@ namespace FrontendQuickpass.Controllers
         class RowV2
         {
             [JsonProperty("fecha")] public DateTime Fecha { get; set; }
-            [JsonProperty("hora")] public string Hora { get; set; }   // "HH:mm:ss" o "previos"
-            [JsonProperty("ingenio_id")] public string IngenioId { get; set; }
-            [JsonProperty("product")] public string Product { get; set; }
-            [JsonProperty("truck_type")] public string TruckType { get; set; }    // "V"|"R"|"P"
+            [JsonProperty("hora")] public string Hora { get; set; } = string.Empty;   // "HH:mm:ss" o "previos"
+            [JsonProperty("ingenio_id")] public string IngenioId { get; set; } = string.Empty;
+            [JsonProperty("product")] public string Product { get; set; } = string.Empty;
+            [JsonProperty("truck_type")] public string TruckType { get; set; } = string.Empty;    // "V"|"R"|"P"
             [JsonProperty("predefined_status_id")] public int PredefStatusId { get; set; } // 2 o 12
             [JsonProperty("current_status")] public int CurrentStatusId { get; set; } // fallback
             [JsonProperty("total")] public int Total { get; set; }
@@ -1174,8 +1174,8 @@ namespace FrontendQuickpass.Controllers
         // ============================
         public class DashboardSummaryDto
         {
-            public KpiDto kpi { get; set; }
-            public ChartsDto charts { get; set; }
+            public KpiDto kpi { get; set; } = new();
+            public ChartsDto charts { get; set; } = new();
 
             public static DashboardSummaryDto Empty() => new DashboardSummaryDto
             {
@@ -1251,15 +1251,15 @@ namespace FrontendQuickpass.Controllers
         // ====== DTOs NUEVO formato de /dashboard/promedios-atencion ======
         class PromediosAtencionV3
         {
-            public string Producto { get; set; }
-            public string Ingenio { get; set; }
-            public RangoV3 Rango { get; set; }
+            public string Producto { get; set; } = string.Empty;
+            public string Ingenio { get; set; } = string.Empty;
+            public RangoV3 Rango { get; set; } = new();
 
             [JsonProperty("PromedioEspera")]
-            public PromoGroupV3 PromedioEspera { get; set; }
+            public PromoGroupV3 PromedioEspera { get; set; } = new();
 
             [JsonProperty("PromedioAtencion")]
-            public PromoGroupV3 PromedioAtencion { get; set; }
+            public PromoGroupV3 PromedioAtencion { get; set; } = new();
         }
 
         class RangoV3
@@ -1278,17 +1278,17 @@ namespace FrontendQuickpass.Controllers
         {
             [JsonProperty("total_pares")] public int TotalPares { get; set; }
             [JsonProperty("promedio_seg")] public double PromedioSeg { get; set; }
-            [JsonProperty("promedio_hhmmss")] public string PromedioHHMMSS { get; set; }
+            [JsonProperty("promedio_hhmmss")] public string PromedioHHMMSS { get; set; } = string.Empty;
             [JsonProperty("cantidad_promedio")] public double CantidadPromedio { get; set; } // promedio global de kg
         }
 
         class PromoDiaV3
         {
-            public string fecha { get; set; }        // "YYYY-MM-DD"
-            public string producto { get; set; }     // por día
+            public string fecha { get; set; } = string.Empty;        // "YYYY-MM-DD"
+            public string producto { get; set; } = string.Empty;     // por día
             public double cantidad { get; set; }     // suma día+producto (kg)
             [JsonProperty("promedio_seg")] public double PromedioSeg { get; set; }
-            [JsonProperty("promedio_hhmmss")] public string PromedioHHMMSS { get; set; }
+            [JsonProperty("promedio_hhmmss")] public string PromedioHHMMSS { get; set; } = string.Empty;
         }
     }
 }
