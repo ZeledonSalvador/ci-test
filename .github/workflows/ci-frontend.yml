@@ -11,7 +11,7 @@ jobs:
   build:
     runs-on: windows-latest
 
-    # Exportamos el START_TIME para que el job "timing" lo use después
+    # Outputs para que el job final (timing) pueda calcular el total
     outputs:
       start_time: ${{ steps.build_start.outputs.START_TIME }}
       duration_before_post_seconds: ${{ steps.duration_before_post.outputs.DURATION_SECONDS }}
@@ -44,7 +44,7 @@ jobs:
           dotnet-version: "8.0.x"
 
       #####################################################################
-      # (1) Cache NuGet (mejora tiempos de ejecución)
+      # Cache NuGet (mejora tiempos de ejecución)
       #####################################################################
       - name: Cache NuGet packages
         uses: actions/cache@v4
@@ -55,12 +55,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      # 3) Restaura paquetes NuGet (dependencias)
+      # Restore de dependencias .NET
       - name: Restore dependencies
         run: dotnet restore
 
       #####################################################################
-      # (2) Security scan (NO bloquea en piloto; deja evidencia)
+      # Security scan (NO bloquea en piloto; deja evidencia)
       #####################################################################
       - name: Security scan - NuGet packages (pilot)
         shell: pwsh
@@ -76,14 +76,14 @@ jobs:
           }
 
       #####################################################################
-      # (3) dotnet format (NO bloquea en piloto)
+      # dotnet format (NO bloquea en piloto)
       #####################################################################
       - name: Check code formatting (pilot)
         continue-on-error: true
         run: dotnet format FrontendQuickpass.sln --verify-no-changes --verbosity minimal
 
       #####################################################################
-      # (4) Analyzers / Code Analysis (NO bloquea en piloto)
+      # Analyzers / Code Analysis (NO bloquea en piloto)
       #####################################################################
       - name: Run .NET Code Analysis (pilot)
         continue-on-error: true
@@ -96,7 +96,7 @@ jobs:
         run: dotnet build -c ${{ env.BUILD_CONFIGURATION }} --no-restore
 
       #####################################################################
-      # (5) Tests + Coverage (solo si existen proyectos de test)
+      # Tests + Coverage (solo si existen proyectos de test)
       #####################################################################
       - name: Test with Code Coverage (pilot, only if tests exist)
         if: hashFiles('**/*Test*.csproj', '**/*Tests*.csproj') != ''
@@ -106,6 +106,7 @@ jobs:
             --collect:"XPlat Code Coverage" `
             --results-directory ./coverage
 
+      # Subir cobertura cruda si existe (no genera HTML; solo evidencia)
       - name: Upload raw coverage (if exists)
         if: always() && hashFiles('coverage/**') != ''
         uses: actions/upload-artifact@v4
@@ -115,7 +116,7 @@ jobs:
           retention-days: 14
 
       #####################################################################
-      # (6) Lint JS (solo si existe package-lock.json)
+      # Lint JS (solo si existe package-lock.json)
       #####################################################################
       - name: Setup Node.js (only if package-lock.json exists)
         if: hashFiles('**/package-lock.json') != ''
@@ -150,7 +151,7 @@ jobs:
           }
 
       #####################################################################
-      # Publicación + artefacto
+      # Publicación + artefacto principal
       #####################################################################
       - name: Publish (Release)
         run: dotnet publish -c ${{ env.BUILD_CONFIGURATION }} /p:PublishDir=publish --no-build
@@ -168,7 +169,7 @@ jobs:
           retention-days: 14
 
       #####################################################################
-      # Artefactos de evidencia
+      # Evidencia como artifacts (seguridad + lint)
       #####################################################################
       - name: Upload security scan results
         if: always() && hashFiles('vulnerable-packages.txt') != ''
@@ -187,8 +188,8 @@ jobs:
           retention-days: 14
 
       #####################################################################
-      # ✅ DURACIÓN "ANTES DE POST"
-      # Este step debe ir al final del job build: mide hasta aquí (antes de los Post...)
+      # Duración "ANTES DE POST"
+      # (Este es el último step que tú defines dentro del job build)
       #####################################################################
       - name: Duration (before Post steps)
         id: duration_before_post
@@ -208,9 +209,9 @@ jobs:
           echo "DURATION_SECONDS=$seconds" >> $env:GITHUB_OUTPUT
           echo "DURATION_HUMAN=$minutes min $remainSeconds seg" >> $env:GITHUB_OUTPUT
 
-      #####################################################################
-      # Resumen del job build (incluye la duración antes de Post)
-      #####################################################################
+      #########################################################################
+      # Summary del job build (muestra solo el tiempo antes de Post)
+      #########################################################################
       - name: Generate GitHub Job Summary (build)
         if: always()
         shell: pwsh
@@ -218,7 +219,7 @@ jobs:
           $summary = @"
           # ✅ CI - FrontEnd (.NET 8)
 
-          ## ⏱️ Tiempos
+          ## ⏱️ Tiempo (job build)
           - **Duración antes de Post steps:** `${{ steps.duration_before_post.outputs.DURATION_HUMAN }}`
 
           ## 📦 Artefactos
@@ -236,8 +237,8 @@ jobs:
           $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
 
   #########################################################################
-  # Job extra: mide el tiempo "incluyendo Post steps del job build"
-  # (se ejecuta solo cuando build ya terminó totalmente).
+  # Job final: calcula el tiempo TOTAL (incluyendo los Post steps del build)
+  # y muestra AMBOS tiempos en un solo resumen final.
   #########################################################################
   timing:
     needs: build
@@ -253,28 +254,34 @@ jobs:
           $startTime = [DateTime]::Parse("${{ needs.build.outputs.start_time }}")
           $duration = $now - $startTime
 
-          $minutes = [int]$duration.TotalMinutes
-          $remainSeconds = $duration.Seconds
+          $totalMinutes = [int]$duration.TotalMinutes
+          $totalSeconds = $duration.Seconds
 
           $beforeSeconds = [int]"${{ needs.build.outputs.duration_before_post_seconds }}"
           $before = New-TimeSpan -Seconds $beforeSeconds
+          $beforeMinutes = [int]$before.TotalMinutes
+          $beforeRemainSeconds = $before.Seconds
 
-          Write-Host "⏱️ Duración antes de Post (build): $([int]$before.TotalMinutes) min $($before.Seconds) seg" -ForegroundColor Cyan
-          Write-Host "⏱️ Duración incluyendo Post (build): $minutes min $remainSeconds seg" -ForegroundColor Green
+          Write-Host "⏱️ Duración antes de Post (build): $beforeMinutes min $beforeRemainSeconds seg" -ForegroundColor Cyan
+          Write-Host "⏱️ Duración incluyendo Post (build): $totalMinutes min $totalSeconds seg" -ForegroundColor Green
 
-          echo "TOTAL_HUMAN=$minutes min $remainSeconds seg" >> $env:GITHUB_OUTPUT
-          echo "TOTAL_SECONDS=$([int]$duration.TotalSeconds)" >> $env:GITHUB_OUTPUT
+          echo "TOTAL_HUMAN=$totalMinutes min $totalSeconds seg" >> $env:GITHUB_OUTPUT
+          echo "BEFORE_HUMAN=$beforeMinutes min $beforeRemainSeconds seg" >> $env:GITHUB_OUTPUT
 
-      - name: Generate GitHub Job Summary (timing)
+      - name: Final Summary (both timings)
         if: always()
         shell: pwsh
         run: |
           $summary = @"
-          # ⏱️ Medición de tiempos (post-ejecución)
+          # ⏱️ Resumen final de tiempos (workflow)
 
-          - **Duración incluyendo Post steps del job build:** `${{ steps.total_duration.outputs.TOTAL_HUMAN }}`
+          ✅ **Duración antes de Post steps (solo pasos definidos en el job `build`):**
+          - `${{ steps.total_duration.outputs.BEFORE_HUMAN }}`
 
-          > Nota: este cálculo se hace cuando el job `build` ya terminó completamente (incluyendo sus pasos Post...).
+          ✅ **Duración incluyendo Post steps del job `build`:**
+          - `${{ steps.total_duration.outputs.TOTAL_HUMAN }}`
+
+          > Nota: el segundo tiempo se calcula cuando el job `build` ya terminó completamente (incluyendo sus pasos Post...).
           "@
 
           $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
