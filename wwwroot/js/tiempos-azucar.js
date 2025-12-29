@@ -590,7 +590,7 @@ function refreshView() {
     }
 
     if (currentRefreshXhr) {
-        try { currentRefreshXhr.abort(); } catch(_) {}
+        try { currentRefreshXhr.abort(); } catch { /* ignore abort errors */ }
         currentRefreshXhr = null;
     }
 

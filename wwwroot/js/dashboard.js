@@ -699,10 +699,10 @@ async function fetchAndRender() {
   
   if (labelsSig !== lastLabelsSig) {
     // reset suave para evitar arrastre de puntos
-    try { if (chFinalizados) { chFinalizados.data.labels = []; chFinalizados.data.datasets.forEach(d=>d.data=[]); chFinalizados.update(); } } catch {}
-    try { if (chRecibidos)   { chRecibidos.data.labels   = []; chRecibidos.data.datasets.forEach(d=>d.data=[]);   chRecibidos.update(); }   } catch {}
-    try { if (chAzucar)      { chAzucar.data.labels      = []; chAzucar.data.datasets.forEach(d=>d.data=[]);      chAzucar.update(); }      } catch {}
-    try { if (chPromedio)    { chPromedio.data.labels    = []; chPromedio.data.datasets.forEach(d=>d.data=[]);    chPromedio.update(); }    } catch {}
+    try { if (chFinalizados) { chFinalizados.data.labels = []; chFinalizados.data.datasets.forEach(d=>d.data=[]); chFinalizados.update(); } } catch { /* ignore chart update errors */ }
+    try { if (chRecibidos)   { chRecibidos.data.labels   = []; chRecibidos.data.datasets.forEach(d=>d.data=[]);   chRecibidos.update(); }   } catch { /* ignore chart update errors */ }
+    try { if (chAzucar)      { chAzucar.data.labels      = []; chAzucar.data.datasets.forEach(d=>d.data=[]);      chAzucar.update(); }      } catch { /* ignore chart update errors */ }
+    try { if (chPromedio)    { chPromedio.data.labels    = []; chPromedio.data.datasets.forEach(d=>d.data=[]);    chPromedio.update(); }    } catch { /* ignore chart update errors */ }
     lastLabelsSig = labelsSig;
   }
 
@@ -1151,7 +1151,7 @@ function setProductColorsIfNeeded(chart) {
       }
     });
     chart.update();
-  } catch {}
+  } catch { /* ignore errors */ }
 }
 
 if (typeof ensureScrollableWidth !== "function") {
@@ -1163,7 +1163,7 @@ if (typeof ensureScrollableWidth !== "function") {
       const base = 400;
       const w = Math.max(base, (labels?.length || 0) * minPxPerLabel);
       el.style.width = `${w}px`;
-    } catch {}
+    } catch { /* ignore errors */ }
   };
 }
 if (typeof setLine2 !== "function") {
@@ -1231,7 +1231,7 @@ function putText(id, txt) { const el = document.getElementById(id); if (el) el.t
 (function warnMissingKPIsOnce(){ try {
   const missing = Object.values(KPI_G).filter(id => !document.getElementById(id));
   if (missing.length) console.warn("[KPIs faltantes en esta vista]:", missing);
-} catch {} })();
+} catch { /* ignore errors */ } })();
 
 /* ================== RENDER KPIs ================== */
 function renderKPIs(raw, filters) {

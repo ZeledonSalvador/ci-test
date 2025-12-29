@@ -189,10 +189,10 @@
     lastLabels = L;
     const labelsSig = DC.stableStringify(L);
     if (labelsSig !== lastLabelsSig) {
-      try { if (chFinalizados) { chFinalizados.data.labels = []; chFinalizados.data.datasets.forEach(d=>d.data=[]); chFinalizados.update(); } } catch {}
-      try { if (chRecibidos)   { chRecibidos.data.labels   = []; chRecibidos.data.datasets.forEach(d=>d.data=[]);   chRecibidos.update(); } } catch {}
-      try { if (chAzucar)      { chAzucar.data.labels      = []; chAzucar.data.datasets.forEach(d=>d.data=[]);      chAzucar.update(); } } catch {}
-      try { if (chPromedio)    { chPromedio.data.labels    = []; chPromedio.data.datasets.forEach(d=>d.data=[]);    chPromedio.update(); } } catch {}
+      try { if (chFinalizados) { chFinalizados.data.labels = []; chFinalizados.data.datasets.forEach(d=>d.data=[]); chFinalizados.update(); } } catch { /* ignore chart update errors */ }
+      try { if (chRecibidos)   { chRecibidos.data.labels   = []; chRecibidos.data.datasets.forEach(d=>d.data=[]);   chRecibidos.update(); } } catch { /* ignore chart update errors */ }
+      try { if (chAzucar)      { chAzucar.data.labels      = []; chAzucar.data.datasets.forEach(d=>d.data=[]);      chAzucar.update(); } } catch { /* ignore chart update errors */ }
+      try { if (chPromedio)    { chPromedio.data.labels    = []; chPromedio.data.datasets.forEach(d=>d.data=[]);    chPromedio.update(); } } catch { /* ignore chart update errors */ }
       lastLabelsSig = labelsSig;
     }
 

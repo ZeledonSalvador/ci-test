@@ -25,12 +25,12 @@
       const minPxPerLabel = 28, base = 300;
       const w = Math.max(base, (labels?.length||0)*minPxPerLabel);
       (inner || canvas).style.width = w+"px";
-    } catch {}
+    } catch { /* ignore errors */ }
   };
 
   // Resize
   DC.refreshChartAfterResize = DC.refreshChartAfterResize || function(id){
-    try { window.Chart?.getChart?.(id)?.resize(); } catch {}
+    try { window.Chart?.getChart?.(id)?.resize(); } catch { /* ignore errors */ }
   };
 
   // Stable stringify + hash
