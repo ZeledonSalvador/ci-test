@@ -37,7 +37,7 @@ jobs:
 
       # 5) Publica la aplicación (salida lista para desplegar en IIS)
       - name: Publish (Release)
-        run: dotnet publish -c ${{ env.BUILD_CONFIGURATION }} -o publish --no-build
+        run: dotnet publish -c ${{ env.BUILD_CONFIGURATION }} /p:PublishDir=publish --no-build
 
       # 6) Empaqueta la salida publicada en un ZIP
       - name: Zip publish output
