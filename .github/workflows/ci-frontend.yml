@@ -1,4 +1,4 @@
-name: CI - FrontEnd (.NET 8) 
+name: CI - FrontEnd (.NET 8) - Incremental + Timing
 
 on:
   push:
@@ -11,12 +11,28 @@ jobs:
   build:
     runs-on: windows-latest
 
+    # Exportamos el START_TIME para que el job "timing" lo use después
+    outputs:
+      start_time: ${{ steps.build_start.outputs.START_TIME }}
+      duration_before_post_seconds: ${{ steps.duration_before_post.outputs.DURATION_SECONDS }}
+
     env:
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
       DOTNET_CLI_TELEMETRY_OPTOUT: true
       BUILD_CONFIGURATION: Release
 
     steps:
+      #####################################################################
+      # 0) Guardar hora de inicio del job (para calcular duración)
+      #####################################################################
+      - name: Build Start Time
+        id: build_start
+        shell: pwsh
+        run: |
+          $startTime = Get-Date
+          Write-Host "🚀 Inicio del build: $($startTime.ToString('yyyy-MM-dd HH:mm:ss'))" -ForegroundColor Cyan
+          echo "START_TIME=$($startTime.ToString('o'))" >> $env:GITHUB_OUTPUT
+
       # 1) Descarga el código del repositorio al runner
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,25 +43,123 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
+      #####################################################################
+      # (1) Cache NuGet (mejora tiempos de ejecución)
+      #####################################################################
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/packages.lock.json', '**/global.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
       # 3) Restaura paquetes NuGet (dependencias)
       - name: Restore dependencies
         run: dotnet restore
 
-      # 4) Compila en modo Release (gate principal)
+      #####################################################################
+      # (2) Security scan (NO bloquea en piloto; deja evidencia)
+      #####################################################################
+      - name: Security scan - NuGet packages (pilot)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          dotnet list package --vulnerable --include-transitive `
+            | Tee-Object -FilePath vulnerable-packages.txt
+
+          if (Select-String -Path vulnerable-packages.txt -Pattern "vulnerable" -Quiet) {
+            Write-Host "⚠️ Posibles vulnerabilidades detectadas (piloto: no bloquea)." -ForegroundColor Yellow
+          } else {
+            Write-Host "✅ No se reportan vulnerabilidades por dotnet list package" -ForegroundColor Green
+          }
+
+      #####################################################################
+      # (3) dotnet format (NO bloquea en piloto)
+      #####################################################################
+      - name: Check code formatting (pilot)
+        continue-on-error: true
+        run: dotnet format FrontendQuickpass.sln --verify-no-changes --verbosity minimal
+
+      #####################################################################
+      # (4) Analyzers / Code Analysis (NO bloquea en piloto)
+      #####################################################################
+      - name: Run .NET Code Analysis (pilot)
+        continue-on-error: true
+        run: dotnet build -c ${{ env.BUILD_CONFIGURATION }} --no-restore /p:EnforceCodeStyleInBuild=true /p:TreatWarningsAsErrors=false
+
+      #####################################################################
+      # Gate principal: si falla, CI debe fallar
+      #####################################################################
       - name: Build (Release)
         run: dotnet build -c ${{ env.BUILD_CONFIGURATION }} --no-restore
 
-      # 5) Publica la aplicación (salida lista para desplegar en IIS)
+      #####################################################################
+      # (5) Tests + Coverage (solo si existen proyectos de test)
+      #####################################################################
+      - name: Test with Code Coverage (pilot, only if tests exist)
+        if: hashFiles('**/*Test*.csproj', '**/*Tests*.csproj') != ''
+        continue-on-error: true
+        run: |
+          dotnet test -c ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal `
+            --collect:"XPlat Code Coverage" `
+            --results-directory ./coverage
+
+      - name: Upload raw coverage (if exists)
+        if: always() && hashFiles('coverage/**') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-coverage
+          path: coverage/
+          retention-days: 14
+
+      #####################################################################
+      # (6) Lint JS (solo si existe package-lock.json)
+      #####################################################################
+      - name: Setup Node.js (only if package-lock.json exists)
+        if: hashFiles('**/package-lock.json') != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install npm dependencies (only if package-lock.json exists)
+        if: hashFiles('**/package-lock.json') != ''
+        run: npm ci --no-audit --no-fund
+
+      - name: JavaScript Linting (pilot + report)
+        if: hashFiles('**/package-lock.json') != ''
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          if (Test-Path "package.json") {
+            $pkg = Get-Content "package.json" -Raw | ConvertFrom-Json
+            if ($pkg.scripts -and $pkg.scripts.lint) {
+              npm run lint 2>&1 | Tee-Object -FilePath eslint-report.txt
+              if ($LASTEXITCODE -ne 0) {
+                Write-Host "⚠️ ESLint reportó hallazgos (piloto: no bloquea)." -ForegroundColor Yellow
+                exit 0
+              }
+            } else {
+              "No hay script 'lint' en package.json." | Tee-Object -FilePath eslint-report.txt
+            }
+          } else {
+            "No existe package.json." | Tee-Object -FilePath eslint-report.txt
+          }
+
+      #####################################################################
+      # Publicación + artefacto
+      #####################################################################
       - name: Publish (Release)
         run: dotnet publish -c ${{ env.BUILD_CONFIGURATION }} /p:PublishDir=publish --no-build
 
-      # 6) Empaqueta la salida publicada en un ZIP
       - name: Zip publish output
         shell: pwsh
         run: |
           Compress-Archive -Path publish\* -DestinationPath frontend_publish.zip -Force
 
-      # 7) Sube el ZIP como artifact del run (descargable desde Actions)
       - name: Upload artifact (publish zip)
         uses: actions/upload-artifact@v4
         with:
@@ -53,25 +167,114 @@ jobs:
           path: frontend_publish.zip
           retention-days: 14
 
-      # 8) Resumen visual en la pestaña "Summary" del run
-      - name: Generate GitHub Job Summary
+      #####################################################################
+      # Artefactos de evidencia
+      #####################################################################
+      - name: Upload security scan results
+        if: always() && hashFiles('vulnerable-packages.txt') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-results
+          path: vulnerable-packages.txt
+          retention-days: 14
+
+      - name: Upload ESLint report
+        if: always() && hashFiles('eslint-report.txt') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: eslint-report
+          path: eslint-report.txt
+          retention-days: 14
+
+      #####################################################################
+      # ✅ DURACIÓN "ANTES DE POST"
+      # Este step debe ir al final del job build: mide hasta aquí (antes de los Post...)
+      #####################################################################
+      - name: Duration (before Post steps)
+        id: duration_before_post
+        if: always()
+        shell: pwsh
+        run: |
+          $endTime = Get-Date
+          $startTime = [DateTime]::Parse("${{ steps.build_start.outputs.START_TIME }}")
+          $duration = $endTime - $startTime
+
+          $seconds = [int]$duration.TotalSeconds
+          $minutes = [int]$duration.TotalMinutes
+          $remainSeconds = $duration.Seconds
+
+          Write-Host "⏱️ Duración (antes de Post): $minutes min $remainSeconds seg" -ForegroundColor Cyan
+
+          echo "DURATION_SECONDS=$seconds" >> $env:GITHUB_OUTPUT
+          echo "DURATION_HUMAN=$minutes min $remainSeconds seg" >> $env:GITHUB_OUTPUT
+
+      #####################################################################
+      # Resumen del job build (incluye la duración antes de Post)
+      #####################################################################
+      - name: Generate GitHub Job Summary (build)
         if: always()
         shell: pwsh
         run: |
           $summary = @"
-          # ✅ CI - FrontEnd (.NET 8) (Minimal)
+          # ✅ CI - FrontEnd (.NET 8)
 
-          **Estado:** completado
+          ## ⏱️ Tiempos
+          - **Duración antes de Post steps:** `${{ steps.duration_before_post.outputs.DURATION_HUMAN }}`
 
-          ## 📦 Artefacto generado
-          - **frontend_publish.zip** (retención: 14 días)
+          ## 📦 Artefactos
+          - frontend_publish.zip
+          - security-scan-results (si existió)
+          - eslint-report (si existió)
+          - raw-coverage (si existió)
 
-          ## 🔧 Configuración
-          - **Runner:** ${{ runner.os }}
-          - **Build:** ${{ env.BUILD_CONFIGURATION }}
-          - **Branch:** ${{ github.ref_name }}
-          - **Commit:** [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
-          - **Run:** [${{ github.run_number }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          ## 🔗 Info
+          - Branch: ${{ github.ref_name }}
+          - Commit: [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+          - Run: [${{ github.run_number }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          "@
+
+          $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
+
+  #########################################################################
+  # Job extra: mide el tiempo "incluyendo Post steps del job build"
+  # (se ejecuta solo cuando build ya terminó totalmente).
+  #########################################################################
+  timing:
+    needs: build
+    runs-on: windows-latest
+    if: always()
+
+    steps:
+      - name: Total Duration (including build Post steps)
+        id: total_duration
+        shell: pwsh
+        run: |
+          $now = Get-Date
+          $startTime = [DateTime]::Parse("${{ needs.build.outputs.start_time }}")
+          $duration = $now - $startTime
+
+          $minutes = [int]$duration.TotalMinutes
+          $remainSeconds = $duration.Seconds
+
+          $beforeSeconds = [int]"${{ needs.build.outputs.duration_before_post_seconds }}"
+          $before = New-TimeSpan -Seconds $beforeSeconds
+
+          Write-Host "⏱️ Duración antes de Post (build): $([int]$before.TotalMinutes) min $($before.Seconds) seg" -ForegroundColor Cyan
+          Write-Host "⏱️ Duración incluyendo Post (build): $minutes min $remainSeconds seg" -ForegroundColor Green
+
+          echo "TOTAL_HUMAN=$minutes min $remainSeconds seg" >> $env:GITHUB_OUTPUT
+          echo "TOTAL_SECONDS=$([int]$duration.TotalSeconds)" >> $env:GITHUB_OUTPUT
+
+      - name: Generate GitHub Job Summary (timing)
+        if: always()
+        shell: pwsh
+        run: |
+          $summary = @"
+          # ⏱️ Medición de tiempos (post-ejecución)
+
+          - **Duración incluyendo Post steps del job build:** `${{ steps.total_duration.outputs.TOTAL_HUMAN }}`
+
+          > Nota: este cálculo se hace cuando el job `build` ya terminó completamente (incluyendo sus pasos Post...).
           "@
 
           $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
