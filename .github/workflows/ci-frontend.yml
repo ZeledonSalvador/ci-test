@@ -9,6 +9,7 @@ on:
   schedule:
     - cron: "*/1 * * * *"
 
+
 concurrency:
   group: ci-frontend-${{ github.ref }}
   cancel-in-progress: true
@@ -28,6 +29,13 @@ jobs:
       BUILD_CONFIGURATION: Release
 
     steps:
+      - name: Debug trigger
+        shell: pwsh
+        run: |
+          Write-Host "Event: ${{ github.event_name }}"
+          Write-Host "Ref:   ${{ github.ref }}"
+
+
       #####################################################################
       # 0) Guardar hora de inicio del job (para calcular duración)
       #####################################################################
