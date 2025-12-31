@@ -31,7 +31,8 @@ namespace FrontendQuickpass.Middleware
             // RUTAS BASE PÚBLICAS (ej. /Prechequeo, /Prechequeo/...)
             _publicBaseRoutes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                "/Prechequeo"
+                "/Prechequeo",
+                "/Reportes"  // Acceso público temporal para desarrollo
             };
 
             // ARCHIVOS ESTÁTICOS Y RUTAS DE DESCUBRIMIENTO
@@ -52,6 +53,14 @@ namespace FrontendQuickpass.Middleware
             var currentPath = context.Request.Path.Value ?? "";
 
             // Console.WriteLine($"Middleware - Procesando ruta: '{currentPath}'");
+
+            // BYPASS TEMPORAL PARA DESARROLLO: Permitir acceso completo a /Reportes
+            if (currentPath.StartsWith("/Reportes", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine($"BYPASS REPORTES - Acceso permitido: {currentPath}");
+                await _next(context);
+                return;
+            }
 
             // 1. RUTAS PÚBLICAS (sin autenticación)
             if (IsPublicPath(currentPath))

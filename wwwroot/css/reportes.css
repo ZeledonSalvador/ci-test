@@ -64,12 +64,22 @@ select{
   height: 44px; /* para empatar con h-11 */
   padding: 0 12px;
   outline: none;
-  transition: box-shadow .15s, border-color .15s;
+  transition: box-shadow .15s, border-color .15s, opacity .2s, background-color .2s;
 }
 input[type="date"]:focus,
 select:focus{
   border-color: var(--brand);
   box-shadow: 0 0 0 3px rgba(24,42,110,.15);
+}
+
+/* Campo deshabilitado dinámicamente */
+select.qp-disabled-field,
+input.qp-disabled-field {
+  opacity: 0.5;
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+  pointer-events: none;
+  color: #9ca3af;
 }
 
 /* Botón Buscar (también ya lo estilaste con utilidades, reforzamos estados) */
@@ -99,12 +109,191 @@ select:focus{
 @keyframes sp { to { transform: rotate(360deg);} }
 
 /* ==============================
+   Estado del Reporte
+============================== */
+.reportes-estado {
+  margin: 20px 40px;
+  padding: 30px;
+  background: #f8f9fa;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  text-align: center;
+  transition: opacity 0.3s ease;
+}
+
+.reportes-estado.hidden {
+  display: none;
+}
+
+.estado-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.estado-icon {
+  font-size: 2.5rem;
+  color: var(--muted);
+}
+
+.estado-texto {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* Estados específicos */
+.reportes-estado.loading .estado-icon {
+  color: var(--brand);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.reportes-estado.error .estado-icon {
+  color: #dc3545;
+}
+
+.reportes-estado.empty .estado-icon {
+  color: #ffc107;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Spinner para estado de carga */
+.estado-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid var(--brand);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ==============================
+   Resumen del Reporte
+============================== */
+.resumen-container {
+  margin: 20px 40px;
+  transition: opacity 0.3s ease;
+}
+
+.resumen-container.hidden {
+  display: none;
+}
+
+.resumen-card {
+  background: #FFF;
+  border-radius: 14px;
+  padding: 20px 30px;
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.25);
+}
+
+.resumen-icon {
+  font-size: 3rem;
+  color: var(--brand);
+  flex-shrink: 0;
+}
+
+.resumen-content {
+  display: flex;
+  gap: 35px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.resumen-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resumen-label {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.resumen-valor {
+  font-size: 22px;
+  color:var(--text);
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .resumen-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .resumen-content {
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+  }
+}
+
+/* ==============================
    Barra de Exportaciones
 ============================== */
 .exports{
   margin: 16px 40px 8px 40px; /* separada del bloque de filtros */
   display:flex;
   gap:10px;
+}
+.btn-pdf{
+  appearance: none;
+  border: 1px solid var(--brand);
+  background: #ff0000 !important;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, color .15s, transform .04s, box-shadow .15s;
+}
+.btn-pdf:hover{
+  background: #CA0F14 !important;
+  color:#fff;
+  box-shadow: 0 6px 20px rgba(24,42,110,.15);
+}
+
+.btn-pdf:active {
+    transform: scale(1.05);
+}
+
+.btn-excel{
+  appearance: none;
+  border: 1px solid var(--brand);
+  background: #00B050 !important;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, color .15s, transform .04s, box-shadow .15s;
+}
+.btn-excel:hover{
+  background: #008E31 !important;
+  color:#fff;
+  box-shadow: 0 6px 20px rgba(24,42,110,.15);
+}
+
+.btn-excel:active {
+    transform: scale(1.05);
 }
 
 .btn-export{

@@ -24,6 +24,7 @@
             <option value="">Seleccione</option>
             <option value="1">Lista Negra Motoristas</option>
             <option value="2">Ingreso de Camiones</option>
+            <option value="3">Requiere Barrido</option>
         </select>
     </div>
 
@@ -70,15 +71,49 @@
     </div>
 </div>
 
+<!-- Estado del reporte -->
+<div id="reportes-estado" class="reportes-estado">
+    <div class="estado-content">
+        <i class="fas fa-filter estado-icon"></i>
+        <p class="estado-texto">Completa los filtros y presiona Buscar para ver los resultados</p>
+    </div>
+</div>
+
+<!-- 
 <div id="toolbar" class="toolbar hidden">
   <div class="muted"></div>
   <input type="search" id="f-busqueda" placeholder="Buscar…" />
 </div>
+-->
 
-<section id="exports" class="exports hidden">
-    <button id="btn-pdf" class="btn-export" disabled>Descargar PDF</button>
-    <button id="btn-excel" class="btn-export" disabled>Descargar Excel</button>
-</section>
+<!-- Resumen del reporte -->
+<div id="resumen-container" class="resumen-container hidden">
+    <div class="resumen-card">
+        <div class="resumen-icon">
+            <i class="fas fa-chart-bar"></i>
+        </div>
+        <div class="resumen-content">
+            <div class="resumen-item">
+                <span class="resumen-label">Total de registros:</span>
+                <span class="resumen-valor" id="resumen-total">0</span>
+            </div>
+            <div class="resumen-item">
+                <span class="resumen-label">Primera entrada:</span>
+                <span class="resumen-valor" id="resumen-min-entrada">-</span>
+            </div>
+            <div class="resumen-item">
+                <span class="resumen-label">Última salida:</span>
+                <span class="resumen-valor" id="resumen-max-salida">-</span>
+            </div>
+        </div>
+        <section id="exports" class="exports hidden">
+            <button id="btn-pdf" class="btn-pdf" disabled>Descargar PDF</button>
+            <button id="btn-excel" class="btn-excel" disabled>Descargar Excel</button>
+        </section>
+    </div>
+</div>
+
+
 
 <section id="result">
     <div class="table-wrapper hidden">
