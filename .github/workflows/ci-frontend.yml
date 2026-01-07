@@ -402,8 +402,7 @@ jobs:
           | Evento | $event |
           | Repositorio | $repo |
           | Branch | $branch |
-          | Ref | $ref |
-          | SHA | [$shortSha](https://github.com/$repo/commit/$sha) |
+          | Commit | [$shortSha](https://github.com/$repo/commit/$sha) |
           | Run | [#$runNumber](https://github.com/$repo/actions/runs/$runId) |
           | Start Time | $startTime |
 
