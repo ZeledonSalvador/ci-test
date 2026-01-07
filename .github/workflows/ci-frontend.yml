@@ -430,6 +430,81 @@ jobs:
           $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
 
       #########################################################################
+      # Notificación por correo si hay fallos
+      #########################################################################
+      - name: Send failure notification email
+        if: failure() || (always() && steps.build_release.outputs.exit_code != '0')
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "❌ CI Frontend falló - ${{ github.repository }} [${{ github.ref_name }}]"
+          to: ${{ secrets.NOTIFICATION_EMAIL }}
+          from: GitHub Actions CI
+          html_body: |
+            <h2>❌ El workflow de CI Frontend ha fallado</h2>
+
+            <h3>📋 Información del run:</h3>
+            <ul>
+              <li><strong>Repositorio:</strong> ${{ github.repository }}</li>
+              <li><strong>Branch:</strong> ${{ github.ref_name }}</li>
+              <li><strong>Commit:</strong> <a href="https://github.com/${{ github.repository }}/commit/${{ github.sha }}">${{ github.sha }}</a></li>
+              <li><strong>Actor:</strong> ${{ github.actor }}</li>
+              <li><strong>Evento:</strong> ${{ github.event_name }}</li>
+              <li><strong>Run:</strong> <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">#${{ github.run_number }}</a></li>
+            </ul>
+
+            <h3>🔍 Diagnóstico:</h3>
+            <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+              <tr style="background-color: #f0f0f0;">
+                <th>Paso</th>
+                <th>Exit Code</th>
+                <th>Estado</th>
+              </tr>
+              <tr>
+                <td>dotnet format (pilot)</td>
+                <td>${{ steps.dotnet_format.outputs.exit_code || 'N/A' }}</td>
+                <td>${{ steps.dotnet_format.outputs.exit_code == '0' && '✅ OK' || '⚠️ WARN' }}</td>
+              </tr>
+              <tr style="background-color: #fff3cd;">
+                <td><strong>Build (Gate)</strong></td>
+                <td><strong>${{ steps.build_release.outputs.exit_code || 'N/A' }}</strong></td>
+                <td><strong>${{ steps.build_release.outputs.exit_code == '0' && '✅ OK' || '❌ FAIL' }}</strong></td>
+              </tr>
+              <tr>
+                <td>Test + Coverage (pilot)</td>
+                <td>${{ steps.test_cov.outputs.exit_code || 'N/A' }}</td>
+                <td>${{ steps.test_cov.outputs.exit_code == '0' && '✅ OK' || (steps.test_cov.outputs.exit_code && '⚠️ WARN' || '⚪ N/A') }}</td>
+              </tr>
+              <tr>
+                <td>JS Lint (pilot)</td>
+                <td>${{ steps.js_lint.outputs.exit_code || 'N/A' }}</td>
+                <td>${{ steps.js_lint.outputs.exit_code == '0' && '✅ OK' || (steps.js_lint.outputs.exit_code && '⚠️ WARN' || '⚪ N/A') }}</td>
+              </tr>
+            </table>
+
+            <h3>📊 Causa probable del fallo:</h3>
+            <p style="background-color: #f8d7da; padding: 10px; border-left: 4px solid #dc3545;">
+              ${{ steps.build_release.outputs.exit_code != '0' && '<strong>❌ Build falló</strong>: El paso de compilación (Build Release) reportó errores. Revisa los logs de compilación.' || 'El workflow falló por un error inesperado. Revisa los logs del workflow.' }}
+            </p>
+
+            <h3>🔗 Acciones recomendadas:</h3>
+            <ol>
+              <li>Revisa los <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">logs completos del workflow</a></li>
+              <li>Verifica el commit que causó el error: <a href="https://github.com/${{ github.repository }}/commit/${{ github.sha }}">${{ github.sha }}</a></li>
+              <li>Si el build falló, ejecuta localmente: <code>dotnet build -c Release</code></li>
+              <li>Si dotnet format falló, ejecuta: <code>dotnet format FrontendQuickpass.sln</code></li>
+            </ol>
+
+            <hr>
+            <p style="color: #6c757d; font-size: 12px;">
+              Esta notificación fue generada automáticamente por GitHub Actions<br>
+              Workflow: CI - FrontEnd (.NET 8) - Incremental + Timing
+            </p>
+
+      #########################################################################
       # Gate final: falla el job SOLO si build_release falló
       #########################################################################
       - name: Fail job if required steps failed
