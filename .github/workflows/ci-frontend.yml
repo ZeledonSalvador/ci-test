@@ -436,13 +436,13 @@ jobs:
         if: failure() || (always() && steps.build_release.outputs.exit_code != '0')
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: smtp.gmail.com
+          server_address: smtp.office365.com
           server_port: 587
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
           subject: "❌ CI Frontend falló - ${{ github.repository }} [${{ github.ref_name }}]"
           to: ${{ secrets.NOTIFICATION_EMAIL }}
-          from: GitHub Actions CI
+          from: ${{ secrets.SMTP_USERNAME }}
           html_body: |
             <h2>❌ El workflow de CI Frontend ha fallado</h2>
 
