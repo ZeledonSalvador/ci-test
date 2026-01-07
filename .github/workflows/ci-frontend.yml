@@ -90,11 +90,22 @@ jobs:
           }
 
       #####################################################################
-      # dotnet format (NO bloquea en piloto)
+      # dotnet format (NO bloquea en piloto; captura exit_code + ms)
       #####################################################################
       - name: Check code formatting (pilot)
-        continue-on-error: true
-        run: dotnet format FrontendQuickpass.sln --verify-no-changes --verbosity minimal
+        id: dotnet_format
+        shell: pwsh
+        run: |
+          $t0 = Get-Date
+          dotnet format FrontendQuickpass.sln --verify-no-changes --verbosity minimal
+          $code = $LASTEXITCODE
+          $ms = [int]((Get-Date) - $t0).TotalMilliseconds
+
+          Write-Host "dotnet format exit code: $code (duration: $ms ms)"
+
+          echo "exit_code=$code" >> $env:GITHUB_OUTPUT
+          echo "duration_ms=$ms" >> $env:GITHUB_OUTPUT
+          exit 0
 
       #####################################################################
       # Analyzers / Code Analysis (NO bloquea en piloto)
@@ -104,21 +115,43 @@ jobs:
         run: dotnet build -c ${{ env.BUILD_CONFIGURATION }} --no-restore /p:EnforceCodeStyleInBuild=true /p:TreatWarningsAsErrors=false
 
       #####################################################################
-      # Gate principal: si falla, CI debe fallar
+      # Gate principal: captura exit_code + ms (no rompe inmediato)
       #####################################################################
       - name: Build (Release)
-        run: dotnet build -c ${{ env.BUILD_CONFIGURATION }} --no-restore
+        id: build_release
+        shell: pwsh
+        run: |
+          $t0 = Get-Date
+          dotnet build -c ${{ env.BUILD_CONFIGURATION }} --no-restore
+          $code = $LASTEXITCODE
+          $ms = [int]((Get-Date) - $t0).TotalMilliseconds
+
+          Write-Host "dotnet build exit code: $code (duration: $ms ms)"
+
+          echo "exit_code=$code" >> $env:GITHUB_OUTPUT
+          echo "duration_ms=$ms" >> $env:GITHUB_OUTPUT
+          exit 0
 
       #####################################################################
       # Tests + Coverage (solo si existen proyectos de test)
       #####################################################################
       - name: Test with Code Coverage (pilot, only if tests exist)
+        id: test_cov
         if: hashFiles('**/*Test*.csproj', '**/*Tests*.csproj') != ''
-        continue-on-error: true
+        shell: pwsh
         run: |
+          $t0 = Get-Date
           dotnet test -c ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal `
             --collect:"XPlat Code Coverage" `
             --results-directory ./coverage
+          $code = $LASTEXITCODE
+          $ms = [int]((Get-Date) - $t0).TotalMilliseconds
+
+          Write-Host "dotnet test exit code: $code (duration: $ms ms)"
+
+          echo "exit_code=$code" >> $env:GITHUB_OUTPUT
+          echo "duration_ms=$ms" >> $env:GITHUB_OUTPUT
+          exit 0
 
       # Subir cobertura cruda si existe (no genera HTML; solo evidencia)
       - name: Upload raw coverage (if exists)
@@ -145,17 +178,20 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: JavaScript Linting (pilot + report)
+        id: js_lint
         if: hashFiles('**/package-lock.json') != ''
         shell: pwsh
-        continue-on-error: true
         run: |
+          $t0 = Get-Date
+          $code = 0
+
           if (Test-Path "package.json") {
             $pkg = Get-Content "package.json" -Raw | ConvertFrom-Json
             if ($pkg.scripts -and $pkg.scripts.lint) {
               npm run lint 2>&1 | Tee-Object -FilePath eslint-report.txt
-              if ($LASTEXITCODE -ne 0) {
+              $code = $LASTEXITCODE
+              if ($code -ne 0) {
                 Write-Host "⚠️ ESLint reportó hallazgos (piloto: no bloquea)." -ForegroundColor Yellow
-                exit 0
               }
             } else {
               "No hay script 'lint' en package.json." | Tee-Object -FilePath eslint-report.txt
@@ -164,18 +200,40 @@ jobs:
             "No existe package.json." | Tee-Object -FilePath eslint-report.txt
           }
 
+          $ms = [int]((Get-Date) - $t0).TotalMilliseconds
+          Write-Host "JS Lint exit code: $code (duration: $ms ms)"
+
+          echo "exit_code=$code" >> $env:GITHUB_OUTPUT
+          echo "duration_ms=$ms" >> $env:GITHUB_OUTPUT
+          exit 0
+
       #####################################################################
-      # Publicación + artefacto principal
+      # Publicación + artefacto principal (solo si build exitoso)
       #####################################################################
       - name: Publish (Release)
-        run: dotnet publish -c ${{ env.BUILD_CONFIGURATION }} /p:PublishDir=publish --no-build
+        id: publish
+        if: steps.build_release.outputs.exit_code == '0'
+        shell: pwsh
+        run: |
+          $t0 = Get-Date
+          dotnet publish -c ${{ env.BUILD_CONFIGURATION }} /p:PublishDir=publish --no-build
+          $code = $LASTEXITCODE
+          $ms = [int]((Get-Date) - $t0).TotalMilliseconds
+
+          Write-Host "dotnet publish exit code: $code (duration: $ms ms)"
+
+          echo "exit_code=$code" >> $env:GITHUB_OUTPUT
+          echo "duration_ms=$ms" >> $env:GITHUB_OUTPUT
+          exit 0
 
       - name: Zip publish output
+        if: steps.build_release.outputs.exit_code == '0'
         shell: pwsh
         run: |
           Compress-Archive -Path publish\* -DestinationPath frontend_publish.zip -Force
 
       - name: Upload artifact (publish zip)
+        if: steps.build_release.outputs.exit_code == '0'
         uses: actions/upload-artifact@v4
         with:
           name: frontend_publish
@@ -224,31 +282,173 @@ jobs:
           echo "DURATION_HUMAN=$minutes min $remainSeconds seg" >> $env:GITHUB_OUTPUT
 
       #########################################################################
-      # Summary del job build (muestra solo el tiempo antes de Post)
+      # Summary detallado del job build (metadata + timings + tabla + diagnóstico)
       #########################################################################
-      - name: Generate GitHub Job Summary (build)
+      - name: Generate GitHub Job Summary (detailed)
         if: always()
         shell: pwsh
         run: |
+          # Helper: convertir ms a formato m:ss
+          function Format-Duration {
+            param([string]$ms)
+            if ([string]::IsNullOrEmpty($ms) -or $ms -eq '') { return 'N/A' }
+            $totalSec = [int]$ms / 1000
+            $min = [int]($totalSec / 60)
+            $sec = [int]($totalSec % 60)
+            return "$min`:$($sec.ToString('00'))"
+          }
+
+          # Helper: icono según exit_code (piloto vs gate)
+          function Get-StatusIcon {
+            param([string]$exitCode, [bool]$isPilot)
+            if ([string]::IsNullOrEmpty($exitCode)) { return '⚪ N/A' }
+            if ($exitCode -eq '0') { return '✅ OK' }
+            if ($isPilot) { return '⚠️ WARN' }
+            return '❌ FAIL'
+          }
+
+          # Leer outputs de steps
+          $formatExitCode = '${{ steps.dotnet_format.outputs.exit_code }}'
+          $formatMs = '${{ steps.dotnet_format.outputs.duration_ms }}'
+          $buildExitCode = '${{ steps.build_release.outputs.exit_code }}'
+          $buildMs = '${{ steps.build_release.outputs.duration_ms }}'
+          $publishExitCode = '${{ steps.publish.outputs.exit_code }}'
+          $publishMs = '${{ steps.publish.outputs.duration_ms }}'
+          $testExitCode = '${{ steps.test_cov.outputs.exit_code }}'
+          $testMs = '${{ steps.test_cov.outputs.duration_ms }}'
+          $lintExitCode = '${{ steps.js_lint.outputs.exit_code }}'
+          $lintMs = '${{ steps.js_lint.outputs.duration_ms }}'
+
+          # Metadata
+          $actor = '${{ github.actor }}'
+          $event = '${{ github.event_name }}'
+          $repo = '${{ github.repository }}'
+          $branch = '${{ github.ref_name }}'
+          $ref = '${{ github.ref }}'
+          $sha = '${{ github.sha }}'
+          $shortSha = $sha.Substring(0, 7)
+          $runNumber = '${{ github.run_number }}'
+          $runId = '${{ github.run_id }}'
+          $startTime = '${{ steps.build_start.outputs.START_TIME }}'
+          $durationBeforePost = '${{ steps.duration_before_post.outputs.DURATION_HUMAN }}'
+
+          # Señales rápidas: Vulnerabilidades
+          $vulnCount = 0
+          if (Test-Path 'vulnerable-packages.txt') {
+            try {
+              $vulnContent = Get-Content 'vulnerable-packages.txt' -Raw
+              $vulnMatches = [regex]::Matches($vulnContent, '(Severity|vulnerable|>)')
+              $vulnCount = $vulnMatches.Count
+            } catch {
+              $vulnCount = 0
+            }
+          }
+          $vulnSignal = if ($vulnCount -gt 0) { "⚠️ $vulnCount posibles señales" } else { "✅ Ninguna detectada" }
+
+          # Señales rápidas: Cobertura
+          $coveragePercent = 'N/A'
+          try {
+            $coberturaFile = Get-ChildItem -Path './coverage' -Filter 'coverage.cobertura.xml' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($coberturaFile) {
+              [xml]$coberturaXml = Get-Content $coberturaFile.FullName
+              $lineRate = $coberturaXml.coverage.'line-rate'
+              if ($lineRate) {
+                $coveragePercent = "$([int]([double]$lineRate * 100))%"
+              }
+            }
+          } catch {
+            $coveragePercent = 'N/A'
+          }
+
+          # Diagnóstico rápido
+          $diagMsgs = @()
+          if ($buildExitCode -ne '0' -and $buildExitCode -ne '') {
+            $diagMsgs += "❌ **Build falló** (exit code: $buildExitCode). Revisa los logs del paso 'Build (Release)'."
+          }
+          if ($formatExitCode -ne '0' -and $formatExitCode -ne '') {
+            $diagMsgs += "⚠️ **dotnet format reportó diferencias** (piloto). Considera ejecutar ``dotnet format`` localmente."
+          }
+          if ($diagMsgs.Count -eq 0) {
+            $diagMsgs += "✅ No se detectaron problemas críticos."
+          }
+          $diagSection = $diagMsgs -join "`n"
+
+          # Construcción de la tabla de pasos
+          $tableRows = @"
+          | Paso | Resultado | Exit | Tiempo |
+          |------|-----------|------|--------|
+          | Restore | ✅ OK | 0 | N/A |
+          | dotnet format (pilot) | $(Get-StatusIcon $formatExitCode $true) | $formatExitCode | $(Format-Duration $formatMs) |
+          | Build (Gate) | $(Get-StatusIcon $buildExitCode $false) | $buildExitCode | $(Format-Duration $buildMs) |
+          | Publish | $(Get-StatusIcon $publishExitCode $false) | $publishExitCode | $(Format-Duration $publishMs) |
+          "@
+
+          # Si test_cov o js_lint corrieron, agregarlos
+          if ($testExitCode -ne '' -and $testExitCode -ne '${{ steps.test_cov.outputs.exit_code }}') {
+            $tableRows += "`n| Test + Coverage (pilot) | $(Get-StatusIcon $testExitCode $true) | $testExitCode | $(Format-Duration $testMs) |"
+          }
+          if ($lintExitCode -ne '' -and $lintExitCode -ne '${{ steps.js_lint.outputs.exit_code }}') {
+            $tableRows += "`n| JS Lint (pilot) | $(Get-StatusIcon $lintExitCode $true) | $lintExitCode | $(Format-Duration $lintMs) |"
+          }
+
+          # Construcción del summary completo
           $summary = @"
-          # ✅ CI - FrontEnd (.NET 8)
+          # CI Summary — CI - FrontEnd (.NET 8)
 
-          ## ⏱️ Tiempo (job build)
-          - **Duración antes de Post steps:** `${{ steps.duration_before_post.outputs.DURATION_HUMAN }}`
+          ## 📋 Metadata
+          | Campo | Valor |
+          |-------|-------|
+          | Actor | $actor |
+          | Evento | $event |
+          | Repositorio | $repo |
+          | Branch | $branch |
+          | Ref | $ref |
+          | SHA | [$shortSha](https://github.com/$repo/commit/$sha) |
+          | Run | [#$runNumber](https://github.com/$repo/actions/runs/$runId) |
+          | Start Time | $startTime |
 
-          ## 📦 Artefactos
-          - frontend_publish.zip
-          - security-scan-results (si existió)
-          - eslint-report (si existió)
-          - raw-coverage (si existió)
+          ## ⏱️ Timing
+          - **Duración antes de Post steps:** $durationBeforePost
+          - *(El tiempo total se calcula en el job ``timing``)*
 
-          ## 🔗 Info
-          - Branch: ${{ github.ref_name }}
-          - Commit: [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
-          - Run: [${{ github.run_number }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          ## 📊 Pasos y resultados
+          $tableRows
+
+          ## 🔍 Señales rápidas
+          - **Vulnerabilidades:** $vulnSignal
+          - **Cobertura de código:** $coveragePercent
+
+          ## 📦 Artefactos esperados
+          - ``frontend_publish.zip`` (solo si build exitoso)
+          - ``security-scan-results`` (si se detectaron vulnerabilidades)
+          - ``eslint-report`` (si existió package.json con lint)
+          - ``raw-coverage`` (si existieron tests)
+
+          ## 🩺 Diagnóstico rápido
+          $diagSection
           "@
 
           $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
+
+      #########################################################################
+      # Gate final: falla el job SOLO si build_release falló
+      #########################################################################
+      - name: Fail job if required steps failed
+        if: always()
+        shell: pwsh
+        run: |
+          $buildExitCode = '${{ steps.build_release.outputs.exit_code }}'
+
+          Write-Host "Verificando exit codes de pasos críticos..."
+          Write-Host "Build (Release) exit code: $buildExitCode"
+
+          if ($buildExitCode -ne '0') {
+            Write-Host "❌ El build falló. Terminando el job con error." -ForegroundColor Red
+            exit 1
+          }
+
+          Write-Host "✅ Todos los pasos críticos pasaron exitosamente." -ForegroundColor Green
+          exit 0
 
   #########################################################################
   # Job final: calcula el tiempo TOTAL (incluyendo los Post steps del build)
@@ -286,16 +486,29 @@ jobs:
         if: always()
         shell: pwsh
         run: |
+          $repo = '${{ github.repository }}'
+          $sha = '${{ github.sha }}'
+          $shortSha = $sha.Substring(0, 7)
+          $branch = '${{ github.ref_name }}'
+          $runNumber = '${{ github.run_number }}'
+          $runId = '${{ github.run_id }}'
+
           $summary = @"
           # ⏱️ Resumen final de tiempos (workflow)
 
-          ✅ **Duración antes de Post steps (solo pasos definidos en el job `build`):**
-          - `${{ steps.total_duration.outputs.BEFORE_HUMAN }}`
+          ## 📊 Duración del workflow
+          ✅ **Duración antes de Post steps (solo pasos definidos en el job ``build``):**
+          - ``${{ steps.total_duration.outputs.BEFORE_HUMAN }}``
 
-          ✅ **Duración incluyendo Post steps del job `build`:**
-          - `${{ steps.total_duration.outputs.TOTAL_HUMAN }}`
+          ✅ **Duración incluyendo Post steps del job ``build``:**
+          - ``${{ steps.total_duration.outputs.TOTAL_HUMAN }}``
 
-          > Nota: el segundo tiempo se calcula cuando el job `build` ya terminó completamente (incluyendo sus pasos Post...).
+          > Nota: el segundo tiempo se calcula cuando el job ``build`` ya terminó completamente (incluyendo sus pasos Post...).
+
+          ## 🔗 Info del run
+          - **Branch:** $branch
+          - **Commit:** [$shortSha](https://github.com/$repo/commit/$sha)
+          - **Run:** [#$runNumber](https://github.com/$repo/actions/runs/$runId)
           "@
 
           $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
