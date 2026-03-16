@@ -8,7 +8,7 @@ namespace Test
         // Error intencional: falta punto y coma
         public void Test()
         {
-            var x = 1
+            var x = 1;
         }
     }
 }
