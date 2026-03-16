@@ -570,7 +570,7 @@ jobs:
           $summary = @"
           # ⏱️ Resumen final de tiempos (workflow)
 
-          ## 📊 Duración del workflow
+          ## 📊 Tiempo de Duración del workflow
           ✅ **Duración antes de Post steps (solo pasos definidos en el job ``build``):**
           - ``${{ steps.total_duration.outputs.BEFORE_HUMAN }}``
 
