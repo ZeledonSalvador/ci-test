@@ -586,3 +586,44 @@ jobs:
           "@
 
           $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
+
+
+
+          
+  deploy_qa:
+    needs: build
+    runs-on: [self-hosted, qa]
+
+    steps:
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend_publish
+
+      - name: Extract artifact
+        shell: pwsh
+        run: |
+          Expand-Archive frontend_publish.zip -DestinationPath deploy -Force
+
+      - name: Stop IIS site
+        shell: pwsh
+        run: |
+          Import-Module WebAdministration
+          Stop-Website -Name "quickpass-frontend-cicd"
+
+      - name: Deploy files
+        shell: pwsh
+        run: |
+          robocopy deploy C:\Sites\quickpass-frontend-cicd /MIR
+
+      - name: Start IIS site
+        shell: pwsh
+        run: |
+          Import-Module WebAdministration
+          Start-Website -Name "quickpass-frontend-cicd"
+
+      - name: Health check
+        shell: pwsh
+        run: |
+          Invoke-WebRequest http://localhost:8081
