@@ -602,30 +602,30 @@ jobs:
           name: frontend_publish
 
       - name: Extract artifact
-        shell: pwsh
+        shell: powershell
         run: |
           Get-ChildItem -Recurse
           Expand-Archive frontend_publish/frontend_publish.zip -DestinationPath deploy -Force
 
 
       - name: Stop IIS site
-        shell: pwsh
+        shell: powershell
         run: |
           Import-Module WebAdministration
           Stop-Website -Name "quickpass-frontend-cicd"
 
       - name: Deploy files
-        shell: pwsh
+        shell: powershell
         run: |
           robocopy deploy C:\Sites\quickpass-frontend-cicd /MIR
 
       - name: Start IIS site
-        shell: pwsh
+        shell: powershell
         run: |
           Import-Module WebAdministration
           Start-Website -Name "quickpass-frontend-cicd"
 
       - name: Health check
-        shell: pwsh
+        shell: powershell
         run: |
           Invoke-WebRequest http://localhost:8081
