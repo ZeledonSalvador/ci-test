@@ -605,7 +605,7 @@ jobs:
         shell: powershell
         run: |
           Get-ChildItem -Recurse
-          Expand-Archive frontend_publish/frontend_publish.zip -DestinationPath deploy -Force
+          Expand-Archive frontend_publish.zip -DestinationPath deploy -Force
 
 
       - name: Stop IIS site
