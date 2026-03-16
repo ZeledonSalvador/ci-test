@@ -596,6 +596,12 @@ jobs:
 
     steps:
 
+      - name: Clean old artifacts
+        shell: powershell
+        run: |
+          Remove-Item frontend_publish.zip -ErrorAction Ignore
+          Remove-Item deploy -Recurse -Force -ErrorAction Ignore
+
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
@@ -604,9 +610,8 @@ jobs:
       - name: Extract artifact
         shell: powershell
         run: |
-          Get-ChildItem -Recurse
+          Get-ChildItem
           Expand-Archive frontend_publish.zip -DestinationPath deploy -Force
-
 
       - name: Stop IIS site
         shell: powershell
