@@ -613,21 +613,27 @@ jobs:
           Get-ChildItem
           Expand-Archive frontend_publish.zip -DestinationPath deploy -Force
 
-      - name: Stop IIS site
+      - name: Stop IIS site (hard stop)
         shell: powershell
         run: |
           Import-Module WebAdministration
           Stop-Website -Name "quickpass-frontend-cicd"
 
+          # Esperar a que IIS libere archivos
+          Start-Sleep -Seconds 5
+
+          # Forzar cierre de procesos si aún están activos
+          Get-Process w3wp -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep -Seconds 5
+          
       - name: Deploy files
         shell: powershell
         run: |
-          robocopy deploy C:\Sites\quickpass-frontend-cicd /MIR
+          robocopy deploy C:\Sites\quickpass-frontend-cicd /MIR /XD App_Data
+
           if ($LASTEXITCODE -lt 8) {
-              Write-Host "Robocopy completed successfully with code $LASTEXITCODE"
               exit 0
           } else {
-              Write-Host "Robocopy failed with code $LASTEXITCODE"
               exit $LASTEXITCODE
           }
 
