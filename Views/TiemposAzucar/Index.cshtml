@@ -152,12 +152,12 @@
                             </div>
                         </div>
                             <div class="bg-white p-2 shadow-lg rounded-b-lg text-sm mb-4" style="font-family: 'Gilroy-Light', sans-serif;margin-top: 0px;">
-                                <p><strong>Transacción:</strong> @(unidad.idNavRecord?.ToString() ?? "Sin Datos")</p>
+                                <p><strong>ID:</strong> @(unidad.id.ToString() ?? "Sin Datos")</p>
                                 <p><strong>Ingenio:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode((unidad.ingenio?.name ?? "").Replace("_", " ")))</p>
                                 <p><strong>Motorista:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.driver?.name ?? ""))</p>
                                 <p><strong>Placa Remolque:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.vehicle?.trailerPlate ?? ""))</p>
                                 <p><strong>Placa Camión:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.vehicle?.plate ?? ""))</p>
-                                <p><strong>Hora de Ingreso:</strong> @(unidad.dateTimePrecheckeo?.ToString("yyyy-MM-dd HH:mm:ss") ?? "No hay datos")</p>
+                                <p><strong>Hora de Ingreso:</strong> @(unidad.dateTimeEntry?.ToString("yyyy-MM-dd HH:mm:ss") ?? "No hay datos")</p>
                             </div>
                     </div>
                 }
@@ -176,12 +176,12 @@
                              data-codigo-generacion="@unidad.codeGen"
                              onclick="confirmAuthorization(this)">
                             <ul class="space-y text-sm" style="color: white; text-align: left;">
-                                <li><strong>Transacción:</strong> @(unidad.idNavRecord?.ToString() ?? "Sin Datos")</li>
+                                <li><strong>ID:</strong> @(unidad.id.ToString() ?? "Sin Datos")</li>
                                 <li><strong>Ingenio:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode((unidad.ingenio?.name ?? "").Replace("_", " ")))</li>
                                 <li><strong>Motorista:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.driver?.name ?? ""))</li>
                                 <li><strong>Placa Remolque:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.vehicle?.trailerPlate ?? ""))</li>
                                 <li><strong>Placa Camión:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.vehicle?.plate ?? ""))</li>
-                                <li><strong>Hora de Ingreso:</strong> @(unidad.dateTimePrecheckeo?.ToString("yyyy-MM-dd HH:mm:ss") ?? "No hay datos")</li>
+                                <li><strong>Hora de Ingreso:</strong> @(unidad.dateTimeEntry?.ToString("yyyy-MM-dd HH:mm:ss") ?? "No hay datos")</li>
                             </ul>
                         </div>
                     </div>
@@ -253,12 +253,12 @@
                             </div>
                         </div>
                             <div class="bg-white p-2 shadow-lg rounded-b-lg text-sm mb-4" style="font-family: 'Gilroy-Light', sans-serif;margin-top: 0px;">
-                                <p><strong>Transacción:</strong> @(unidad.idNavRecord?.ToString() ?? "Sin Datos")</p>
+                                <p><strong>ID:</strong> @(unidad.id.ToString() ?? "Sin Datos")</p>
                                 <p><strong>Ingenio:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode((unidad.ingenio?.name ?? "").Replace("_", " ")))</p>
                                 <p><strong>Motorista:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.driver?.name ?? ""))</p>
                                 <p><strong>Placa Remolque:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.vehicle?.trailerPlate ?? ""))</p>
                                 <p><strong>Placa Camión:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.vehicle?.plate ?? ""))</p>
-                                <p><strong>Hora de Ingreso:</strong> @(unidad.dateTimePrecheckeo?.ToString("yyyy-MM-dd HH:mm:ss") ?? "No hay datos")</p>
+                                <p><strong>Hora de Ingreso:</strong> @(unidad.dateTimeEntry?.ToString("yyyy-MM-dd HH:mm:ss") ?? "No hay datos")</p>
                             </div>
                         </div>
                 }
@@ -277,12 +277,12 @@
                              data-codigo-generacion="@unidad.codeGen"
                              onclick="confirmAuthorization(this)">
                             <ul class="space-y text-sm" style="color: white; text-align: left;">
-                                <li><strong>Transacción:</strong> @(unidad.idNavRecord?.ToString() ?? "Sin Datos")</li>
+                                <li><strong>ID:</strong> @(unidad.id.ToString() ?? "Sin Datos")</li>
                                 <li><strong>Ingenio:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode((unidad.ingenio?.name ?? "").Replace("_", " ")))</li>
                                 <li><strong>Motorista:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.driver?.name ?? ""))</li>
                                 <li><strong>Placa Remolque:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.vehicle?.trailerPlate ?? ""))</li>
                                 <li><strong>Placa Camión:</strong> @Html.Raw(System.Web.HttpUtility.HtmlEncode(unidad.vehicle?.plate ?? ""))</li>
-                                <li><strong>Hora de Ingreso:</strong> @(unidad.dateTimePrecheckeo?.ToString("yyyy-MM-dd HH:mm:ss") ?? "No hay datos")</li>
+                                <li><strong>Hora de Ingreso:</strong> @(unidad.dateTimeEntry?.ToString("yyyy-MM-dd HH:mm:ss") ?? "No hay datos")</li>
                             </ul>
                         </div>
                     </div>
@@ -303,8 +303,8 @@
             <div class="modal-body">
                 <p>Seleccione el tipo de barrido:</p>
                 <select id="tipoBarrido" class="form-control">
-                    <option value="N">Sencillo</option>
-                    <option value="S">Doble</option>
+                    <option value="SENCILLO">Sencillo</option>
+                    <option value="DOBLE">Doble</option>
                 </select>
             </div>
             <div class="modal-footer">
@@ -326,7 +326,7 @@
             <div class="modal-body">
                 <p>Por favor selecciona una opción para explicar el motivo del retraso:</p>
                 <select id="motivoDetencion" class="form-control">
-                    <option value="sin_observaciones">Sin observaciones.</option>
+                    <option value="">Seleccionar</option>
                     <option value="corte_energia">Corte de energía eléctrica.</option>
                     <option value="azucar_terrones">Azúcar con terrones</option>
                     <option value="falla_bascula">Falla en Báscula</option>
@@ -372,7 +372,9 @@
                     <option value="azucar_pegada_terrones">Azúcar pegada y con terrones</option>
                     <option value="flujo_restringido_tolva_banda_66">Flujo restringido en abertura de tolva de banda #66 [01]</option>
                     <option value="flujo_restringido_banda_67">Flujo restringido en banda #67 [01]</option>
+                    <option value="otro">Otro (especificar)</option>
                 </select>
+                <input type="text" id="motivoOtro" class="form-control mt-2" style="display:none;" placeholder="Especifique el motivo..." maxlength="200">
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal" id="cancelStopButton">Cancelar</button>

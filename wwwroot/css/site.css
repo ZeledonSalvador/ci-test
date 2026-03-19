@@ -65,7 +65,7 @@ body {
 
 /* Logo */
 .logo img {
-  max-height: 35px;
+  max-height: 28px;
   transition: transform 0.2s ease;
 }
 
@@ -531,10 +531,19 @@ body {
    RESPONSIVE BREAKPOINTS
    ========================================================================== */
 
+/* Base: menú hamburguesa siempre visible por debajo de 992px */
+@media (max-width: 991px) {
+  #menu-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
 /* Pantallas muy grandes - 4K y similares */
 @media (min-width: 1400px) {
   .logo img {
-    max-height: 42px;
+    max-height: 32px;
   }
   .dropdown-menu {
     min-width: 260px;
@@ -547,7 +556,7 @@ body {
 /* Desktop Grande - 1200px a 1399px */
 @media (max-width: 1399px) and (min-width: 1200px) {
   .logo img {
-    max-height: 38px;
+    max-height: 30px;
   }
   .login-button {
     padding: 12px 24px;
@@ -570,7 +579,7 @@ body {
     min-width: 220px;
   }
   .logo img {
-    max-height: 35px;
+    max-height: 28px;
   }
   body {
     padding-top: 60px;
@@ -587,7 +596,7 @@ body {
     min-width: 200px;
   }
   .logo img {
-    max-height: 33px;
+    max-height: 27px;
   }
   .login-button {
     padding: 8px 16px;
@@ -604,11 +613,11 @@ body {
     padding: 8px 20px;
     height: 55px;
   }
-  
+
   .header nav {
     display: none !important;
   }
-  
+
   #menu-toggle {
     display: inline-flex !important;
     align-items: center;
@@ -616,9 +625,9 @@ body {
     width: 48px;
     height: 42px;
   }
-  
+
   .logo img {
-    max-height: 32px;
+    max-height: 26px;
   }
   
   .login-button {
@@ -662,14 +671,14 @@ body {
     padding: 8px 18px;
     height: 52px;
   }
-  
+
   #menu-toggle {
     width: 46px;
     height: 40px;
   }
-  
+
   .logo img {
-    max-height: 30px;
+    max-height: 24px;
   }
   
   #mobile-menu {
@@ -708,14 +717,14 @@ body {
     padding: 6px 15px;
     height: 48px;
   }
-  
+
   #menu-toggle {
     width: 42px;
     height: 36px;
   }
-  
+
   .logo img {
-    max-height: 28px;
+    max-height: 22px;
   }
   
   #mobile-menu {
@@ -760,14 +769,14 @@ body {
     padding: 4px 10px;
     height: 44px;
   }
-  
+
   #menu-toggle {
     width: 38px;
     height: 34px;
   }
-  
+
   .logo img {
-    max-height: 25px;
+    max-height: 20px;
   }
   
   #mobile-menu {
@@ -810,10 +819,6 @@ body {
 @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
   .header nav {
     display: flex !important;
-  }
-
-  #menu-toggle {
-    display: none !important;
   }
 }
 
@@ -1047,3 +1052,4 @@ footer {
             50% { transform: translateY(-2px); } /* Mueve el camión ligeramente hacia arriba */
             100% { transform: translateY(0px); }
         }
+

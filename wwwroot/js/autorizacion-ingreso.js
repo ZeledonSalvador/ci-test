@@ -216,30 +216,27 @@ function checkForUpdates() {
                 // Verificar cambios en tarjetas
                 if (currentViewType === 'melaza') {
                     const newPipasContainer = newDoc.find('#pipas');
-                    // Solo actualizar si hay contenido válido
-                    if (newPipasContainer.length && newPipasContainer.find('.card').length > 0) {
+                    // Actualizar si el contenedor existe (incluso con 0 cards, para limpiar la vista)
+                    if (newPipasContainer.length) {
                         hasCardsChanges = checkHashChangesImproved(newPipasContainer);
                         if (hasCardsChanges) {
                             updateMelazaView(newDoc);
                         }
                     } else {
-                        console.log('Respuesta sin cards en pipas, no se actualiza');
+                        console.log('Respuesta sin contenedor de pipas, no se actualiza');
                     }
                 } else if (currentViewType === 'azucar') {
                     const newPlanasContainer = newDoc.find('#planas');
                     const newVolteoContainer = newDoc.find('#volteo');
 
-                    // Solo actualizar si hay contenido válido en alguno
-                    const hasPlanas = newPlanasContainer.length && newPlanasContainer.find('.card').length > 0;
-                    const hasVolteo = newVolteoContainer.length && newVolteoContainer.find('.card').length > 0;
-
-                    if (hasPlanas || hasVolteo) {
+                    // Actualizar si algún contenedor existe (incluso con 0 cards, para limpiar la vista)
+                    if (newPlanasContainer.length || newVolteoContainer.length) {
                         hasCardsChanges = checkHashChangesImprovedAzucar(newPlanasContainer, newVolteoContainer);
                         if (hasCardsChanges) {
                             updateAzucarView(newDoc);
                         }
                     } else {
-                        console.log('Respuesta sin cards en planas/volteo, no se actualiza');
+                        console.log('Respuesta sin contenedores planas/volteo, no se actualiza');
                     }
                 }
 
@@ -367,10 +364,10 @@ function checkHashChangesImprovedAzucar(newPlanasContainer, newVolteoContainer) 
 function updateMelazaView(newDoc) {
     try {
         const searchValue = $('#searchInput').val();
-        const newPipasHtml = newDoc.find('#pipas').html();
+        const newPipasContainer = newDoc.find('#pipas');
 
-        if (newPipasHtml) {
-            $('#pipas').html(newPipasHtml);
+        if (newPipasContainer.length) {
+            $('#pipas').html(newPipasContainer.html());
 
             // Re-bind filtros de ingenio
             bindIngenioFilterCards();
@@ -398,12 +395,16 @@ function updateMelazaView(newDoc) {
 function updateAzucarView(newDoc) {
     try {
         const searchValue = $('#searchInput').val();
-        const newPlanasHtml = newDoc.find('#planas .row.g-3').html();
-        const newVolteoHtml = newDoc.find('#volteo .row.g-3').html();
+        const newPlanasRow = newDoc.find('#planas .row.g-3');
+        const newVolteoRow = newDoc.find('#volteo .row.g-3');
 
-        if (newPlanasHtml && newVolteoHtml) {
-            $('#planas .row.g-3').html(newPlanasHtml);
-            $('#volteo .row.g-3').html(newVolteoHtml);
+        if (newPlanasRow.length || newVolteoRow.length) {
+            if (newPlanasRow.length) {
+                $('#planas .row.g-3').html(newPlanasRow.html());
+            }
+            if (newVolteoRow.length) {
+                $('#volteo .row.g-3').html(newVolteoRow.html());
+            }
 
             // Re-bind filtros de ingenio
             bindIngenioFilterCards();

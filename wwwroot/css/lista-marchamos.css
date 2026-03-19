@@ -47,6 +47,8 @@
     background-color: #fff;
     border-bottom: 1px solid #CDCAC7;
     transition: all 0.3s ease;
+    white-space: nowrap;
+    vertical-align: middle;
 }
 
 .tabla-marchamos tbody tr:hover {
@@ -103,6 +105,13 @@
     padding-left: 1rem;
     white-space: normal;
     word-break: break-all;
+}
+
+/* 5. Observaciones */
+.tabla-marchamos th:nth-child(5),
+.tabla-marchamos td:nth-child(5) {
+    width: 25%;
+    text-align: center;
 }
 
 /* Responsive */

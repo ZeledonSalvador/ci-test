@@ -3,8 +3,10 @@
     ViewData["Title"] = "Lista de Transacciones";
     Layout = "~/Views/Shared/_Layout.cshtml";
 
-    var pager = ViewBag.Pager as FrontendQuickpass.Models.ListaTransaccionesPager ?? new FrontendQuickpass.Models.ListaTransaccionesPager();
-    var filters = ViewBag.Filters as FrontendQuickpass.Models.TransaccionesFilters ?? new FrontendQuickpass.Models.TransaccionesFilters();
+    var pager = ViewBag.Pager as FrontendQuickpass.Models.ListaTransaccionesPager ?? new
+    FrontendQuickpass.Models.ListaTransaccionesPager();
+    var filters = ViewBag.Filters as FrontendQuickpass.Models.TransaccionesFilters ?? new
+    FrontendQuickpass.Models.TransaccionesFilters();
     var products = ViewBag.Products as List<ProductFilter> ?? new List<ProductFilter>();
 }
 
@@ -13,9 +15,27 @@
 }
 
 <!-- Banner Principal -->
-<section class="lt-banner">
-    <h1>Lista de transacciones</h1>
-</section>
+<div class="lt-banner-wrapper">
+    <section class="lt-banner">
+        <h1>Lista de transacciones</h1>
+    </section>
+
+    <!-- Pestañas de Estado -->
+    <div class="lt-tab-buttons" id="statusTabs" style="display: flex;">
+        <button class="lt-tab-button" data-status="1">
+            <i class="fas fa-clipboard-check"></i> Autorizada
+        </button>
+        <button class="lt-tab-button" data-status="2">
+            <i class="fas fa-arrow-circle-down"></i> Pesaje Entrada
+        </button>
+        <button class="lt-tab-button" data-status="3">
+            <i class="fas fa-arrow-circle-up"></i> Pesaje Salida
+        </button>
+        <button class="lt-tab-button" data-status="4">
+            <i class="fas fa-check-circle"></i> Terminada
+        </button>
+    </div>
+</div>
 
 <!-- Contenedor Principal -->
 <div class="container-fluid mt-3">
@@ -23,36 +43,27 @@
     <div class="lt-search-bar mb-3">
         <div class="row">
             <div class="col-md-9 mb-2">
-                <input type="text"
-                       id="searchInput"
-                       class="form-control rounded-xl"
-                       placeholder="Buscar #Envío, Transacción, Código de Generación o Tarjeta..." />
+                <input type="text" id="searchInput" class="form-control rounded-xl"
+                    placeholder="Buscar ID, Código de Generación, Comprobante o Tarjeta..." />
             </div>
-            <div class="col-md-3 mb-2">
-                <button class="btn btn-primary btn-block rounded-md" id="toggleFiltersBtn">
-                    <i class="fas fa-filter"></i> Filtros
-                </button>
+            <div class="col-md-3 mb-2 d-flex justify-content-end" id="toggleFiltersContainer">
+                <div class="lt-action-buttons">
+                    <button class="btn btn-primary rounded-md lt-btn-action" id="toggleFiltersBtn">
+                        <i class="fas fa-filter"></i> Filtros
+                    </button>
+                    <button class="btn btn-cuotas rounded-md lt-btn-action" id="btnCuotas" data-toggle="modal"
+                        data-target="#cuotasModal">
+                        <i class="fas fa-warehouse"></i> Cuotas
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="row">
         <!-- Columna de Filtros (Izquierda - Se oculta completamente) -->
-        <div class="col-lg-3 col-md-4 mb-3 lt-filters-column" id="filtersColumn" style="display: none;">
+        <div class="col-lg-3 col-md-4 mb-3 lt-filters-column d-none" id="filtersColumn">
             <div class="lt-filters-sidebar">
-                <!-- Filtro Estado -->
-                <div class="lt-filter-group mb-3">
-                    <label class="lt-filter-label">
-                        <i class="fas fa-check-circle"></i> Estado
-                    </label>
-                    <select class="form-control" id="estadoFilter">
-                        <option value="">Seleccione</option>
-                        <option value="3">Creada</option>
-                        <option value="11">En Proceso</option>
-                        <option value="12">Terminada</option>
-                    </select>
-                </div>
-
                 <!-- Filtro Producto -->
                 <div class="lt-filter-group mb-3">
                     <label class="lt-filter-label">
@@ -101,14 +112,19 @@
                     <table class="lt-table">
                         <thead class="lt-table-header">
                             <tr>
-                                <th>Fecha entrada</th>
-                                <th>Transacción</th>
+                                <th>ID</th>
+                                <th class="col-comprobante">Comprobante</th>
+                                <th class="col-fecha-creacion">Fecha Creación</th>
+                                <th class="col-fecha-entrada">Fecha Entrada</th>
+                                <th class="col-fecha-salida">Fecha Salida</th>
+                                <th>Placa Camión</th>
+                                <th>Placa Remolque</th>
+                                <th class="col-peso-entrada">Peso Entrada</th>
+                                <th class="col-peso-salida">Peso Salida</th>
+                                <th class="col-peso-neto">Peso Neto</th>
                                 <th>Producto</th>
                                 <th>Cliente</th>
                                 <th>Tarjeta</th>
-                                <th>Actividad</th>
-                                <th>Placa Camión</th>
-                                <th>Placa Remolque</th>
                             </tr>
                         </thead>
                         <tbody id="tableBody" class="lt-table-body">
@@ -118,12 +134,7 @@
                 </div>
             </div>
 
-            <!-- Mensaje de Cargando -->
-            <div id="loadingMessage" class="lt-loading">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="sr-only">Cargando...</span>
-                </div>
-            </div>
+
 
             <!-- Mensaje de Sin Resultados -->
             <div id="noDataMessage" class="lt-no-data" style="display: none;">
@@ -138,7 +149,8 @@
                         Mostrando 10 - 20 de 1002
                     </div>
 
-                    <div class="lt-pagination lt-pagination-nav d-flex justify-content-center align-items-center" id="paginationNav">
+                    <div class="lt-pagination lt-pagination-nav d-flex justify-content-center align-items-center"
+                        id="paginationNav">
                         <!-- Los controles de paginación se generarán dinámicamente -->
                     </div>
 
@@ -148,10 +160,143 @@
                             <option value="10" selected>10</option>
                             <option value="20">20</option>
                             <option value="30">30</option>
-                            <option value="50">50</option>
                         </select>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cuotas de Almacenaje -->
+<div class="modal fade" id="cuotasModal" tabindex="-1" role="dialog" aria-labelledby="cuotasModalLabel"
+    aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header cuotas-modal-header">
+                <h5 class="modal-title" id="cuotasModalLabel">
+                    Registro de Almacenaje
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Filtros del Modal -->
+                <div class="cuotas-filters-row">
+                    <div class="cuotas-filter-group">
+                        <label class="cuotas-filter-label">Fecha desde</label>
+                        <input type="date" class="form-control" id="cuotasFechaDesde">
+                    </div>
+                    <div class="cuotas-filter-group">
+                        <label class="cuotas-filter-label">Fecha hasta</label>
+                        <input type="date" class="form-control" id="cuotasFechaHasta">
+                    </div>
+                    <div class="cuotas-filter-group">
+                        <label class="cuotas-filter-label">Almacén</label>
+                        <select class="form-control" id="cuotasAlmacen">
+                            <option value="">Seleccione</option>
+                        </select>
+                    </div>
+                    <div class="cuotas-filter-group">
+                        <label class="cuotas-filter-label">Cliente</label>
+                        <select class="form-control" id="cuotasCliente">
+                            <option value="">Seleccione</option>
+                        </select>
+                    </div>
+                    <div class="cuotas-filter-group">
+                        <label class="cuotas-filter-label">Producto</label>
+                        <select class="form-control" id="cuotasProducto">
+                            <option value="">Seleccione</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Totales por Almacén (Colapsable) -->
+                <div class="cuotas-section">
+                    <div class="cuotas-section-header" id="headerTotalAlmacen" aria-expanded="false">
+                        <div class="cuotas-section-title">
+                            <i class="fas fa-warehouse"></i>
+                            <span>Total recibido por almacén</span>
+                        </div>
+                        <i class="fas fa-chevron-down cuotas-collapse-icon"></i>
+                    </div>
+                    <div class="cuotas-collapse-content" id="contentTotalAlmacen">
+                        <div class="cuotas-section-body">
+                            <div class="cuotas-table-container">
+                                <table class="cuotas-table" id="tablaTotalAlmacen">
+                                    <thead>
+                                        <tr>
+                                            <th>FECHA</th>
+                                            <th>ALMACÉN</th>
+                                            <th>PRODUCTO</th>
+                                            <th class="text-right">CANTIDAD</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyTotalAlmacen">
+                                        <!-- Los datos se cargarán dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="cuotas-total-row" id="totalAlmacenRow">
+                                <span class="cuotas-total-label">TOTAL</span>
+                                <span class="cuotas-total-value" id="totalAlmacenValue">0 KGS</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Totales por Ingenio/Cliente (Colapsable) -->
+                <div class="cuotas-section">
+                    <div class="cuotas-section-header" id="headerTotalIngenio" aria-expanded="false">
+                        <div class="cuotas-section-title">
+                            <i class="fas fa-industry"></i>
+                            <span>Total recibido por cliente</span>
+                        </div>
+                        <i class="fas fa-chevron-down cuotas-collapse-icon"></i>
+                    </div>
+                    <div class="cuotas-collapse-content" id="contentTotalIngenio">
+                        <div class="cuotas-section-body">
+                            <div class="cuotas-table-container">
+                                <table class="cuotas-table" id="tablaTotalIngenio">
+                                    <thead>
+                                        <tr>
+                                            <th>FECHA</th>
+                                            <th>CLIENTE</th>
+                                            <th>PRODUCTO</th>
+                                            <th>ALMACÉN</th>
+                                            <th class="text-right">CANTIDAD</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyTotalCliente">
+                                        <!-- Los datos se cargarán dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="cuotas-total-row" id="totalClienteRow">
+                                <span class="cuotas-total-label">TOTAL</span>
+                                <span class="cuotas-total-value" id="totalClienteValue">0 KGS</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading del Modal -->
+                <div id="cuotasLoading" class="cuotas-loading" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Cargando...</span>
+                    </div>
+                    <p>Consultando datos...</p>
+                </div>
+
+                <!-- Sin Datos del Modal -->
+                <div id="cuotasNoData" class="cuotas-no-data" style="display: none;">
+                    <i class="fas fa-inbox fa-3x"></i>
+                    <p>No se encontraron datos para los filtros seleccionados.</p>
+                </div>
+            </div>
+            <div class="modal-footer cuotas-modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>

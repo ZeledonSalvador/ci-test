@@ -115,18 +115,18 @@ function syncPipaCounterWithDOM() {
     try {
         // Obtener el valor base del DOM (valor del servidor)
         const domValue = parseInt(numberInput.textContent) || 0;
-        
+
         // Si no hay estado inicializado o el valor base cambió, reinicializar
         if (!pipaCounterState.isInitialized || pipaCounterState.baseValue !== domValue) {
             console.log(`🔄 Sincronizando contador: valor DOM=${domValue}, estado base=${pipaCounterState.baseValue}`);
-            
+
             pipaCounterState.baseValue = domValue;
             pipaCounterState.isInitialized = true;
-            
+
             // Mantener los contadores si están en progreso
             const currentDisplayValue = pipaCounterState.baseValue + pipaCounterState.incrementCount - pipaCounterState.decrementCount;
             updatePipaDisplay(currentDisplayValue);
-            
+
             savePipaCounterState();
         }
     } catch (error) {
@@ -176,7 +176,7 @@ class TimerSyncManager {
 
         try {
             console.log(`🚀 Registrando timer en BD: ${timerId} para shipment ${shipmentId} - ${codeGen}`);
-            
+
             const response = await fetch('/TimerSync/start', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -190,7 +190,7 @@ class TimerSyncManager {
             });
 
             const result = await response.json();
-            
+
             if (result.success) {
                 console.log(`✅ Timer registrado en BD: ${timerId} a las ${new Date(result.data.startedAtMilliseconds).toISOString()}`);
                 return result.data;
@@ -212,7 +212,7 @@ class TimerSyncManager {
     async stopTimerInDB(timerId) {
         try {
             console.log(`⏹️ Eliminando timer de BD: ${timerId}`);
-            
+
             const response = await fetch('/TimerSync/stop', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -220,7 +220,7 @@ class TimerSyncManager {
             });
 
             const result = await response.json();
-            
+
             if (result.success) {
                 console.log(`✅ Timer eliminado de BD: ${timerId}`);
                 return true;
@@ -240,13 +240,13 @@ class TimerSyncManager {
     async liberarTimerPorShipmentId(shipmentId) {
         try {
             console.log(`🔄 Liberando timer por cambio de estado: shipment ${shipmentId}`);
-            
+
             const response = await fetch(`/TimerSync/liberar/${shipmentId}`, {
                 method: 'POST'
             });
 
             const result = await response.json();
-            
+
             if (result.success && result.data.liberado) {
                 console.log(`✅ Timer liberado por cambio de estado: shipment ${shipmentId}`);
                 return true;
@@ -268,83 +268,88 @@ class TimerSyncManager {
             console.log(`🔍 INICIO sincronización desde BD para tipo: ${this.tipoTimer}`);
             console.log(`🔗 URL llamada: /TimerSync/active/${this.tipoTimer}`);
             console.log(`🔍 Estado actual isRunning antes de sincronizar:`, isRunning);
-            
+
             const response = await fetch(`/TimerSync/active/${this.tipoTimer}`);
             console.log(`📡 Respuesta del servidor:`, response);
             console.log(`📡 Status: ${response.status} ${response.statusText}`);
             console.log(`📡 Headers:`, [...response.headers.entries()]);
-            
+
             if (!response.ok) {
                 console.error(`❌ Error HTTP: ${response.status} - ${response.statusText}`);
                 const errorText = await response.text();
                 console.error(`❌ Error texto:`, errorText);
                 return [];
             }
-            
+
             const result = await response.json();
             console.log(`📦 Resultado JSON completo:`, result);
             console.log(`📦 Tipo de resultado:`, typeof result);
             console.log(`📦 result.success:`, result.success);
             console.log(`📦 result.data:`, result.data);
             console.log(`📦 Array.isArray(result.data):`, Array.isArray(result.data));
-            
+
             if (result.success && Array.isArray(result.data)) {
                 console.log(`📊 Timers activos en BD: ${result.data.length}`);
                 console.log(`📋 Lista completa de timers:`, result.data);
-                
+
                 if (result.data.length === 0) {
                     console.log(`ℹ️ RESULTADO: No hay timers activos en BD para sincronizar`);
                     return [];
                 }
-                
+
                 // Verificar cada timer de BD
                 for (const dbTimer of result.data) {
                     console.log(`🔍 Procesando timer de BD:`, dbTimer);
-                    
+
                     const localRunning = isRunning[dbTimer.timerId];
                     console.log(`🔍 Timer ${dbTimer.timerId}: localRunning=${localRunning}`);
-                    
+
                     if (!localRunning) {
                         console.log(`🔄 Timer encontrado en BD pero no localmente: ${dbTimer.timerId}`);
-                        
+
                         // Verificar formato de datos
                         if (!dbTimer.startedAtMilliseconds) {
                             console.error(`❌ startedAtMilliseconds no encontrado en:`, dbTimer);
                             continue;
                         }
-                        
+
                         console.log(`📅 StartedAtMilliseconds: ${dbTimer.startedAtMilliseconds}`);
                         console.log(`📅 Fecha de inicio en BD: ${new Date(dbTimer.startedAtMilliseconds).toISOString()}`);
                         console.log(`📅 Hora actual: ${new Date().toISOString()}`);
-                        
+
                         // Calcular tiempo transcurrido desde la fecha REAL de inicio en BD
                         const now = Date.now();
                         const startTime = dbTimer.startedAtMilliseconds;
                         const elapsedMs = Math.max(0, now - startTime);
-                        
+
                         console.log(`⏱️ now: ${now}`);
                         console.log(`⏱️ startTime: ${startTime}`);
                         console.log(`⏱️ elapsedMs: ${elapsedMs}`);
-                        console.log(`⏱️ Tiempo transcurrido calculado: ${(elapsedMs/1000/60).toFixed(1)} minutos`);
-                        
+                        console.log(`⏱️ Tiempo transcurrido calculado: ${(elapsedMs / 1000 / 60).toFixed(1)} minutos`);
+
                         // Verificar si el elemento UI existe antes de sincronizar
                         const txtEl = document.getElementById(dbTimer.timerId);
                         const progressBarId = dbTimer.timerId.replace('timer', 'progressBar');
                         const progressBarEl = document.getElementById(progressBarId);
-                        
+
                         console.log(`🔍 Elementos UI para ${dbTimer.timerId}:`);
                         console.log(`  - txtEl:`, txtEl);
                         console.log(`  - progressBarEl:`, progressBarEl);
-                        
+
                         if (!txtEl && !progressBarEl) {
-                            console.warn(`⚠️ UI no disponible para ${dbTimer.timerId}, saltando sincronización`);
+                            console.warn(`⚠️ UI no disponible para ${dbTimer.timerId}, limpiando de BD...`);
+                            if (dbTimer.shipmentId) {
+                                this.liberarTimerPorShipmentId(dbTimer.shipmentId).catch(err =>
+                                    console.error(`⚠️ Error limpiando timer huérfano de BD: ${dbTimer.timerId}`, err)
+                                );
+                            }
                             continue;
                         }
-                        
+
                         // Configurar estado local completo ANTES de iniciar
                         timerCodeGenMap[dbTimer.timerId] = dbTimer.codeGen;
                         console.log(`📝 Configurando timerCodeGenMap[${dbTimer.timerId}] = ${dbTimer.codeGen}`);
-                        
+
                         // Guardar estado completo en localStorage
                         saveTimerState(dbTimer.timerId, {
                             cg: dbTimer.codeGen,
@@ -354,24 +359,35 @@ class TimerSyncManager {
                             run: true
                         });
                         console.log(`💾 Estado guardado en localStorage para ${dbTimer.timerId}`);
-                        
+
                         // Marcar como corriendo ANTES de iniciar intervalo
                         isRunning[dbTimer.timerId] = true;
                         console.log(`▶️ Marcando isRunning[${dbTimer.timerId}] = true`);
-                        
+
                         // Iniciar cronómetro con tiempo ya transcurrido
                         startInterval(dbTimer.timerId, elapsedMs);
                         console.log(`🎯 startInterval llamado para ${dbTimer.timerId} con ${elapsedMs}ms`);
-                        
+
                         console.log(`✅ Timer sincronizado desde BD: ${dbTimer.timerId}`);
                         console.log(`📊 Estado final guardado - ms: ${elapsedMs}, running: true`);
                     } else {
                         console.log(`ℹ️ Timer ${dbTimer.timerId} ya está corriendo localmente`);
                     }
                 }
-                
-                console.log(`📊 RESULTADO FINAL: ${result.data.length} timers procesados`);
-                console.log(`🔍 Estado final isRunning después de sincronizar:`, isRunning);
+
+                // Limpiar localStorage de timers que ya no están en BD
+                const activeTimerIds = new Set(result.data.map(t => t.timerId));
+                Object.keys(localStorage).forEach(key => {
+                    const match = key.match(/^(.+)_isRunning$/);
+                    if (match && localStorage.getItem(key) === 'true') {
+                        const tid = match[1];
+                        if (tid.startsWith('timerPileta_') && !activeTimerIds.has(tid)) {
+                            clearTimerState(tid);
+                            isRunning[tid] = false;
+                        }
+                    }
+                });
+
                 return result.data;
             } else {
                 console.log(`⚠️ Respuesta sin éxito o datos no son array:`, result);
@@ -398,7 +414,7 @@ const timerSyncMelaza = new TimerSyncManager();
  */
 function parseServerDate(dateStr) {
     if (!dateStr) return null;
-    
+
     try {
         // Detectar si la fecha ya trae zona (Z o ±HH:MM) al final
         const hasTZ = /(?:Z|[+\-]\d{2}:\d{2})$/.test(dateStr);
@@ -421,17 +437,17 @@ function parseServerDate(dateStr) {
  */
 function calculateNextTemperatureTime(lastTemperatureTimeStr) {
     if (!lastTemperatureTimeStr) return null;
-    
+
     try {
         const lastTemperatureTime = parseServerDate(lastTemperatureTimeStr);
         if (!lastTemperatureTime) return null;
-        
+
         // Agregar 3 horas
         const nextTemperatureTime = new Date(lastTemperatureTime.getTime() + TEMPERATURE_INTERVAL_MLS);
-        
+
         console.log(`📊 Última temperatura: ${lastTemperatureTime.toLocaleString('es-SV')} (El Salvador)`);
         console.log(`📊 Próxima temperatura: ${nextTemperatureTime.toLocaleString('es-SV')} (El Salvador)`);
-        
+
         return nextTemperatureTime;
     } catch (error) {
         console.error('❌ Error calculando próxima temperatura:', error);
@@ -446,23 +462,23 @@ function calculateNextTemperatureTime(lastTemperatureTimeStr) {
  */
 function initEnfriamientoCounters() {
     console.log('🕒 Inicializando contadores de enfriamiento con zona horaria UTC-6...');
-    
+
     // Buscar todas las tarjetas de enfriamiento con contadores
     document.querySelectorAll('[data-target-time]').forEach(element => {
         const targetTimeStr = element.getAttribute('data-target-time');
         const codeGen = element.closest('[data-codigo-generacion]')?.getAttribute('data-codigo-generacion');
-        
+
         if (targetTimeStr && codeGen) {
             console.log(`🕒 Procesando contador directo para ${codeGen} con tiempo objetivo: ${targetTimeStr}`);
             startEnfriamientoCounter(element, targetTimeStr, codeGen);
         }
     });
-    
+
     // También buscar elementos con data-last-temperature-time para calcular el próximo tiempo
     document.querySelectorAll('[data-last-temperature-time]').forEach(element => {
         const lastTempTimeStr = element.getAttribute('data-last-temperature-time');
         const codeGen = element.closest('[data-codigo-generacion]')?.getAttribute('data-codigo-generacion');
-        
+
         // Solo procesar si no tiene data-target-time (evitar duplicados)
         if (lastTempTimeStr && codeGen && !element.hasAttribute('data-target-time')) {
             const nextTempTime = calculateNextTemperatureTime(lastTempTimeStr);
@@ -473,13 +489,13 @@ function initEnfriamientoCounters() {
             }
         }
     });
-    
+
     // Búsqueda adicional por atributos NextTemperatureTime del modelo
     document.querySelectorAll('.unidad-enfriamiento-vertical-card').forEach(card => {
         const codeGen = card.getAttribute('data-codigo-generacion');
         const nextTempTimeStr = card.getAttribute('data-next-temperature-time');
         const countdownElement = card.querySelector('[data-target-time], .temperature-countdown');
-        
+
         if (codeGen && nextTempTimeStr && countdownElement && !countdownElement.hasAttribute('data-processed')) {
             console.log(`🕒 Procesando NextTemperatureTime para ${codeGen}: ${nextTempTimeStr}`);
             countdownElement.setAttribute('data-processed', 'true');
@@ -499,52 +515,52 @@ function startEnfriamientoCounter(element, targetTimeStr, codeGen) {
             console.error('❌ No se pudo parsear la fecha objetivo:', targetTimeStr);
             return;
         }
-        
+
         const countdownId = `countdown_${codeGen}`;
-        
+
         // Limpiar contador anterior si existe
         if (enfriamientoCounters[countdownId]) {
             clearInterval(enfriamientoCounters[countdownId]);
         }
-        
+
         const updateCounter = () => {
             // Obtener la hora actual en la zona horaria del cliente
             const now = new Date();
-            
+
             // Calcular el tiempo restante
             const timeRemaining = targetTime.getTime() - now.getTime();
-            
-            const displayElement = element.querySelector('.countdown-display') || 
-                                   element.querySelector('.countdown-timer') || 
-                                   element;
-                                   
+
+            const displayElement = element.querySelector('.countdown-display') ||
+                element.querySelector('.countdown-timer') ||
+                element;
+
             if (!displayElement) {
                 console.warn('⚠️ No se encontró elemento de display para el countdown');
                 return;
             }
-            
+
             if (timeRemaining <= 0) {
                 element.classList.add('countdown-expired');
-                
+
                 // Marcar la tarjeta completa como que necesita temperatura
                 const card = element.closest('.unidad-enfriamiento-vertical-card');
                 if (card) {
                     card.classList.add('time-for-temperature');
                 }
-                
+
                 // Limpiar intervalo
                 clearInterval(enfriamientoCounters[countdownId]);
                 delete enfriamientoCounters[countdownId];
-                
+
                 console.log(`⏰ Tiempo cumplido para ${codeGen}`);
             } else {
                 // Calcular tiempo restante
                 const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
                 const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
                 const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
-                
+
                 displayElement.innerHTML = `<span>${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}</span>`;
-                
+
                 // Cambiar estilo si queda menos de 30 minutos
                 if (timeRemaining <= 30 * 60 * 1000) {
                     element.classList.add('countdown-warning');
@@ -553,17 +569,17 @@ function startEnfriamientoCounter(element, targetTimeStr, codeGen) {
                 }
             }
         };
-        
+
         // Actualizar inmediatamente
         updateCounter();
-        
+
         // Iniciar intervalo de actualización cada segundo
         enfriamientoCounters[countdownId] = setInterval(updateCounter, 1000);
-        
+
         console.log(`🕒 Contador iniciado para ${codeGen}`);
         console.log(`📅 Fecha objetivo: ${targetTime.toLocaleString('es-SV')} (El Salvador)`);
         console.log(`📅 Fecha actual: ${new Date().toLocaleString('es-SV')} (Hora del cliente)`);
-        
+
     } catch (error) {
         console.error('❌ Error iniciando contador de enfriamiento:', error);
         console.error('❌ targetTimeStr recibido:', targetTimeStr);
@@ -593,34 +609,34 @@ function getLastTemperatureFromDOM(element) {
             console.log('📊 No se encontró historial de temperaturas');
             return null;
         }
-        
+
         const tempItems = tempHistoryList.querySelectorAll('.temp-history-item');
         if (!tempItems || tempItems.length === 0) {
             console.log('📊 No hay items en el historial de temperaturas');
             return null;
         }
-        
+
         // El primer item es la temperatura más reciente (están ordenados por fecha descendente)
         const firstTempItem = tempItems[0];
         const tempValueElement = firstTempItem.querySelector('.temp-value');
-        
+
         if (!tempValueElement) {
             console.log('📊 No se encontró elemento de temperatura');
             return null;
         }
-        
+
         // Extraer el valor numérico de la temperatura (formato: "39.5°C")
         const tempText = tempValueElement.textContent;
         const tempMatch = tempText.match(/(\d+\.?\d*)°C/);
-        
+
         if (!tempMatch) {
             console.log('📊 No se pudo extraer valor numérico de:', tempText);
             return null;
         }
-        
+
         const temperature = parseFloat(tempMatch[1]);
         console.log(`📊 Última temperatura encontrada: ${temperature}°C`);
-        
+
         return temperature;
     } catch (error) {
         console.error('❌ Error obteniendo última temperatura del DOM:', error);
@@ -634,7 +650,7 @@ function getLastTemperatureFromDOM(element) {
 function mostrarModalTemperaturaPileta(element) {
     const hasValidTemperature = element.getAttribute('data-has-valid-temperature') === 'true';
     const lastTemperature = parseFloat(element.getAttribute('data-last-temperature') || '0');
-    
+
     const data = {
         codeGen: element.getAttribute('data-codigo-generacion'),
         shipmentId: element.getAttribute('data-shipment-id'),
@@ -645,7 +661,7 @@ function mostrarModalTemperaturaPileta(element) {
         transaccion: element.getAttribute('data-transaccion'),
         pileta: element.getAttribute('data-pileta')
     };
-    
+
     if (hasValidTemperature && lastTemperature > 0) {
         console.log(`⏰ Temperatura válida encontrada (${lastTemperature}°C), mostrando confirmación para tomar tiempo`);
         mostrarSweetAlertTomarTiempo(data, lastTemperature);
@@ -711,10 +727,10 @@ function mostrarModalTemperaturaCola(element) {
         ingenio: element.getAttribute('data-ingenio'),
         transaccion: element.getAttribute('data-transaccion')
     };
-    
+
     // Verificar si hay historial de temperaturas y obtener la última
     const lastTemperature = getLastTemperatureFromDOM(element);
-    
+
     if (lastTemperature !== null && lastTemperature <= GOOD_TEMPERATURE_THRESHOLD) {
         // La última temperatura es buena, mostrar modal sin input de temperatura
         console.log(`🌡️ Última temperatura (${lastTemperature}°C) está en rango bueno, mostrando confirmación sin input`);
@@ -731,13 +747,13 @@ function mostrarModalTemperaturaCola(element) {
  */
 function mostrarModalTemperaturaEnfriamiento(element) {
     const temperatureCount = parseInt(element.getAttribute('data-temperature-count') || '0');
-    
+
     // Verificar si ya se han tomado 4 temperaturas
     if (temperatureCount >= 4) {
         showWarningAlert('Esta unidad ya ha alcanzado el límite máximo de 4 temperaturas registradas.');
         return;
     }
-    
+
     const data = {
         codeGen: element.getAttribute('data-codigo-generacion'),
         shipmentId: element.getAttribute('data-shipment-id'),
@@ -749,7 +765,7 @@ function mostrarModalTemperaturaEnfriamiento(element) {
         temperaturaActual: element.getAttribute('data-temperatura'),
         temperatureCount: temperatureCount
     };
-    
+
     mostrarSweetAlertTemperatura(data, 'enfriamiento');
 }
 
@@ -762,12 +778,12 @@ function mostrarSweetAlertTemperatura(data, origen = 'cola', existingTemperature
         return;
     }
 
-    const valorInicial = (origen === 'enfriamiento' && data.temperaturaActual && data.temperaturaActual !== 'N/A') 
-        ? parseFloat(data.temperaturaActual) 
+    const valorInicial = (origen === 'enfriamiento' && data.temperaturaActual && data.temperaturaActual !== 'N/A')
+        ? parseFloat(data.temperaturaActual)
         : '';
 
     // Texto principal según el origen
-    const textoPrincipal = origen === 'enfriamiento' 
+    const textoPrincipal = origen === 'enfriamiento'
         ? '¿Este es el camión que debe regresar a cola?'
         : '¿Este es el camión para la toma de temperatura?';
 
@@ -814,7 +830,7 @@ function mostrarSweetAlertTemperatura(data, origen = 'cola', existingTemperature
     if (existingTemperature === null) {
         sweetAlertConfig.input = 'number';
         sweetAlertConfig.inputAttributes = {
-            inputmode: 'decimal',  
+            inputmode: 'decimal',
             min: 0,
             max: 100,
             step: 0.1,
@@ -846,22 +862,22 @@ function mostrarSweetAlertTemperatura(data, origen = 'cola', existingTemperature
  */
 async function registrarTemperatura(codeGen, temperatura, origen = 'cola', isExistingTemperature = false) {
     const lockKey = `registrar_temperatura_${codeGen}`;
-    
+
     try {
         await preventMultipleExecutions(lockKey, async () => {
             window.AlmapacUtils?.showSpinner();
-            
+
             console.log(`🌡️ Registrando temperatura ${temperatura}°C para ${codeGen} (origen: ${origen}, existente: ${isExistingTemperature})`);
-            
+
             const response = await postJson('/TiemposMelaza/RegistrarTemperatura', {
                 codeGen: codeGen,
                 temperature: temperatura,
                 origen: origen,
                 isExistingTemperature: isExistingTemperature
             });
-            
+
             console.log('✅ Temperatura registrada exitosamente:', response);
-            
+
             // Determinar mensaje según temperatura, origen y si fue anulado
             let statusMessage;
             if (response.data && response.data.isAnulado) {
@@ -888,15 +904,15 @@ async function registrarTemperatura(codeGen, temperatura, origen = 'cola', isExi
                 }
                 await showWarningAlert(statusMessage);
             }
-            
+
             // Refresh para mostrar cambios
             setTimeout(() => {
                 refreshView();
             }, 1000);
-            
+
             return true;
         }, 5000);
-        
+
     } catch (error) {
         console.error('❌ Error registrando temperatura:', error);
         showErrorAlert(error.message || 'Error al registrar la temperatura');
@@ -915,59 +931,77 @@ function preventMultipleExecutions(key, fn, delay = 3000) {
         console.warn(`⚠️ Ejecución múltiple bloqueada para: ${key}`);
         return Promise.resolve(false);
     }
-    
+
     executionLocks.set(key, true);
     console.log(`🔒 Bloqueando ejecución para: ${key}`);
-    
+
     // Auto-liberar después del delay
     setTimeout(() => {
         executionLocks.delete(key);
         console.log(`🔓 Liberando ejecución para: ${key}`);
     }, delay);
-    
+
     return fn();
 }
 
 /**
  * Deshabilita un botón temporalmente
  */
-function disableButtonTemporarily(button, duration = 3000) {
+function disableButtonTemporarily(button, duration = 3000, loadingText = '') {
     if (!button) return;
-    
+
     const buttonId = button.id || button.getAttribute('data-timer-id') || 'unknown';
-    
+
     if (buttonStates.has(buttonId)) {
         console.warn(`⚠️ Botón ${buttonId} ya está deshabilitado`);
         return;
     }
-    
+
     const originalDisabled = button.disabled;
-    const originalText = button.textContent;
-    
+    const originalHTML = button.innerHTML;
+
     button.disabled = true;
     button.style.cursor = 'not-allowed';
+    button.style.opacity = '0.7';
+    button.style.pointerEvents = 'none';
     button.setAttribute('aria-busy', 'true');
-    
-    buttonStates.set(buttonId, { 
-        originalDisabled, 
-        originalText, 
-        button: button 
+
+    if (loadingText) {
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + loadingText;
+    }
+
+    let timeoutId = null;
+    if (duration > 0) {
+        timeoutId = setTimeout(() => {
+            restoreButtonFromState(buttonId);
+        }, duration);
+    }
+
+    buttonStates.set(buttonId, {
+        originalDisabled,
+        originalHTML,
+        button: button,
+        timeoutId: timeoutId
     });
-    
+
     console.log(`🚫 Botón ${buttonId} deshabilitado temporalmente`);
-    
-    setTimeout(() => {
-        const state = buttonStates.get(buttonId);
-        if (state && state.button) {
-            state.button.disabled = state.originalDisabled;
-            state.button.style.opacity = '';
-            state.button.style.cursor = '';
-            state.button.textContent = state.originalText;
-            state.button.removeAttribute('aria-busy');
-            buttonStates.delete(buttonId);
-            console.log(`✅ Botón ${buttonId} restaurado`);
+}
+
+function restoreButtonFromState(buttonId) {
+    const state = buttonStates.get(buttonId);
+    if (state && state.button) {
+        if (state.timeoutId) {
+            clearTimeout(state.timeoutId);
         }
-    }, duration);
+        state.button.disabled = state.originalDisabled;
+        state.button.innerHTML = state.originalHTML;
+        state.button.style.opacity = '';
+        state.button.style.cursor = '';
+        state.button.style.pointerEvents = '';
+        state.button.removeAttribute('aria-busy');
+        buttonStates.delete(buttonId);
+        console.log(`✅ Botón ${buttonId} restaurado`);
+    }
 }
 
 /* ------------------ Persistencia de Selección ------------------ */
@@ -997,7 +1031,7 @@ function updateActiveDropdownItem(activeComponent) {
         const icon = item.querySelector('.check-icon');
         if (icon) icon.style.display = 'none';
     });
-    
+
     const activeItem = document.querySelector(`[data-component="${activeComponent}"]`);
     if (activeItem) {
         activeItem.classList.add('active');
@@ -1010,11 +1044,11 @@ function updateActiveDropdownItem(activeComponent) {
 /* ------------------ Gestión de Dropdown ------------------ */
 function initDropdown() {
     console.log('🔄 Inicializando dropdown...');
-    
+
     const dropdownContainer = document.querySelector('.activity-dropdown');
     const dropdownToggle = document.getElementById('activityDropdown');
     const dropdownMenu = document.getElementById('activityDropdownMenu');
-    
+
     if (!dropdownContainer || !dropdownToggle || !dropdownMenu) {
         console.error('❌ Elementos del dropdown no encontrados');
         setTimeout(initDropdown, 500);
@@ -1022,14 +1056,14 @@ function initDropdown() {
     }
 
     console.log('✅ Elementos del dropdown encontrados');
-    
+
     const newContainer = dropdownContainer.cloneNode(true);
     dropdownContainer.parentNode.replaceChild(newContainer, dropdownContainer);
-    
+
     const container = document.querySelector('.activity-dropdown');
     const button = container.querySelector('#activityDropdown');
     const menu = container.querySelector('#activityDropdownMenu');
-    
+
     let timeout;
     let isOpen = false;
 
@@ -1038,7 +1072,7 @@ function initDropdown() {
         clearTimeout(timeout);
         container.classList.add('active');
         menu.classList.add('show');
-        
+
         button.setAttribute('aria-expanded', 'true');
         isOpen = true;
         console.log('🖱️ Dropdown abierto');
@@ -1047,12 +1081,12 @@ function initDropdown() {
     // Función para cerrar dropdown
     function closeDropdown(delay = 0) {
         clearTimeout(timeout);
-        
+
         if (delay > 0) {
             timeout = setTimeout(() => {
                 container.classList.remove('active');
                 menu.classList.remove('show');
-                
+
                 button.setAttribute('aria-expanded', 'false');
                 isOpen = false;
                 console.log('🖱️ Dropdown cerrado');
@@ -1060,7 +1094,7 @@ function initDropdown() {
         } else {
             container.classList.remove('active');
             menu.classList.remove('show');
-            
+
             button.setAttribute('aria-expanded', 'false');
             isOpen = false;
             console.log('🖱️ Dropdown cerrado');
@@ -1072,14 +1106,14 @@ function initDropdown() {
 
     if (isTouchDevice) {
         console.log('📱 Dispositivo táctil detectado - usando eventos touch');
-        
+
         // Para dispositivos táctiles, solo usar click
         button.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            
+
             console.log('👆 Touch click en dropdown');
-            
+
             if (isOpen) {
                 closeDropdown();
             } else {
@@ -1089,12 +1123,12 @@ function initDropdown() {
                         otherContainer.classList.remove('active');
                         const otherMenu = otherContainer.querySelector('.dropdown-menu');
                         const otherButton = otherContainer.querySelector('button');
-                        
+
                         if (otherMenu) otherMenu.classList.remove('show');
                         if (otherButton) otherButton.setAttribute('aria-expanded', 'false');
                     }
                 });
-                
+
                 openDropdown();
             }
         });
@@ -1108,7 +1142,7 @@ function initDropdown() {
 
     } else {
         console.log('🖥️ Dispositivo desktop - usando eventos mouse');
-        
+
         // Para desktop, usar mouse events
         container.addEventListener('mouseenter', () => {
             openDropdown();
@@ -1121,9 +1155,9 @@ function initDropdown() {
         button.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            
+
             console.log('🖱️ Click en dropdown toggle');
-            
+
             if (isOpen) {
                 closeDropdown();
             } else {
@@ -1135,20 +1169,20 @@ function initDropdown() {
     // Manejo de selección de items (común para ambos)
     menu.addEventListener('click', (e) => {
         const item = e.target.closest('.dropdown-item[data-component]');
-        
+
         if (!item) return;
-        
+
         e.preventDefault();
         e.stopPropagation();
-        
+
         const componentName = item.getAttribute('data-component');
-        
+
         console.log('📋 Item seleccionado:', componentName);
-        
+
         saveSelectedComponent(componentName);
         updateActiveDropdownItem(componentName);
         showOnlyComponent(componentName);
-        
+
         closeDropdown();
     });
 
@@ -1166,9 +1200,9 @@ function initDropdown() {
 /* ------------------ Gestión de Componentes ------------------ */
 function showOnlyComponent(componentName) {
     const allComponents = ['tiempos-melaza', 'unidades-enfriamiento'];
-    
+
     console.log('🔄 Mostrando componente:', componentName);
-    
+
     try {
         allComponents.forEach(name => {
             const component = document.getElementById(`component-${name}`);
@@ -1177,24 +1211,24 @@ function showOnlyComponent(componentName) {
                 component.classList.add('hidden');
             }
         });
-        
+
         const selectedComponent = document.getElementById(`component-${componentName}`);
         if (selectedComponent) {
             selectedComponent.style.display = 'block';
             selectedComponent.classList.remove('hidden');
             selectedComponent.offsetHeight;
         }
-        
+
         currentActiveComponent = componentName;
         console.log('✅ Componente mostrado:', componentName);
-        
+
         // Inicializar contadores si es el componente de enfriamiento
         if (componentName === 'unidades-enfriamiento') {
             setTimeout(() => {
                 initEnfriamientoCounters();
             }, 100);
         }
-        
+
     } catch (error) {
         console.error('❌ Error al cambiar componente:', error);
     }
@@ -1202,19 +1236,19 @@ function showOnlyComponent(componentName) {
 
 function initComponentSystem() {
     console.log('🔄 Inicializando sistema de componentes...');
-    
+
     try {
         const savedComponent = loadSelectedComponent();
         showOnlyComponent(savedComponent);
         currentActiveComponent = savedComponent;
         initDropdownWithRetry();
-        
+
         setTimeout(() => {
             updateActiveDropdownItem(savedComponent);
         }, 200);
-        
+
         console.log('✅ Sistema de componentes inicializado con:', savedComponent);
-        
+
     } catch (error) {
         console.error('❌ Error inicializando componentes:', error);
         setTimeout(initComponentSystem, 1000);
@@ -1223,22 +1257,22 @@ function initComponentSystem() {
 
 function initDropdownWithRetry(attempts = 0) {
     const maxAttempts = 5;
-    
+
     if (attempts >= maxAttempts) {
         console.error('❌ No se pudo inicializar el dropdown después de', maxAttempts, 'intentos');
         return;
     }
-    
+
     const container = document.querySelector('.activity-dropdown');
     const toggle = document.getElementById('activityDropdown');
     const menu = document.getElementById('activityDropdownMenu');
-    
+
     if (!container || !toggle || !menu) {
         console.log('⏳ Elementos no encontrados, reintentando...', attempts + 1);
         setTimeout(() => initDropdownWithRetry(attempts + 1), 200);
         return;
     }
-    
+
     initDropdown();
 }
 
@@ -1392,30 +1426,30 @@ function refreshView() {
     const startedAt = Date.now();
 
     // showRefreshIndicator();
-    
+
     const currentComponent = currentActiveComponent;
     const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
     console.log('🔄 Refresh iniciado, componente activo:', currentComponent);
-    
+
     const dropdownContainer = document.querySelector('.activity-dropdown');
     if (dropdownContainer) {
         dropdownContainer.classList.remove('active');
         const menu = dropdownContainer.querySelector('.dropdown-menu');
         const button = dropdownContainer.querySelector('button');
-        
+
         if (menu) menu.classList.remove('show');
         if (button) button.setAttribute('aria-expanded', 'false');
     }
-    
+
     // Limpiar contadores de enfriamiento antes del refresh
     clearAllEnfriamientoCounters();
-    
+
     $.ajax({
         type: "GET",
         url: window.location.pathname,
         cache: false,
         timeout: 15000,
-        success: function(response) {
+        success: function (response) {
             if (startedAt < lastRefreshTs) {
                 console.log('⏩ Respuesta vieja ignorada');
                 return;
@@ -1486,24 +1520,29 @@ function refreshView() {
                 } else {
                     console.warn('No se encontró contenido <main> para actualizar');
                 }
-              } catch (err) {
+            } catch (err) {
                 console.error('❌ Error procesando respuesta:', err);
             }
             // hideRefreshIndicator();
+
+            // NOTA: La detección de timers huérfanos en MELAZA se hace en estaciones-melaza.js
+            // (en updateEstacionesFromPolling e initEstacionesMelaza), NO aquí,
+            // porque los elementos DOM son renderizados dinámicamente por estaciones-melaza.js
+            // y no existen inmediatamente después de reemplazar <main>.
 
             // Re-inicializar timers con el nuevo DOM
             initTimersFromStorage();
             // Sincronizar cronómetros
             timerSyncMelaza.syncActiveTimersFromDB().catch(err => console.error('❌ Error en syncActiveTimersFromDB()', err));
         },
-        error: function(xhr, status, error) {
+        error: function (xhr, status, error) {
             console.error('❌ Error al actualizar datos:', error);
             // hideRefreshIndicator();
             if (status !== 'timeout' && status !== 'abort') {
                 showRefreshError();
             }
         },
-        complete: function() {
+        complete: function () {
             refreshInFlight = false;
         }
     });
@@ -1564,6 +1603,8 @@ function initTimersFromStorage() {
     });
 }
 
+
+
 function startInterval(timerId, msStart) {
     const txtEl = document.getElementById(timerId);
     const progressBarId = timerId.replace('timer', 'progressBar');
@@ -1603,23 +1644,23 @@ function startInterval(timerId, msStart) {
         updateTimerDisplay(timerId, ms);
     }, 50);
 
-    console.log(`🎯 Intervalo iniciado para ${timerId} con ${(ms/1000/60).toFixed(1)} min transcurridos`);
+    console.log(`🎯 Intervalo iniciado para ${timerId} con ${(ms / 1000 / 60).toFixed(1)} min transcurridos`);
 }
 
 function updateProgressBar(timerId, ms) {
     const progressBarId = timerId.replace('timer', 'progressBar');
     const progressBarEl = document.getElementById(progressBarId);
-    
+
     if (!progressBarEl) return;
 
     const percentage = Math.min(100, (ms / TIMER_DUR_MELAZA_MLS) * 100);
     progressBarEl.style.width = `${percentage}%`;
-    
+
     const color = getProgressColor(ms);
     progressBarEl.style.setProperty('background-color', color, 'important');
-    
+
     progressBarEl.classList.remove('timer-normal', 'timer-warning', 'timer-danger');
-    
+
     if (ms < TIMER_DUR_MELAZA_MLS / 2) {
         progressBarEl.classList.add('timer-normal');
     } else if (ms < TIMER_DUR_MELAZA_MLS) {
@@ -1726,14 +1767,14 @@ function startTimerFlow(buttonStart) {
 
     preventMultipleExecutions(lockKey, async () => {
         try {
-            disableButtonTemporarily(buttonStart, 2000);
-            
+            disableButtonTemporarily(buttonStart, 0, 'Iniciando...');
+
             // PASO 1: Registrar en BD primero
             const dbResult = await timerSyncMelaza.startTimerInDB(timerId, codeGen, shipmentId, 'pipa');
             if (!dbResult) {
                 console.warn(`⚠️ No se pudo registrar timer en BD, continuando solo localmente`);
             }
-            
+
             // PASO 2: Iniciar cronómetro local
             timerCodeGenMap[timerId] = codeGen;
             const prevMs = parseInt(localStorage.getItem(`${timerId}_milliseconds`)) || 0;
@@ -1747,14 +1788,18 @@ function startTimerFlow(buttonStart) {
 
             isRunning[timerId] = true;
             startInterval(timerId, prevMs);
-            
+
             const newRunningCount = getRunningTimersCount();
             console.log(`⏱️ Cronómetro iniciado: ${timerId}, Pileta: ${pileta}, ShipmentId: ${shipmentId}. Total activos: ${newRunningCount}/${MAX_SIMULTANEOUS_TIMERS}`);
-            
+
+            const buttonId = buttonStart.id || buttonStart.getAttribute('data-timer-id');
+            if (buttonId) restoreButtonFromState(buttonId);
             return true;
         } catch (error) {
             console.error(`❌ Error iniciando timer ${timerId}:`, error);
             showErrorAlert('Error al iniciar cronómetro. Inténtalo de nuevo.');
+            const buttonId = buttonStart.id || buttonStart.getAttribute('data-timer-id');
+            if (buttonId) restoreButtonFromState(buttonId);
         }
     }, 2000);
 }
@@ -1839,8 +1884,8 @@ function stopTimerFlow(btnElement) {
     const finalizeStop = async (motivo = '') => {
         return preventMultipleExecutions(lockKey, async () => {
             try {
-                disableButtonTemporarily(btn, 4000);
-                
+                disableButtonTemporarily(btn, 0, 'Deteniendo...');
+
                 // PASO 1: Detener cronómetro local primero
                 clearInterval(intervals[timerId]);
                 intervals[timerId] = null;
@@ -1868,18 +1913,21 @@ function stopTimerFlow(btnElement) {
                 const remainingCount = getRunningTimersCount();
                 console.log(`⏹️ Timer detenido: ${timerId}, Pileta: ${pileta}. Restantes: ${remainingCount}/${MAX_SIMULTANEOUS_TIMERS}`);
                 console.log(`📤 Tiempo enviado al backend: ${tiempoBackend} (mostrado: ${tiempoDisplay})`);
-                
+
                 // PASO 4: Eliminar de BD solo después de cambio de estado exitoso (en changeStatusMelaza)
-                
+
                 setTimeout(refreshView, 700);
                 return true;
             } catch (err) {
                 console.error(`Error al detener timer ${timerId}:`, err);
                 showErrorAlert(err.message || 'Error al enviar el tiempo');
-                
-                // Restaurar estado si hay error
+
+                // Restaurar estado y reanudar visual desde donde iba
                 isRunning[timerId] = true;
-                saveTimerState(timerId, { run: true });
+                saveTimerState(timerId, { ms, le: Date.now(), run: true });
+                startInterval(timerId, ms);
+                const buttonId = btn.id || btn.getAttribute('data-timer-id');
+                if (buttonId) restoreButtonFromState(buttonId);
                 return false;
             } finally {
                 stopInFlight[timerId] = false;
@@ -1899,6 +1947,8 @@ function stopTimerFlow(btnElement) {
             document.getElementById("cancelStopButton").onclick = function () {
                 modal.style.display = "none";
                 stopInFlight[timerId] = false;
+                const buttonId = btn.id || btn.getAttribute('data-timer-id');
+                if (buttonId) restoreButtonFromState(buttonId);
             };
         } else {
             finalizeStop('');
@@ -1912,14 +1962,21 @@ async function TiempoMelaza(codeGen, tiempo, comentario, shipmentId, truckType) 
     if (!codeGen) throw new Error('Código de generación requerido');
     if (!shipmentId) throw new Error('ID de shipment requerido');
     if (!truckType) throw new Error('Tipo de camión requerido');
-    
+
+    // Validar formato HH:MM:SS antes de enviar
+    const formatoHHMMSS = /^\d{2}:\d{2}:\d{2}$/;
+    if (!formatoHHMMSS.test(tiempo)) {
+        console.error(`Formato de tiempo incorrecto: ${tiempo} (debe ser HH:MM:SS)`);
+        throw new Error(`Formato de tiempo incorrecto: ${tiempo}. Debe ser HH:MM:SS`);
+    }
+
     const lockKey = `tiempomelaza_${codeGen}_${shipmentId}`;
-    
+
     return preventMultipleExecutions(lockKey, async () => {
         window.AlmapacUtils?.showSpinner();
         try {
             console.log(`🚀 Enviando TiempoMelaza ÚNICO para: ${codeGen} con tiempo: ${tiempo} (formato HH:MM:SS)`);
-            
+
             const res = await postJson('/TiemposMelaza/TiempoMelaza', {
                 codigoGeneracion: codeGen,
                 tiempo: tiempo, // Ya viene formateado en HH:MM:SS
@@ -1927,11 +1984,11 @@ async function TiempoMelaza(codeGen, tiempo, comentario, shipmentId, truckType) 
                 shipmentId: shipmentId,
                 truckType: truckType
             });
-            
+
             console.log("✅ TiempoMelaza OK (ÚNICO):", res);
-            
+
             await changeStatusMelaza(codeGen);
-            
+
             return res;
         } finally {
             window.AlmapacUtils?.hideSpinner();
@@ -1941,37 +1998,37 @@ async function TiempoMelaza(codeGen, tiempo, comentario, shipmentId, truckType) 
 
 async function changeStatusMelaza(codeGen) {
     const predefinedStatusId = 9;
-    
+
     const lockKey = `changestatus_${codeGen}_${predefinedStatusId}`;
-    
+
     return preventMultipleExecutions(lockKey, async () => {
         try {
             console.log(`🔄 Cambiando estado ÚNICO para: ${codeGen}`);
-            
+
             const response = await postJson('/TiemposMelaza/ChangeTransactionStatus', {
                 codeGen: codeGen,
                 predefinedStatusId
             });
-            
+
             console.log(`✅ Estado cambiado exitosamente para: ${codeGen}`);
-            
+
             // Liberar timer de BD cuando cambie de estado exitosamente
             const shipmentId = await getShipmentIdFromCodeGen(codeGen);
             if (shipmentId) {
                 await timerSyncMelaza.liberarTimerPorShipmentId(shipmentId);
             }
-            
+
             showSuccessAlert('El estado se actualizó correctamente.');
-            
+
             return true;
         } catch (e) {
             console.error("Error cambiando estado:", e);
-            
+
             if (e.message && e.message.includes('ya fue registrado')) {
                 console.log('⚠️ Estado ya registrado, continuando...');
                 return true;
             }
-            
+
             showErrorAlert(e.message || 'Error al cambiar estado');
             throw e;
         }
@@ -1987,7 +2044,7 @@ function getShipmentIdFromCodeGen(codeGen) {
             const shipmentId = parseInt(element.getAttribute('data-shipment-id'));
             return shipmentId || null;
         }
-        
+
         // Si no lo encontramos en DOM, buscar en el timerCodeGenMap y localStorage
         for (const [timerId, storedCodeGen] of Object.entries(timerCodeGenMap)) {
             if (storedCodeGen === codeGen) {
@@ -1995,7 +2052,7 @@ function getShipmentIdFromCodeGen(codeGen) {
                 return state.shipmentId || null;
             }
         }
-        
+
         return null;
     } catch (error) {
         console.error(`❌ Error obteniendo shipmentId para ${codeGen}:`, error);
@@ -2029,27 +2086,27 @@ async function SolicitarUnidad(unidadesSolicitadas) {
         showWarningAlert('Operación en proceso, espere...');
         return;
     }
-    
+
     if (unidadesSolicitadas <= 0) {
         showWarningAlert('Debe solicitar al menos 1 unidad');
         return;
     }
-    
+
     counterLocks.pipa = true;
 
     try {
         window.AlmapacUtils?.showSpinner();
         console.log(`📋 Solicitando ${unidadesSolicitadas} unidades Pipa`);
-        
+
         await postJson('/TiemposMelaza/SolicitarUnidad', {
             CurrentValue: unidadesSolicitadas
         });
-        
+
         await showSuccessAlert(`Has solicitado ${unidadesSolicitadas} unidades Pipa.`);
-        
+
         // Limpiar contadores después de solicitud exitosa
         clearPipaCounterState();
-        
+
         refreshView();
     } catch (err) {
         console.error("Error solicitando unidad:", err);
@@ -2066,27 +2123,27 @@ async function ReducirUnidad(unidadesReducidas) {
         showWarningAlert('Operación en proceso, espere...');
         return;
     }
-    
+
     if (unidadesReducidas <= 0) {
         showWarningAlert('Debe especificar al menos 1 unidad para reducir');
         return;
     }
-    
+
     counterLocks.pipa = true;
 
     try {
         window.AlmapacUtils?.showSpinner();
         console.log(`📋 Reduciendo ${unidadesReducidas} unidades Pipa`);
-        
+
         await postJson('/TiemposMelaza/ReducirUnidad', {
             UnidadesReducidas: unidadesReducidas
         });
-        
+
         await showSuccessAlert(`Se eliminaron ${unidadesReducidas} unidades Pipa.`);
-        
+
         // Limpiar contadores después de reducción exitosa
         clearPipaCounterState();
-        
+
         refreshView();
     } catch (err) {
         console.error("Error en reducción:", err);
@@ -2103,10 +2160,10 @@ async function ReducirUnidad(unidadesReducidas) {
  */
 function bindSolicitudesBtns() {
     console.log('🔗 Vinculando botones de solicitudes...');
-    
+
     // Cargar estado del contador al inicializar
     loadPipaCounterState();
-    
+
     const elements = {
         decreaseBtn: document.getElementById('decreaseButtonPipa'),
         increaseBtn: document.getElementById('increaseButtonPipa'),
@@ -2123,7 +2180,7 @@ function bindSolicitudesBtns() {
 
     // Sincronizar con DOM después de cargar estado
     syncPipaCounterWithDOM();
-    
+
     // Mostrar valor actual
     const currentValue = getCurrentPipaValue();
     updatePipaDisplay(currentValue);
@@ -2134,14 +2191,14 @@ function bindSolicitudesBtns() {
             console.warn('⚠️ Contador bloqueado durante operación');
             return;
         }
-        
+
         const currentValue = getCurrentPipaValue();
         if (currentValue > 0) {
             pipaCounterState.decrementCount++;
             const newValue = getCurrentPipaValue();
             updatePipaDisplay(newValue);
             savePipaCounterState();
-            
+
             console.log(`⬇️ Decrementado: total=${newValue}, decrements=${pipaCounterState.decrementCount}`);
         }
     };
@@ -2152,12 +2209,12 @@ function bindSolicitudesBtns() {
             console.warn('⚠️ Contador bloqueado durante operación');
             return;
         }
-        
+
         pipaCounterState.incrementCount++;
         const newValue = getCurrentPipaValue();
         updatePipaDisplay(newValue);
         savePipaCounterState();
-        
+
         console.log(`⬆️ Incrementado: total=${newValue}, increments=${pipaCounterState.incrementCount}`);
     };
 
@@ -2167,11 +2224,11 @@ function bindSolicitudesBtns() {
             showWarningAlert('Operación en proceso, espere...');
             return;
         }
-        
+
         const { incrementCount, decrementCount } = pipaCounterState;
-        
+
         console.log(`📊 Estado del contador: increments=${incrementCount}, decrements=${decrementCount}`);
-        
+
         let operationsPerformed = false;
 
         try {
@@ -2222,12 +2279,12 @@ function bindSolicitudesBtns() {
         e.preventDefault();
         handleDecrease();
     });
-    
+
     elements.increaseBtn.addEventListener('touchend', (e) => {
         e.preventDefault();
         handleIncrease();
     });
-    
+
     elements.solicitarBtn.addEventListener('touchend', (e) => {
         e.preventDefault();
         handleSolicitar();
@@ -2295,18 +2352,18 @@ function bindTimerButtonsSafe() {
         console.log('⚠️ Ya se están vinculando eventos, saltando...');
         return;
     }
-    
+
     isBindingEvents = true;
     console.log('🔗 Vinculando eventos de botones de forma segura...');
-    
+
     try {
         $(document).off('click.timerEvents', '.timer-start-btn, .timer-stop-btn');
-        
+
         $(document).on('click.timerEvents', '.timer-start-btn', function (e) {
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
-            
+
             console.log('🚀 Click en botón START:', this.id || this.getAttribute('data-timer-id'));
             startTimerFlow(this);
         });
@@ -2315,13 +2372,13 @@ function bindTimerButtonsSafe() {
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
-            
+
             console.log('⏹️ Click en botón STOP:', this.id || this.getAttribute('data-timer-id'));
             stopTimerFlow(this);
         });
-        
+
         console.log('✅ Eventos de botones vinculados correctamente');
-        
+
     } catch (error) {
         console.error('❌ Error vinculando eventos:', error);
     } finally {
@@ -2331,21 +2388,21 @@ function bindTimerButtonsSafe() {
 
 function bindTemperatureButtons() {
     console.log('🌡️ Vinculando eventos de botones de temperatura...');
-    
+
     try {
         $(document).off('click.temperatureEvents', '.temperature-btn');
-        
+
         $(document).on('click.temperatureEvents', '.temperature-btn', function (e) {
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
-            
+
             console.log('🌡️ Click en botón temperatura:', this.id);
             mostrarModalTemperaturaPileta(this);
         });
-        
+
         console.log('✅ Eventos de temperatura vinculados correctamente');
-        
+
     } catch (error) {
         console.error('❌ Error vinculando eventos de temperatura:', error);
     }
@@ -2359,7 +2416,7 @@ $(document).ready(function () {
     console.log('🚀 Documento listo - Inicializando aplicación...');
     console.log(`⏱️ Máximo ${MAX_SIMULTANEOUS_TIMERS} cronómetros simultáneos permitidos`);
     console.log('🌍 Zona horaria configurada: UTC-6 (El Salvador)');
-    
+
     window.AlmapacUtils?.hideSpinner();
 
     document.querySelectorAll("button").forEach(b => {
@@ -2372,20 +2429,23 @@ $(document).ready(function () {
     bindTimerButtonsSafe();
     bindTemperatureButtons();
     bindSolicitudesBtns();
-    
+
     setTimeout(() => {
         initComponentSystem();
     }, 100);
 
-    // PRIMERO: Inicializar timers desde localStorage
+    // NOTA: La detección de timers huérfanos en MELAZA se hace en estaciones-melaza.js
+    // (en updateEstacionesFromPolling e initEstacionesMelaza), NO aquí.
+
+    // Inicializar timers visibles desde localStorage
     initTimersFromStorage();
-    
-    // SEGUNDO: Sincronizar cronómetros desde BD al cargar
+
+    // TERCERO: Sincronizar cronómetros desde BD al cargar
     setTimeout(() => {
         console.log('🔄 Iniciando sincronización automática desde BD...');
         timerSyncMelaza.syncActiveTimersFromDB();
     }, 1500); // Aumentado a 1.5 segundos para asegurar que todo esté listo
-    
+
     startAutoRefresh();
 
     // Pausar/redibujar intervalos al cambiar visibilidad (ahorro CPU y evitar drift)
@@ -2396,7 +2456,7 @@ $(document).ready(function () {
             initTimersFromStorage();
         }
     });
-    
+
     console.log('✅ Aplicación inicializada correctamente');
 });
 

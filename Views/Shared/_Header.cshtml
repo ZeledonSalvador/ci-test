@@ -14,7 +14,7 @@
     List<string> permisosUsuario = new();
     bool permisosDeserializados = false;
 
-    // Validar token y extraer permisos
+    // Validar token y extraer permisosx
     if (isLoggedIn)
     {
         try
@@ -60,7 +60,9 @@
                                || permisosUsuario.Contains("ListaNegraMotoristas")
                                || permisosUsuario.Contains("Dashboard")
                                || permisosUsuario.Contains("Dashboard/Recepcion")
-                               || permisosUsuario.Contains("Dashboard/tiempos-hoy-detalle");
+                               || permisosUsuario.Contains("Dashboard/TiemposHoyDetalle")
+                               || permisosUsuario.Contains("Dashboard/PesosHistorico")
+                               || permisosUsuario.Contains("Dashboard/HistoricoDiarioHoras");
     
     // Verificar permisos específicos para Recepción
     bool tienePermisosAzucar = permisosUsuario.Contains("TiemposAzucar");
@@ -86,7 +88,9 @@
                     || IsActive("/listanegramotoristas")
                     || IsActive("/dashboard")
                     || IsActive("/dashboard/recepcion")
-                    || IsActive("/dashboard/tiempos-hoy-detalle");
+                    || IsActive("/Dashboard/TiemposHoyDetalle")
+                    || IsActive("/dashboard/pesoshistorico")
+                    || IsActive("/dashboard/HistoricoDiarioHoras");
 
     // Verificar si Recepción está activa
     bool recepcionActive = IsActive("/tiemposazucar") || IsActive("/tiemposmelaza");
@@ -110,7 +114,7 @@
   <div class="desktop-header container-fluid d-none d-lg-flex justify-content-between align-items-center">
     <!-- Logo -->
     <a href="/Prechequeo" class="logo">
-      <img src="~/assets/almapac.png" alt="Almapac Logo">
+      <img src="~/assets/almapac-logo.png" alt="Almapac Logo">
     </a>
 
     <!-- NAVEGACIÓN BASADA EN COOKIES DE PERMISOS -->
@@ -287,7 +291,7 @@
   <!-- MOBILE/TABLET HEADER (<1025px) -->
   <div class="mobile-header container-fluid d-flex d-lg-none justify-content-between align-items-center p-0">
     <a href="/Prechequeo" class="logo">
-      <img src="~/assets/almapac.png" alt="Almapac Logo">
+      <img src="~/assets/almapac-logo.png" alt="Almapac Logo">
     </a>
     
     <div class="d-flex align-items-center">

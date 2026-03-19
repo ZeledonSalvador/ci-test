@@ -46,7 +46,7 @@ namespace FrontendQuickpass.Services
 
         // CREAR TOKEN JWT CON PERMISOS INCLUIDOS (PARA AUTORIZACIÓN SEGURA)
         // Sobrecarga que recibe permisos específicos (para usuarios del API)
-        public SessionTokenInfo CrearTokenSesion(int codUsuario, int codRol, string usuario, string bascula, string turno, List<string> permisos, string nombreRol, string fullName = "")
+        public SessionTokenInfo CrearTokenSesion(int codUsuario, int codRol, string usuario, string bascula, string turno, List<string> permisos, string nombreRol, string fullName = "", string userCode = "")
         {
             try
             {
@@ -65,6 +65,7 @@ namespace FrontendQuickpass.Services
                     new Claim("cod_turno", turno),
                     new Claim("nombre_rol", nombreRol),
                     new Claim("full_name", fullName), // Nombre completo del usuario
+                    new Claim("user_code", userCode), // Código del usuario
 
                     // Permisos firmados dentro del token (PARA AUTORIZACIÓN)
                     new Claim("permisos", JsonSerializer.Serialize(permisos)),
@@ -99,6 +100,8 @@ namespace FrontendQuickpass.Services
                     CodBascula = bascula,
                     CodTurno = turno,
                     NombreRol = nombreRol,
+                    FullName = fullName,
+                    UserCode = userCode,
                     Permisos = permisos,
                     FechaCreacion = fechaCreacion,
                     FechaExpiracion = fechaExpiracion,
@@ -162,6 +165,7 @@ namespace FrontendQuickpass.Services
                 var turno = jwtToken.Claims.First(x => x.Type == "cod_turno").Value;
                 var nombreRol = jwtToken.Claims.First(x => x.Type == "nombre_rol").Value;
                 var fullName = jwtToken.Claims.FirstOrDefault(x => x.Type == "full_name")?.Value ?? "";
+                var userCode = jwtToken.Claims.FirstOrDefault(x => x.Type == "user_code")?.Value ?? "";
 
                 // OBTENER PERMISOS DEL TOKEN
                 var permisosJson = jwtToken.Claims.First(x => x.Type == "permisos").Value;
@@ -183,6 +187,7 @@ namespace FrontendQuickpass.Services
                     CodTurno = turno,
                     NombreRol = nombreRol,
                     FullName = fullName,
+                    UserCode = userCode,
                     Permisos = permisos,
                     FechaCreacion = fechaCreacion,
                     FechaExpiracion = fechaExpiracion,
@@ -288,6 +293,7 @@ namespace FrontendQuickpass.Services
                             UserId = user.Id,
                             Username = user.Username,
                             FullName = user.FullName,
+                            UserCode = user.UserCode ?? "",
                             Email = user.Email,
                             Category = user.Category?.Name ?? "Sin Categoría",
                             RoleId = roleId,
@@ -372,6 +378,7 @@ namespace FrontendQuickpass.Services
         public string CodTurno { get; set; } = "";
         public string NombreRol { get; set; } = "";
         public string FullName { get; set; } = "";
+        public string UserCode { get; set; } = "";
         public List<string> Permisos { get; set; } = new();
         public DateTime FechaCreacion { get; set; }
         public DateTime FechaExpiracion { get; set; }
@@ -392,6 +399,7 @@ namespace FrontendQuickpass.Services
         public int UserId { get; set; }
         public string Username { get; set; } = "";
         public string FullName { get; set; } = "";
+        public string UserCode { get; set; } = "";
         public string Email { get; set; } = "";
         public string Category { get; set; } = "";
         public int RoleId { get; set; }

@@ -14,6 +14,7 @@ const runMap = {};
 const ivMap  = {};
 const lastTs = {};
 const accMs  = {};
+const syncedTimerData = {}; // Datos completos de timers sincronizados desde SQLite (para detección de huérfanos)
 let melazaPollingInterval = null;
 let isMelazaPollingActive = false;
 let initialized = false;
@@ -42,6 +43,31 @@ const fmtBackend = ms => {
 };
 
 const pbColor = ms => ms < MELAZA_TIMER_MS/2 ? 'pb-green' : (ms < MELAZA_TIMER_MS ? 'pb-orange' : 'pb-red');
+
+/* ===== Feedback visual en botones ===== */
+function setButtonLoading(btn, loadingText) {
+    if (!btn) return;
+    btn._originalHTML = btn.innerHTML;
+    btn._originalDisabled = btn.disabled;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + loadingText;
+    btn.style.opacity = '0.7';
+    btn.style.pointerEvents = 'none';
+}
+
+function restoreButton(btn) {
+    if (!btn) return;
+    if (btn._originalHTML !== undefined) {
+        btn.innerHTML = btn._originalHTML;
+        delete btn._originalHTML;
+    }
+    if (btn._originalDisabled !== undefined) {
+        btn.disabled = btn._originalDisabled;
+        delete btn._originalDisabled;
+    }
+    btn.style.opacity = '';
+    btn.style.pointerEvents = '';
+}
 
 function isEstacionesComponentVisible() {
     const component = document.getElementById('component-descarga-unidades');
@@ -534,6 +560,7 @@ function updateEstacionesFromPolling(data) {
         const hasNewUnits = Array.from(currentUnitIds).some(id => !existingUnitIds.has(id));
         
         // PASO 4: Limpiar timers obsoletos si hay unidades removidas
+        // y guardar tiempo automáticamente para timers que estaban corriendo
         let cleanedTimers = false;
         if (hasRemovedUnits || newUnits.length === 0) {
             const obsoleteTimers = [];
@@ -546,7 +573,33 @@ function updateEstacionesFromPolling(data) {
 
             if (obsoleteTimers.length > 0) {
                 console.log(`Limpiando ${obsoleteTimers.length} timers obsoletos:`, obsoleteTimers);
+
+                // Recolectar datos de timers huérfanos que estaban corriendo ANTES de limpiar
+                const orphansToSave = [];
+
                 obsoleteTimers.forEach(timerId => {
+                    // Calcular tiempo acumulado si estaba corriendo
+                    if (runMap[timerId]) {
+                        let ms = accMs[timerId] || 0;
+                        if (lastTs[timerId]) {
+                            ms += performance.now() - lastTs[timerId];
+                        }
+                        ms = Math.max(0, ms);
+
+                        const shipmentId = extractShipmentIdFromTimerId(timerId);
+                        // Buscar codeGen en los datos ANTERIORES (currentUnitsData aún no se actualizó)
+                        const prevUnit = currentUnitsData.find(u => u.id === shipmentId);
+                        const codeGen = prevUnit?.codeGen || syncedTimerData[timerId]?.codeGen || null;
+                        const truckType = prevUnit?.vehicle?.truckType || syncedTimerData[timerId]?.truckType || 'P';
+
+                        if (ms > 0 && shipmentId && codeGen) {
+                            orphansToSave.push({ timerId, shipmentId, codeGen, ms, truckType });
+                        }
+
+                        console.log(`🧹 Timer huérfano MELAZA detectado: ${timerId} (shipment ${shipmentId}, ${(ms / 1000 / 60).toFixed(1)} min acumulados)`);
+                    }
+
+                    // Limpiar estado en memoria
                     if (ivMap[timerId]) {
                         clearInterval(ivMap[timerId]);
                         ivMap[timerId] = null;
@@ -554,7 +607,15 @@ function updateEstacionesFromPolling(data) {
                     runMap[timerId] = false;
                     delete accMs[timerId];
                     delete lastTs[timerId];
+                    delete syncedTimerData[timerId];
                 });
+
+                // Fire-and-forget: guardar tiempos y limpiar SQLite
+                if (orphansToSave.length > 0) {
+                    console.log(`🧹 ${orphansToSave.length} timer(s) huérfano(s) MELAZA, guardando tiempos...`);
+                    saveOrphanedMelazaTimers(orphansToSave);
+                }
+
                 cleanedTimers = true;
             }
         }
@@ -719,6 +780,45 @@ function stopInterval(timerId){
     maybeRerenderOnActiveChange();
 }
 
+/* ===== AUTO-LIMPIEZA DE TIMERS HUÉRFANOS ===== */
+
+/**
+ * Guarda el tiempo acumulado de timers huérfanos en el backend (sin cambiar status)
+ * y limpia los registros de SQLite. Fire-and-forget.
+ */
+async function saveOrphanedMelazaTimers(orphans) {
+    for (const timer of orphans) {
+        // Guardar tiempo en backend
+        try {
+            const tiempo = fmtBackend(timer.ms);
+            await postJSON('/TiemposMelaza/TiempoMelaza', {
+                codigoGeneracion: timer.codeGen,
+                tiempo: tiempo,
+                comentario: 'Finalizar descarga/carga automaticamente',
+                shipmentId: timer.shipmentId,
+                truckType: timer.truckType
+            }, true);
+            console.log(`✅ Tiempo MELAZA guardado automáticamente para ${timer.timerId} (shipment ${timer.shipmentId}): ${tiempo}`);
+        } catch (err) {
+            console.error(`⚠️ Error guardando tiempo MELAZA para ${timer.timerId}:`, err);
+        }
+
+        // Limpiar SQLite
+        try {
+            if (typeof timerSyncMelaza !== 'undefined') {
+                await timerSyncMelaza.liberarTimerPorShipmentId(timer.shipmentId);
+            }
+        } catch (err) {
+            console.error(`⚠️ Error limpiando SQLite MELAZA para shipment ${timer.shipmentId}:`, err);
+        }
+
+        // Limpiar localStorage
+        if (typeof clearTimerState === 'function') {
+            clearTimerState(timer.timerId);
+        }
+    }
+}
+
 /* ===== SYNC TIMERS ACTIVOS ===== */
 async function syncActiveTimers(){
     try{
@@ -742,13 +842,20 @@ async function syncActiveTimers(){
             const timerId = t.timerId;
             const started = Number(t.startedAtMilliseconds||0);
             if (!timerId || !started) return;
-            
+
             const elapsed = Math.max(0, Date.now() - started);
-            
+
             runMap[timerId] = true;
             accMs[timerId] = elapsed;
             lastTs[timerId] = performance.now();
-            
+
+            // Almacenar datos completos para detección de huérfanos
+            syncedTimerData[timerId] = {
+                codeGen: t.codeGen,
+                shipmentId: t.shipmentId,
+                truckType: t.tipoUnidad || 'P'
+            };
+
             console.log(`Timer sincronizado: ${timerId} - ${elapsed}ms elapsed`);
         });
         
@@ -922,6 +1029,8 @@ async function flowStart(btn){
     }).then(r=>r.isConfirmed);
     if (!ok) return;
 
+    setButtonLoading(btn, 'Iniciando...');
+
     try {
         console.log('Iniciando timer:', { timerId, codeGen, shipmentId, tipoTimer:'melaza', tipoUnidad:truckType });
         const sync = await postJSON('/TimerSync/start', { timerId, codeGen, shipmentId, tipoTimer:'melaza', tipoUnidad:truckType });
@@ -931,9 +1040,11 @@ async function flowStart(btn){
         const elapsed = Math.max(0, Date.now() - startedAt);
         startInterval(timerId, elapsed);
 
+        restoreButton(btn);
         setTimeout(() => { if (POLLING_CONFIG_MELAZA.ENABLED && isMelazaPollingActive) performSilentMelazaPolling(); }, 1000);
     } catch (error) {
         console.error('Error al iniciar el timer:', error);
+        restoreButton(btn);
         await Swal.fire({
             title: 'Error',
             text: 'No se pudo iniciar el cronómetro: ' + error.message,
@@ -966,8 +1077,9 @@ async function flowStop(btn){
     const hasExceededLimit = ms > MELAZA_TIMER_MS;
 
     if (hasExceededLimit) {
-        showStopConfirmationModal(btn, async (motivo) => { 
-            await stopWithObservation(btn, ms, motivo); 
+        showStopConfirmationModal(btn, async (motivo) => {
+            setButtonLoading(btn, 'Deteniendo...');
+            await stopWithObservation(btn, ms, motivo);
         });
         return;
     }
@@ -993,6 +1105,7 @@ async function flowStop(btn){
 
     if (!confirmStop.isConfirmed) return;
 
+    setButtonLoading(btn, 'Deteniendo...');
     await stopWithObservation(btn, ms, '');
 }
 
@@ -1060,6 +1173,7 @@ async function stopWithObservation(btn, ms, motivo) {
 
     } catch (error) {
         console.error('❌ Error al registrar tiempo:', error);
+        restoreButton(btn);
         await Swal.fire({
             title: 'Error',
             text: 'No se pudo registrar el tiempo: ' + error.message,
@@ -1150,7 +1264,44 @@ async function initEstacionesMelaza() {
         
         // PASO 5: Renderizar UNA SOLA VEZ con datos frescos
         renderEstaciones(finalData);
-        
+
+        // PASO 5.5: Detectar timers huérfanos (en SQLite pero su envío ya no está en status 7/8)
+        const validUnitIds = new Set(finalData.map(u => u.id));
+        const orphansOnLoad = [];
+        Object.keys(runMap).forEach(timerId => {
+            if (!runMap[timerId]) return;
+            const shipmentId = extractShipmentIdFromTimerId(timerId);
+            if (shipmentId && !validUnitIds.has(shipmentId)) {
+                let ms = accMs[timerId] || 0;
+                if (lastTs[timerId]) ms += performance.now() - lastTs[timerId];
+                ms = Math.max(0, ms);
+
+                const data = syncedTimerData[timerId];
+                if (data && data.codeGen && ms > 0) {
+                    orphansOnLoad.push({
+                        timerId,
+                        shipmentId: data.shipmentId || shipmentId,
+                        codeGen: data.codeGen,
+                        ms,
+                        truckType: data.truckType || 'P'
+                    });
+                }
+
+                // Limpiar estado en memoria
+                if (ivMap[timerId]) { clearInterval(ivMap[timerId]); ivMap[timerId] = null; }
+                runMap[timerId] = false;
+                delete accMs[timerId];
+                delete lastTs[timerId];
+                delete syncedTimerData[timerId];
+
+                console.log(`🧹 Timer huérfano MELAZA detectado al cargar: ${timerId} (shipment ${shipmentId}, ${(ms / 1000 / 60).toFixed(1)} min)`);
+            }
+        });
+        if (orphansOnLoad.length > 0) {
+            console.log(`🧹 ${orphansOnLoad.length} timer(s) huérfano(s) MELAZA al inicializar, guardando tiempos...`);
+            saveOrphanedMelazaTimers(orphansOnLoad);
+        }
+
         // PASO 6: Aplicar timers activos
         setTimeout(() => {
             document.querySelectorAll('.estacion-card').forEach(card => {

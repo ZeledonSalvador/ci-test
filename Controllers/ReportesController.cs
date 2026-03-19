@@ -1,12 +1,16 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using FrontendQuickpass.Models;
 using FrontendQuickpass.Models.Configurations;
-using Microsoft.AspNetCore.WebUtilities;
 
 namespace FrontendQuickpass.Controllers
 {
@@ -28,162 +32,143 @@ namespace FrontendQuickpass.Controllers
         }
 
         // GET /Reportes
-        [HttpGet("")]   // o [HttpGet] con plantilla vacía
+        [HttpGet("")]
         public IActionResult Index() => View();
 
-        // GET /Reportes/Consultar?mode=1|2|3&from=YYYY-MM-DD&to=YYYY-MM-DD&ingenioCode=XXX[&onlyCompleted=true]
+        // ✅ SOLO RECEPCIONES:
+        // GET /Reportes/Consultar?mode=1&from=YYYY-MM-DD&to=YYYY-MM-DD&ingenioCode=...&productoCodigo=...&almacenCodigo=...[&page=1&limit=50]
         [HttpGet("Consultar")]
-        public async Task<IActionResult> Consultar(int mode = 2, string? from = null, string? to = null, string? ingenioCode = null, bool? onlyCompleted = null)
+        public async Task<IActionResult> Consultar(
+            int mode = 1,
+            string? from = null,
+            string? to = null,
+            string? ingenioCode = null,
+            string? productoCodigo = null,
+            string? almacenCodigo = null,
+            int? page = null,
+            int? limit = null
+        )
         {
-            // Validación de parámetros requeridos
-            if (string.IsNullOrWhiteSpace(from) || string.IsNullOrWhiteSpace(to))
-            {
-                return BadRequest(new { success = false, message = "Los parámetros 'from' y 'to' son obligatorios" });
-            }
-
-            var baseUrl = _api.BaseUrl?.TrimEnd('/') ?? "";
-            string apiUrl;
-
-            // mode=3 es "Requiere Barrido"
-            if (mode == 3)
-            {
-                // Validación específica para Requiere Barrido
-                if (string.IsNullOrWhiteSpace(ingenioCode))
-                {
-                    return BadRequest(new { success = false, message = "El parámetro 'ingenioCode' es obligatorio para el reporte Requiere Barrido" });
-                }
-
-                // Endpoint: api/reports/requires-sweeping
-                var qs = new Dictionary<string, string?>
-                {
-                    ["ingenioCode"] = ingenioCode,
-                    ["from"] = from,
-                    ["to"] = to
-                };
-                apiUrl = QueryHelpers.AddQueryString($"{baseUrl}/reports/requires-sweeping", qs);
-            }
-            else
-            {
-                // Endpoints existentes (mode=1 o mode=2)
-                var endpoint = baseUrl + "/shipping/report";
-                var qs = new Dictionary<string, string?>
-                {
-                    ["mode"] = mode.ToString(),
-                    ["from"] = from,
-                    ["to"] = to
-                };
-                if (onlyCompleted.GetValueOrDefault() && mode == 2) qs["onlyCompleted"] = "true";
-
-                apiUrl = QueryHelpers.AddQueryString(endpoint, qs);
-            }
-
             try
             {
-                var http = _httpFactory.CreateClient();
-                http.Timeout = TimeSpan.FromSeconds(60); // Timeout de 60 segundos
+                var baseUrl = _api.BaseUrl?.TrimEnd('/') ?? "";
+                if (string.IsNullOrWhiteSpace(baseUrl))
+                    return StatusCode(500, "BaseUrl no configurada.");
 
-                // Usar el token de la API externa (no el token de sesión del usuario)
+                // Endpoint API: /reports/reception-report-detail
+                var qs = new Dictionary<string, string?>();
+
+                // filtros opcionales
+                if (!string.IsNullOrWhiteSpace(from)) qs["from"] = $"{from}T00:00:00";
+                if (!string.IsNullOrWhiteSpace(to)) qs["to"] = $"{to}T23:59:59";
+                if (!string.IsNullOrWhiteSpace(ingenioCode)) qs["clienteCodigo"] = ingenioCode;
+                if (!string.IsNullOrWhiteSpace(productoCodigo)) qs["productoCodigo"] = productoCodigo;
+                if (!string.IsNullOrWhiteSpace(almacenCodigo)) qs["almacenCodigo"] = almacenCodigo;
+
+                // paginación (por si ya la implementas en API; no afecta si no existe)
+                if (page.HasValue && page.Value > 0) qs["page"] = page.Value.ToString();
+                if (limit.HasValue && limit.Value > 0) qs["limit"] = limit.Value.ToString();
+
+                var apiUrl = QueryHelpers.AddQueryString($"{baseUrl}/reports/reception-report-detail", qs);
+
+                var http = _httpFactory.CreateClient();
+                http.Timeout = TimeSpan.FromSeconds(60);
+
+                // Token para API externa
                 if (!string.IsNullOrWhiteSpace(_api.Token))
                     http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _api.Token);
 
-                _logger.LogInformation("Consultando API externa: {ApiUrl}", apiUrl);
+                _logger.LogInformation("Consultando API externa (Recepciones): {ApiUrl}", apiUrl);
 
                 var resp = await http.GetAsync(apiUrl);
                 var payload = await resp.Content.ReadAsStringAsync();
 
                 if (!resp.IsSuccessStatusCode)
                 {
-                    _logger.LogWarning("Error en API externa. Status: {StatusCode}, Response: {Response}",
+                    _logger.LogWarning("Error en API externa (Recepciones). Status: {StatusCode}, Response: {Response}",
                         resp.StatusCode, payload);
                     return StatusCode((int)resp.StatusCode, payload);
                 }
 
-                return Content(payload, "application/json");
+                // Transformar los datos con headers legibles y valores formateados
+                var transformedResponse = ReceptionReportTransformer.Transform(payload);
+
+                return Json(transformedResponse);
             }
             catch (TaskCanceledException ex)
             {
-                _logger.LogError(ex, "Timeout al consultar API externa");
-                return StatusCode(504, new { success = false, message = "La consulta tardó demasiado tiempo. Intenta con un rango de fechas menor." });
+                _logger.LogError(ex, "Timeout al consultar API externa (Recepciones)");
+                return StatusCode(504, new { success = false, message = "La consulta tardó demasiado tiempo. Intenta con un rango menor." });
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError(ex, "Error de conexión con API externa");
+                _logger.LogError(ex, "Error de conexión con API externa (Recepciones)");
                 return StatusCode(503, new { success = false, message = "No se pudo conectar con el servidor. Verifica tu conexión." });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error inesperado en Consultar");
+                _logger.LogError(ex, "Error inesperado en Consultar (Recepciones)");
                 return StatusCode(500, new { success = false, message = "Ocurrió un error inesperado al procesar la solicitud." });
             }
         }
 
-        // GET /Reportes/Export?mode=1|2|3&from=...&to=...&ingenioCode=...&format=pdf|excel
+        // ✅ SOLO RECEPCIONES:
+        // GET /Reportes/Export?mode=1&from=YYYY-MM-DD&to=YYYY-MM-DD&ingenioCode=...&productoCodigo=...&almacenCodigo=...&format=pdf|excel
         [HttpGet("Export")]
-        public async Task<IActionResult> Export(int mode, string? from, string? to, string? ingenioCode = null, string? format = null)
+        public async Task<IActionResult> Export(
+            int mode = 1,
+            string? from = null,
+            string? to = null,
+            string? ingenioCode = null,
+            string? productoCodigo = null,
+            string? almacenCodigo = null,
+            string? format = null
+        )
         {
-            format = (format ?? "pdf").ToLowerInvariant();
-
-            // Validación de parámetros
-            if (string.IsNullOrWhiteSpace(from) || string.IsNullOrWhiteSpace(to))
-            {
-                return BadRequest("Los parámetros 'from' y 'to' son obligatorios");
-            }
+            format = (format ?? "excel").ToLowerInvariant();
 
             var baseUrl = _api.BaseUrl?.TrimEnd('/') ?? "";
-            string apiUrl;
-            string defaultFileName;
+            if (string.IsNullOrWhiteSpace(baseUrl))
+                return StatusCode(500, "BaseUrl no configurada.");
 
-            // mode=3 es "Requiere Barrido"
-            if (mode == 3)
+            // Endpoint API: /reports/reception-report/export
+            var qs = new Dictionary<string, string?>
             {
-                // Validación específica
-                if (string.IsNullOrWhiteSpace(ingenioCode))
-                {
-                    return BadRequest("El parámetro 'ingenioCode' es obligatorio para el reporte Requiere Barrido");
-                }
+                ["format"] = format
+            };
 
-                // Endpoint: api/reports/requires-sweeping/export
-                var qs = new Dictionary<string, string?>
-                {
-                    ["format"] = format,
-                    ["ingenioCode"] = ingenioCode,
-                    ["from"] = from,
-                    ["to"] = to
-                };
-                apiUrl = QueryHelpers.AddQueryString($"{baseUrl}/reports/requires-sweeping/export", qs);
-
-                // Nombre de archivo sugerido: RequiereBarrido_ICHP_2024-01-01_2025-12-30.pdf
-                var ext = format == "excel" ? "xlsx" : "pdf";
-                defaultFileName = $"RequiereBarrido_{ingenioCode}_{from}_{to}.{ext}";
-            }
-            else
+            // NOTA: enviamos startDate/endDate porque así estaba tu controller.
+            // Si tu API usa from/to, puedes cambiarlo en backend o enviar ambos.
+            if (!string.IsNullOrWhiteSpace(from))
             {
-                // Endpoints existentes (mode=1 o mode=2)
-                var qs = new Dictionary<string, string?>
-                {
-                    ["mode"] = mode.ToString(),
-                    ["from"] = from ?? "",
-                    ["to"] = to ?? "",
-                    ["format"] = format
-                };
-                if (mode == 2) qs["onlyCompleted"] = "true";
-
-                apiUrl = QueryHelpers.AddQueryString($"{baseUrl}/shipping/report", qs);
-
-                var ext = format == "excel" ? "xlsx" : "pdf";
-                defaultFileName = mode == 1 ? $"reporte_lista_negra.{ext}" : $"reporte_ingreso_camiones.{ext}";
+                qs["startDate"] = $"{from}T00:00:00";
+                qs["from"] = $"{from}T00:00:00";
             }
+
+            if (!string.IsNullOrWhiteSpace(to))
+            {
+                qs["endDate"] = $"{to}T23:59:59";
+                qs["to"] = $"{to}T23:59:59";
+            }
+
+            if (!string.IsNullOrWhiteSpace(ingenioCode)) qs["clienteCodigo"] = ingenioCode;
+            if (!string.IsNullOrWhiteSpace(productoCodigo)) qs["productoCodigo"] = productoCodigo;
+            if (!string.IsNullOrWhiteSpace(almacenCodigo)) qs["almacenCodigo"] = almacenCodigo;
+
+            var apiUrl = QueryHelpers.AddQueryString($"{baseUrl}/reports/reception-report/export", qs);
+
+            var ext = format == "excel" ? "xlsx" : "pdf";
+            var defaultFileName = $"reporte_recepciones.{ext}";
 
             try
             {
                 var http = _httpFactory.CreateClient();
-                http.Timeout = TimeSpan.FromSeconds(120); // Timeout mayor para exportación
+                http.Timeout = TimeSpan.FromSeconds(120);
 
-                // Usar el token de la API externa (no el token de sesión del usuario)
                 if (!string.IsNullOrWhiteSpace(_api.Token))
                     http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _api.Token);
 
-                _logger.LogInformation("Exportando desde API externa: {ApiUrl}", apiUrl);
+                _logger.LogInformation("Exportando desde API externa (Recepciones): {ApiUrl}", apiUrl);
 
                 var resp = await http.GetAsync(apiUrl);
                 var bytes = await resp.Content.ReadAsByteArrayAsync();
@@ -191,25 +176,20 @@ namespace FrontendQuickpass.Controllers
                 if (!resp.IsSuccessStatusCode)
                 {
                     var err = System.Text.Encoding.UTF8.GetString(bytes);
-                    _logger.LogWarning("Error en exportación. Status: {StatusCode}, Response: {Response}",
+                    _logger.LogWarning("Error en exportación (Recepciones). Status: {StatusCode}, Response: {Response}",
                         resp.StatusCode, err);
                     return StatusCode((int)resp.StatusCode, err);
                 }
 
-                // 1) Content-Type desde API (fallback por formato)
+                // Content-Type desde API (fallback por formato)
                 var contentType = resp.Content.Headers.ContentType?.MediaType
                     ?? (format == "excel"
                         ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                         : "application/pdf");
 
-                // 2) Intentar obtener filename desde Content-Disposition
+                // filename desde Content-Disposition si viene
                 string? fileName = null;
-                var cdHeader = resp.Content.Headers.ContentDisposition;
-                if (cdHeader != null)
-                {
-                    fileName = cdHeader.FileNameStar ?? cdHeader.FileName;
-                }
-                else if (resp.Content.Headers.TryGetValues("Content-Disposition", out var cdValues))
+                if (resp.Content.Headers.TryGetValues("Content-Disposition", out var cdValues))
                 {
                     var raw = cdValues?.FirstOrDefault();
                     if (!string.IsNullOrWhiteSpace(raw))
@@ -220,30 +200,168 @@ namespace FrontendQuickpass.Controllers
                 }
                 fileName = fileName?.Trim('"');
 
-                // 3) Fallback al nombre por defecto
                 if (string.IsNullOrWhiteSpace(fileName))
-                {
                     fileName = defaultFileName;
-                }
 
-                _logger.LogInformation("Exportación exitosa. Archivo: {FileName}, Tamaño: {Size} bytes", fileName, bytes.Length);
+                _logger.LogInformation("Exportación exitosa (Recepciones). Archivo: {FileName}, Tamaño: {Size} bytes", fileName, bytes.Length);
 
                 return File(bytes, contentType, fileName);
             }
             catch (TaskCanceledException ex)
             {
-                _logger.LogError(ex, "Timeout al exportar desde API externa");
+                _logger.LogError(ex, "Timeout al exportar (Recepciones)");
                 return StatusCode(504, "La exportación tardó demasiado tiempo. Intenta con un rango de fechas menor.");
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError(ex, "Error de conexión al exportar");
+                _logger.LogError(ex, "Error de conexión al exportar (Recepciones)");
                 return StatusCode(503, "No se pudo conectar con el servidor para generar el archivo.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error inesperado en Export");
+                _logger.LogError(ex, "Error inesperado en Export (Recepciones)");
                 return StatusCode(500, "Ocurrió un error inesperado al generar el archivo.");
+            }
+        }
+
+        // GET /Reportes/Clientes => proxy a correlatives/clients
+        [HttpGet("Clientes")]
+        public async Task<IActionResult> Clientes()
+        {
+            try
+            {
+                var http = _httpFactory.CreateClient();
+                if (!string.IsNullOrWhiteSpace(_api.Token))
+                    http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _api.Token);
+
+                var baseUrl = _api.BaseUrl?.TrimEnd('/') ?? "";
+                var url = $"{baseUrl}/correlatives/clients";
+
+                var resp = await http.GetAsync(url);
+                var raw = await resp.Content.ReadAsStringAsync();
+
+                if (!resp.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("Error al obtener clientes. Status: {Status}", resp.StatusCode);
+                    return Json(new { success = false, message = "No se pudo obtener la lista de clientes." });
+                }
+
+                using var doc = JsonDocument.Parse(raw);
+                var items = new List<object>();
+
+                if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in doc.RootElement.EnumerateArray())
+                    {
+                        var code = item.TryGetProperty("ingenioCode", out var c) ? c.GetString() : null;
+                        var name = item.TryGetProperty("name", out var n) ? n.GetString() : null;
+                        if (!string.IsNullOrWhiteSpace(code) && !string.IsNullOrWhiteSpace(name))
+                            items.Add(new { code, name });
+                    }
+                }
+
+                return Json(new { success = true, data = items });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error inesperado al obtener clientes.");
+                return Json(new { success = false, message = "Error al obtener clientes." });
+            }
+        }
+
+        // GET /Reportes/Productos => proxy a correlatives/products
+        [HttpGet("Productos")]
+        public async Task<IActionResult> Productos()
+        {
+            try
+            {
+                var http = _httpFactory.CreateClient();
+                if (!string.IsNullOrWhiteSpace(_api.Token))
+                    http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _api.Token);
+
+                var baseUrl = _api.BaseUrl?.TrimEnd('/') ?? "";
+                var url = $"{baseUrl}/correlatives/products";
+
+                var resp = await http.GetAsync(url);
+                var raw = await resp.Content.ReadAsStringAsync();
+
+                if (!resp.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("Error al obtener productos. Status: {Status}", resp.StatusCode);
+                    return Json(new { success = false, message = "No se pudo obtener la lista de productos." });
+                }
+
+                using var doc = JsonDocument.Parse(raw);
+                var items = new List<object>();
+
+                if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in doc.RootElement.EnumerateArray())
+                    {
+                        var isActive = item.TryGetProperty("isActive", out var a) && a.GetBoolean();
+                        if (!isActive) continue;
+
+                        var code = item.TryGetProperty("code", out var c) ? c.GetString() : null;
+                        var name = item.TryGetProperty("name", out var n) ? n.GetString() : null;
+                        if (!string.IsNullOrWhiteSpace(code) && !string.IsNullOrWhiteSpace(name))
+                            items.Add(new { code, name });
+                    }
+                }
+
+                return Json(new { success = true, data = items });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error inesperado al obtener productos.");
+                return Json(new { success = false, message = "Error al obtener productos." });
+            }
+        }
+
+        // GET /Reportes/Almacenes => proxy a warehouses
+        [HttpGet("Almacenes")]
+        public async Task<IActionResult> Almacenes()
+        {
+            try
+            {
+                var http = _httpFactory.CreateClient();
+                if (!string.IsNullOrWhiteSpace(_api.Token))
+                    http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _api.Token);
+
+                var baseUrl = _api.BaseUrl?.TrimEnd('/') ?? "";
+                var url = $"{baseUrl}/warehouses";
+
+                var resp = await http.GetAsync(url);
+                var raw = await resp.Content.ReadAsStringAsync();
+
+                if (!resp.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("Error al obtener almacenes. Status: {Status}", resp.StatusCode);
+                    return Json(new { success = false, message = "No se pudo obtener la lista de almacenes." });
+                }
+
+                using var doc = JsonDocument.Parse(raw);
+                var items = new List<object>();
+
+                if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in doc.RootElement.EnumerateArray())
+                    {
+                        var isActive = item.TryGetProperty("isActive", out var a) && a.GetBoolean();
+                        if (!isActive) continue;
+
+                        var code = item.TryGetProperty("code", out var c) ? c.GetString() : null;
+                        var name = item.TryGetProperty("name", out var n) ? n.GetString() : null;
+                        if (!string.IsNullOrWhiteSpace(code) && !string.IsNullOrWhiteSpace(name))
+                            items.Add(new { code, name });
+                    }
+                }
+
+                return Json(new { success = true, data = items });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error inesperado al obtener almacenes.");
+                return Json(new { success = false, message = "Error al obtener almacenes." });
             }
         }
     }

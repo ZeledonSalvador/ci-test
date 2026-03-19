@@ -85,11 +85,12 @@
                             <tr>
                                 <th class="FechaRegistre">Fecha registro</th>
                                 <th class="NumeroComprobante">N° comprobante</th>
-                                <th class="NumeroEnvio">N° de envío</th>
+                                <th class="NumeroEnvio">ID</th>
                                 <th class="Estado">Estado</th>
                                 <th class="Cliente">Cliente</th>
                                 <th class="Producto">Producto</th>
                                 <th class="FechaImpresion">Fecha Impresión</th>
+                                <th class ='Observaciones'>Observaciones</th>
                                 <th class="IconoImpresion sticky-actions">Opciones</th>
                             </tr>
                         </thead>
@@ -98,12 +99,12 @@
                             {
                                @foreach (var item in Model.Items)
                             {
-                    var puedeImprimir = !string.IsNullOrWhiteSpace(item.NumeroEnvio);
-                    var hasEnvio = !string.IsNullOrWhiteSpace(item.NumeroEnvio);
+                    var puedeImprimir = item.NumeroEnvio.HasValue && item.NumeroEnvio.Value > 0;
+                    var hasEnvio = !string.IsNullOrWhiteSpace(item.CodeGen);
                     var isVoided = string.Equals(item.EstadoCode, "VOIDED", StringComparison.OrdinalIgnoreCase);
 
                     <tr data-id="@item.Id"
-                        data-envio="@item.NumeroEnvio"
+                        data-codegen="@item.CodeGen"
                         data-numero="@item.NumeroComprobante"
                         class="@(isVoided ? "row-voided" : "")"
                         title="@(isVoided ? "Anulado" : "")">
@@ -114,9 +115,9 @@
                             @item.NumeroComprobante
                         </td>
                         <td class="NumeroEnvio">
-                            @(string.IsNullOrWhiteSpace(item.NumeroEnvio)
-                                ? ""
-                                : item.NumeroEnvio)
+                            @(item.NumeroEnvio > 0
+                                ? item.NumeroEnvio.ToString()
+                                : "")
                         </td>
                         <td class="Estado">
                             @item.Estado
@@ -132,6 +133,7 @@
                                 ? item.FechaImpresion.Value.ToString("dd/MM/yyyy HH:mm")
                                 : "")
                         </td>
+                        <td>@(string.IsNullOrWhiteSpace(item.Observaciones) ? "—" : item.Observaciones)</td>
                         <td class="col-opciones opciones-cell sticky-actions">
                             <button type="button"
                                 class="btn-icon btn-annul @(hasEnvio ? "" : "btn-disabled")"

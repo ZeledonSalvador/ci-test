@@ -16,6 +16,7 @@ namespace FrontendQuickpass.Controllers
         private readonly ApiSettings _apiSettings;
         private readonly ILogger<TiemposAzucarController> _logger;
         private readonly ITransactionLogService _logService;
+        private readonly IShipmentAuditService _auditService;
         private readonly LoginService _loginService;
 
         // Obtener código de usuario desde JWT en lugar de cookie
@@ -33,13 +34,71 @@ namespace FrontendQuickpass.Controllers
             IOptions<ApiSettings> apiSettings,
             ILogger<TiemposAzucarController> logger,
             ITransactionLogService logService,
+            IShipmentAuditService auditService,
             LoginService loginService)
         {
             _httpClientFactory = httpClientFactory;
             _apiSettings = apiSettings.Value;
             _logger = logger;
             _logService = logService;
+            _auditService = auditService;
             _loginService = loginService;
+        }
+
+        /// <summary>
+        /// Obtiene el código de usuario autenticado desde el contexto HTTP.
+        /// </summary>
+        /// <returns>Código de usuario o 0 si no está disponible</returns>
+        private int GetUserId()
+        {
+            if (HttpContext.Items.TryGetValue("UserInfo", out var userInfo))
+            {
+                try
+                {
+                    // userInfo es un objeto anónimo con la propiedad CodUsuario
+                    var expandoDict = userInfo as IDictionary<string, object>;
+                    if (expandoDict != null && expandoDict.ContainsKey("CodUsuario"))
+                    {
+                        return Convert.ToInt32(expandoDict["CodUsuario"]);
+                    }
+
+                    // Intentar acceso directo usando reflexión
+                    if (userInfo != null)
+                    {
+                        var type = userInfo.GetType();
+                        var prop = type.GetProperty("CodUsuario");
+                        if (prop != null)
+                        {
+                            return Convert.ToInt32(prop.GetValue(userInfo));
+                        }
+                    }
+                }
+                catch
+                {
+                    return 0;
+                }
+            }
+            return 0;
+        }
+
+        /// <summary>
+        /// Formatea el comentario para la bitácora: reemplaza guiones bajos por espacios y capitaliza la primera letra
+        /// Ejemplo: "azucar_terrones" -> "Azucar terrones"
+        /// </summary>
+        private string FormatearComentarioParaBitacora(string comentario)
+        {
+            if (string.IsNullOrEmpty(comentario)) return comentario;
+
+            // Reemplazar guiones bajos por espacios
+            var textoConEspacios = comentario.Replace("_", " ");
+
+            // Capitalizar la primera letra y el resto en minúsculas
+            if (textoConEspacios.Length > 0)
+            {
+                return char.ToUpper(textoConEspacios[0]) + textoConEspacios.Substring(1).ToLower();
+            }
+
+            return textoConEspacios;
         }
 
         private HttpClient CreateApiClient()
@@ -102,7 +161,7 @@ namespace FrontendQuickpass.Controllers
                 TimeZoneInfo gmtMinus6 = TimeZoneInfo.CreateCustomTimeZone("GMT-6", TimeSpan.FromHours(-6), "GMT-6", "GMT-6");
 
                 // --- Status 7 (cola)
-                var responseCola = await client.GetAsync($"{_apiSettings.BaseUrl}shipping/status/7?page=1&size=10000");
+                var responseCola = await client.GetAsync($"{_apiSettings.BaseUrl}shipping/status/7?page=1&size=2000");
                 if (responseCola.IsSuccessStatusCode)
                 {
                     var content = await responseCola.Content.ReadAsStringAsync();
@@ -129,7 +188,7 @@ namespace FrontendQuickpass.Controllers
                 }
 
                 // --- Status 8 (proceso)
-                var responseProceso = await client.GetAsync($"{_apiSettings.BaseUrl}shipping/status/8?page=1&size=10000");
+                var responseProceso = await client.GetAsync($"{_apiSettings.BaseUrl}shipping/status/8?page=1&size=2000");
                 if (responseProceso.IsSuccessStatusCode)
                 {
                     var content = await responseProceso.Content.ReadAsStringAsync();
@@ -154,7 +213,7 @@ namespace FrontendQuickpass.Controllers
                 }
 
                 // --- Status 3 (pendientes)
-                var responsePendientes = await client.GetAsync($"{_apiSettings.BaseUrl}shipping/status/3?page=1&size=10000");
+                var responsePendientes = await client.GetAsync($"{_apiSettings.BaseUrl}shipping/status/3?page=1&size=2000");
                 if (responsePendientes.IsSuccessStatusCode)
                 {
                     var content = await responsePendientes.Content.ReadAsStringAsync();
@@ -170,7 +229,7 @@ namespace FrontendQuickpass.Controllers
                 {
                     var content = await responseSolicitudes.Content.ReadAsStringAsync();
                     var queueData = JsonConvert.DeserializeObject<dynamic>(content);
-
+                    
                     // El API retorna: { data: { R: number, V: number, P: number } }
                     model.NumberInputPlano = (int)(queueData?.data?.R ?? 0);
                     model.NumberInputVolteo = (int)(queueData?.data?.V ?? 0);
@@ -199,9 +258,9 @@ namespace FrontendQuickpass.Controllers
                 TimeZoneInfo gmtMinus6 = TimeZoneInfo.CreateCustomTimeZone("GMT-6", TimeSpan.FromHours(-6), "GMT-6", "GMT-6");
 
                 // Llamadas paralelas a endpoints reales
-                var taskCola = client.GetAsync($"{_apiSettings.BaseUrl}shipping/status/7?page=1&size=10000");
-                var taskProceso = client.GetAsync($"{_apiSettings.BaseUrl}shipping/status/8?page=1&size=10000");
-                var taskPendientes = client.GetAsync($"{_apiSettings.BaseUrl}shipping/status/3?page=1&size=10000");
+                var taskCola = client.GetAsync($"{_apiSettings.BaseUrl}shipping/status/7?page=1&size=2000");
+                var taskProceso = client.GetAsync($"{_apiSettings.BaseUrl}shipping/status/8?page=1&size=2000");
+                var taskPendientes = client.GetAsync($"{_apiSettings.BaseUrl}shipping/status/3?page=1&size=2000");
                 var taskSolicitudes = client.GetAsync($"{_apiSettings.BaseUrl}queue/count");
 
                 await Task.WhenAll(taskCola, taskProceso, taskPendientes, taskSolicitudes);
@@ -306,7 +365,7 @@ namespace FrontendQuickpass.Controllers
         {
             if (request == null)
             {
-                _logService.LogActivityAsync("", request ?? new object(), Usuario, 0);
+                _logService.LogActivityAsync("", request, Usuario, 0);
                 return JsonError("Request no puede ser null");
             }
 
@@ -342,7 +401,7 @@ namespace FrontendQuickpass.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error inesperado en SolicitarUnidad");
-                _logService.LogActivityAsync("", request ?? new object(), Usuario, 0);
+                _logService.LogActivityAsync("", request, Usuario, 0);
                 return JsonError("Error inesperado al solicitar unidad.", ex.Message);
             }
         }
@@ -352,7 +411,7 @@ namespace FrontendQuickpass.Controllers
         {
             if (request == null)
             {
-                _logService.LogActivityAsync("", request ?? new object(), Usuario, 0);
+                _logService.LogActivityAsync("", request, Usuario, 0);
                 return JsonError("Request no puede ser null");
             }
 
@@ -383,43 +442,69 @@ namespace FrontendQuickpass.Controllers
 
             if (request == null)
             {
-                _logService.LogActivityAsync("", request ?? new object(), Usuario, 0);
+                _logService.LogActivityAsync("", request, Usuario, 0);
                 return JsonError("Request no puede ser null");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.SweepingType))
+            {
+                _logService.LogActivityAsync(codeGen ?? "", request, Usuario, 0);
+                return JsonError("SweepingType es requerido (SIMPLE o DOBLE)");
             }
 
             try
             {
                 using var client = CreateApiClient();
-                // POST /shipping/sweepinglog
-                var url = $"{_apiSettings.BaseUrl}shipping/sweepinglog";
 
-                // El API espera string "true"/"false"
-                var json = JsonConvert.SerializeObject(new
+                // Obtener userId de la sesión
+                var sessionHelper = HttpContext.GetSessionHelper(_loginService);
+                var userId = sessionHelper.UserId;
+
+                // POST /shipment-sweeping
+                var url = $"{_apiSettings.BaseUrl}shipment-sweeping";
+
+                // Construir body según la documentación
+                var body = new
                 {
                     codeGen = request.CodeGen,
-                    requiresSweeping = request.RequiresSweeping.ToString().ToLower(), // "true" o "false"
-                    observation = request.Observation
-                });
+                    sweepingType = request.SweepingType,
+                    userId = userId
+                };
+
+                // Si se proporciona changeReason, agregarlo al body
+                var json = string.IsNullOrWhiteSpace(request.ChangeReason)
+                    ? JsonConvert.SerializeObject(body)
+                    : JsonConvert.SerializeObject(new
+                    {
+                        codeGen = request.CodeGen,
+                        sweepingType = request.SweepingType,
+                        userId = userId,
+                        changeReason = request.ChangeReason
+                    });
+
                 var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
+
+                _logger.LogInformation("Registrando barrido: codeGen={CodeGen}, sweepingType={SweepingType}, userId={UserId}",
+                    request.CodeGen, request.SweepingType, userId);
 
                 var response = await client.PostAsync(url, httpContent);
 
                 if (response.IsSuccessStatusCode)
                 {
-                    _logService.LogActivityAsync(codeGen ?? "", request ?? new object(), Usuario, 8);
+                    _logService.LogActivityAsync(codeGen, request, Usuario, 8);
                 }
                 else
                 {
-                    _logService.LogActivityAsync(codeGen ?? "", request ?? new object(), Usuario, (int)response.StatusCode);
+                    _logService.LogActivityAsync(codeGen, request, Usuario, (int)response.StatusCode);
                 }
 
-                return await HandleApiResponseAsync(response, "Error al registrar sweepinglog");
+                return await HandleApiResponseAsync(response, "Error al registrar barrido");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error inesperado en sweepinglog");
-                _logService.LogActivityAsync(codeGen ?? "", request ?? new object(), Usuario, 0);
-                return JsonError("Error inesperado al registrar sweepinglog.", ex.Message);
+                _logService.LogActivityAsync(codeGen, request, Usuario, 0);
+                return JsonError("Error inesperado al registrar barrido.", ex.Message);
             }
         }
 
@@ -428,10 +513,10 @@ namespace FrontendQuickpass.Controllers
         public async Task<IActionResult> TiempoAzucar([FromBody] TiempoAzucarRequest request)
         {
             var codeGen = request?.CodigoGeneracion?.Trim();
-
+            
             if (request == null)
             {
-                _logService.LogActivityAsync("", request ?? new object(), Usuario, 0);
+                _logService.LogActivityAsync("", request, Usuario, 0);
                 return JsonError("Request no puede ser null");
             }
 
@@ -443,13 +528,13 @@ namespace FrontendQuickpass.Controllers
 
             if (request.ShipmentId <= 0)
             {
-                _logService.LogActivityAsync(codeGen ?? "", request ?? new object(), Usuario, 0);
+                _logService.LogActivityAsync(codeGen, request, Usuario, 0);
                 return JsonError("ID de shipment es requerido");
             }
 
             if (string.IsNullOrEmpty(request.TruckType))
             {
-                _logService.LogActivityAsync(codeGen ?? "", request ?? new object(), Usuario, 0);
+                _logService.LogActivityAsync(codeGen, request, Usuario, 0);
                 return JsonError("Tipo de camión es requerido");
             }
 
@@ -459,15 +544,15 @@ namespace FrontendQuickpass.Controllers
 
                 // POST /operation-times - usando los datos de la request directamente
                 var url = $"{_apiSettings.BaseUrl}operation-times";
-
+                
                 // Crear objeto anónimo con propiedades en camelCase
                 var operationTimeRequest = new
                 {
-                    shipmentId = request.ShipmentId,
-                    operationType = "AZ-001",
-                    duration = request.Tiempo,
-                    comment = !string.IsNullOrEmpty(request.Comentario) ? request.Comentario : "",
-                    truckType = request.TruckType
+                    shipmentId = request.ShipmentId,    
+                    operationType = "AZ-001",               
+                    duration = request.Tiempo,             
+                    comment = !string.IsNullOrEmpty(request.Comentario) ? request.Comentario : "",  
+                    truckType = request.TruckType     
                 };
 
                 // Configurar JsonSerializerSettings para camelCase
@@ -479,20 +564,54 @@ namespace FrontendQuickpass.Controllers
                 var json = JsonConvert.SerializeObject(operationTimeRequest, jsonSettings);
                 var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
 
-                _logger.LogInformation("Enviando tiempo de operación: shipmentId={ShipmentId}, duration={Duration}, truckType={TruckType}",
+                _logger.LogInformation("Enviando tiempo de operación: shipmentId={ShipmentId}, duration={Duration}, truckType={TruckType}", 
                     operationTimeRequest.shipmentId, operationTimeRequest.duration, operationTimeRequest.truckType);
 
                 _logger.LogDebug("JSON enviado: {Json}", json);
 
                 var response = await client.PostAsync(url, httpContent);
 
-                if (response.IsSuccessStatusCode)
+                // TiempoAzucar NO cambia el estado del envío
+                // El cambio de estado a 8 (En Proceso de Descarga) se hace desde JavaScript
+                // mediante ChangeTransactionStatus cuando el usuario autoriza el inicio del proceso
+                if (!response.IsSuccessStatusCode)
                 {
-                    _logService.LogActivityAsync(codeGen ?? "", request ?? new object(), Usuario, 8);
+                    _logService.LogActivityAsync(codeGen, request, Usuario, (int)response.StatusCode);
                 }
                 else
                 {
-                    _logService.LogActivityAsync(codeGen ?? "", request ?? new object(), Usuario, (int)response.StatusCode);
+                    // Registrar en bitácora el tiempo de descarga registrado
+                    try
+                    {
+                        var userId = GetUserId();
+                        var descripcion = $"Tiempo descarga: {request.Tiempo}";
+                        if (!string.IsNullOrEmpty(request.Comentario))
+                        {
+                            // Formatear comentario para bitácora: reemplazar guiones bajos por espacios y capitalizar
+                            var comentarioFormateado = FormatearComentarioParaBitacora(request.Comentario);
+                            descripcion += $". Comentario: {comentarioFormateado}";
+                        }
+
+                        var auditPayload = new
+                        {
+                            codeGen = request.CodigoGeneracion,
+                            actionType = "DISCHARGE_TIME_REGISTERED",
+                            description = descripcion,
+                            userId = userId > 0 ? userId : 1,
+                            userType = "internal",
+                            visibleTo = "ALL"
+                        };
+
+                        var auditUrl = $"{_apiSettings.BaseUrl}shipment-audit/register";
+                        var auditJson = JsonConvert.SerializeObject(auditPayload);
+                        var auditContent = new StringContent(auditJson, Encoding.UTF8, "application/json");
+                        
+                        await client.PostAsync(auditUrl, auditContent);
+                    }
+                    catch (Exception exAudit)
+                    {
+                        _logger.LogWarning(exAudit, "Error al registrar en bitácora el tiempo de descarga para {CodeGen}", request.CodigoGeneracion);
+                    }
                 }
 
                 return await HandleApiResponseAsync(response, "Error al registrar tiempo de operación");
@@ -500,7 +619,7 @@ namespace FrontendQuickpass.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error inesperado en TiempoAzucar para codeGen: {CodeGen}", request.CodigoGeneracion);
-                _logService.LogActivityAsync(codeGen ?? "", request ?? new object(), Usuario, 0);
+                _logService.LogActivityAsync(codeGen, request, Usuario, 0);
                 return JsonError("Error inesperado al registrar tiempo de operación.", ex.Message);
             }
         }
@@ -509,10 +628,10 @@ namespace FrontendQuickpass.Controllers
         public async Task<IActionResult> ChangeTransactionStatus([FromBody] ChangeStatusRequest request)
         {
             var codeGen = request?.CodeGen?.Trim();
-
+            
             if (request == null)
             {
-                _logService.LogActivityAsync("", request ?? new object(), Usuario, 0);
+                _logService.LogActivityAsync("", request, Usuario, 0);
                 return JsonError("Request no puede ser null");
             }
 
@@ -534,16 +653,23 @@ namespace FrontendQuickpass.Controllers
                 var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
 
                 var response = await client.PostAsync(url, httpContent);
-
+                
                 if (response.IsSuccessStatusCode)
                 {
-                    _logService.LogActivityAsync(codeGen ?? "", request, Usuario, request.PredefinedStatusId);
+                    // Registrar en auditoría de cambio de estado (reemplaza transactionlogs para casos exitosos)
+                    var userId = GetUserId();
+                    if (userId == 0)
+                    {
+                        _logger.LogWarning("No se pudo obtener userId para codeGen: {CodeGen}", codeGen);
+                        return JsonError("Usuario no autenticado");
+                    }
+                    _auditService.RegisterStatusChange(codeGen, request.PredefinedStatusId, userId, "internal");
                 }
                 else
                 {
-                    _logService.LogActivityAsync(codeGen ?? "", request, Usuario, (int)response.StatusCode);
+                    _logService.LogActivityAsync(codeGen, request, Usuario, (int)response.StatusCode);
                 }
-
+                
                 return await HandleApiResponseAsync(
                     response,
                     "Error al cambiar el estado",
@@ -552,7 +678,7 @@ namespace FrontendQuickpass.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error inesperado en ChangeTransactionStatus");
-                _logService.LogActivityAsync(codeGen ?? "", request, Usuario, 0);
+                _logService.LogActivityAsync(codeGen, request, Usuario, 0);
                 return JsonError("Error inesperado al cambiar el estado.", ex.Message);
             }
         }
@@ -570,7 +696,7 @@ namespace FrontendQuickpass.Controllers
                 int totalPlanas = 0, totalVolteos = 0, solicitudesPlanas = 0, solicitudesVolteos = 0;
 
                 // Totales status 3
-                var responseTotales = await client.GetAsync($"{_apiSettings.BaseUrl}shipping/status/3?page=1&size=10000");
+                var responseTotales = await client.GetAsync($"{_apiSettings.BaseUrl}shipping/status/3?page=1&size=2000");
                 if (responseTotales.IsSuccessStatusCode)
                 {
                     var content = await responseTotales.Content.ReadAsStringAsync();

@@ -50,6 +50,18 @@ namespace FrontendQuickpass.Helpers
         }
 
         /// <summary>
+        /// Obtiene el ID de usuario como entero desde el JWT
+        /// </summary>
+        public int UserId
+        {
+            get
+            {
+                var tokenInfo = GetTokenInfo();
+                return tokenInfo.EsValido ? tokenInfo.CodUsuario : 0;
+            }
+        }
+
+        /// <summary>
         /// Obtiene el username desde el JWT
         /// </summary>
         public string Username
@@ -74,6 +86,18 @@ namespace FrontendQuickpass.Helpers
         }
 
         /// <summary>
+        /// Obtiene el código de usuario desde el JWT
+        /// </summary>
+        public string UserCode
+        {
+            get
+            {
+                var tokenInfo = GetTokenInfo();
+                return tokenInfo.EsValido ? tokenInfo.UserCode : "";
+            }
+        }
+
+        /// <summary>
         /// Obtiene el código de báscula desde el JWT
         /// </summary>
         public string CodBascula
@@ -82,6 +106,25 @@ namespace FrontendQuickpass.Helpers
             {
                 var tokenInfo = GetTokenInfo();
                 return tokenInfo.EsValido ? tokenInfo.CodBascula : "";
+            }
+        }
+
+        /// <summary>
+        /// Obtiene el ID de báscula como entero desde el JWT
+        /// </summary>
+        public int WeighbridgeId
+        {
+            get
+            {
+                var tokenInfo = GetTokenInfo();
+                if (!tokenInfo.EsValido) return 0;
+
+                // Intentar convertir CodBascula a entero
+                if (int.TryParse(tokenInfo.CodBascula, out int weighbridgeId))
+                {
+                    return weighbridgeId;
+                }
+                return 0;
             }
         }
 

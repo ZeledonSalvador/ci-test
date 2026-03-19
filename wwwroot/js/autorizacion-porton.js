@@ -129,11 +129,35 @@ document.addEventListener('click', function (e) {
     if (!btn) return;
     e.preventDefault();
     e.stopPropagation();
+
+    // Cancelar timers pendientes y resetear flags al cerrar
+    if (__magneticCardAutoValidateTimer) {
+        clearTimeout(__magneticCardAutoValidateTimer);
+        __magneticCardAutoValidateTimer = null;
+    }
+
+    // Cancelar todos los timers de auto-avance de marchamos
+    __sealDetectors.forEach(detector => {
+        if (detector.autoAdvanceTimer) {
+            clearTimeout(detector.autoAdvanceTimer);
+            detector.autoAdvanceTimer = null;
+        }
+    });
+
+    __sealAutoValidating = false;
+    __statusChangeInProgress = false;
+
     hideModal(document.getElementById('rutaModal'));
 });
 
 // Evita doble auto-validación
 let __sealAutoValidating = false;
+
+// Evita doble cambio de status
+let __statusChangeInProgress = false;
+
+// Timer para auto-validación de tarjeta magnética
+let __magneticCardAutoValidateTimer = null;
 
 function isModalOpen() {
     const el = document.getElementById('rutaModal');
@@ -156,7 +180,11 @@ function focusFirstEmptySealInput(select = true) {
     const idx = getFirstEmptyIndex();
     const inputs = getAllSealInputs();
     if (idx === -1) {
-        autoValidateIfReady();
+        // Todos los campos están llenos, mover foco al botón Confirmar
+        const btnConfirmar = document.querySelector('#rutaModal .modal-footer .btn-primary');
+        if (btnConfirmar) {
+            btnConfirmar.focus();
+        }
         return;
     }
     const el = inputs[idx];
@@ -174,7 +202,12 @@ function moveToNext(currentIdx) {
         next.focus();
         next.select && next.select();
     } else {
-        autoValidateIfReady();
+        // No hay más campos, mover foco al botón Confirmar sin validar automáticamente
+        // La validación se hará desde autoValidateIfReady solo cuando sea necesario
+        const btnConfirmar = document.querySelector('#rutaModal .modal-footer .btn-primary');
+        if (btnConfirmar) {
+            btnConfirmar.focus();
+        }
     }
 }
 
@@ -470,6 +503,149 @@ function parseSuccessResponse(response, defaultSuccessMessage) {
 /* ==============================
    UTILIDADES DINÁMICAS MARCHAMOS
    ============================== */
+
+// NUEVO: Renderizar solo validación de tarjeta magnética (cuando status=4 con repesaje)
+function renderMagneticCardValidation() {
+    const container = document.getElementById('sealsContainer');
+    const expectedSealsInput = document.getElementById('expectedSeals');
+
+    container.innerHTML = '';
+    expectedSeals = 0; // No hay marchamos a validar
+    if (expectedSealsInput) expectedSealsInput.value = '0';
+
+    const div = document.createElement('div');
+    div.className = 'col-12';
+    div.innerHTML = `
+      <div class="alert alert-info" style="margin-bottom: 15px;">
+        <i class="fas fa-info-circle"></i> <strong>Envío autorizado para nuevo pesaje</strong>
+        <br>
+        <small>Solo se validará la tarjeta magnética</small>
+      </div>
+      <div class="form-group">
+        <label for="txt_magnetic_card" class="col-form-label">Tarjeta Magnética:</label>
+        <input type="text" class="form-control" 
+               id="txt_magnetic_card" 
+               maxlength="60" autocomplete="off">
+      </div>`;
+    container.appendChild(div);
+
+    // Marcar que estamos en modo "solo tarjeta"
+    document.body.dataset.magneticCardOnly = 'true';
+
+    // Adjuntar comportamiento al input
+    const input = document.getElementById('txt_magnetic_card');
+    if (input) {
+        // Detector de escaneo para tarjeta magnética
+        let cardDetector = {
+            lastTs: 0,
+            streak: 0,
+            isScanLike: false,
+            reset() {
+                this.lastTs = 0;
+                this.streak = 0;
+                this.isScanLike = false;
+            }
+        };
+
+        input.addEventListener('focus', () => cardDetector.reset());
+
+        input.addEventListener('keydown', (e) => {
+            // Detectar ritmo de escaneo
+            const now = performance.now();
+            const delta = now - (cardDetector.lastTs || now);
+            cardDetector.lastTs = now;
+
+            const isChar = e.key.length === 1 || e.key === 'Spacebar' || e.key === ' ';
+            if (isChar) {
+                if (delta <= 30) { // 30ms máximo entre teclas para considerarlo escaneo
+                    cardDetector.streak++;
+                } else {
+                    cardDetector.streak = 0;
+                }
+
+                // Si hay 5+ caracteres consecutivos muy rápidos, es un escáner
+                if (cardDetector.streak >= 5) {
+                    cardDetector.isScanLike = true;
+                }
+            }
+
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Evitar doble validación
+                if (__sealAutoValidating) {
+                    console.log('⚠️ Validación ya en progreso (Enter), ignorando');
+                    return;
+                }
+
+                validarInformacion(); // Validar solo tarjeta
+                return;
+            }
+        });
+
+        let lastInputTime = 0;
+
+        input.addEventListener('input', (e) => {
+            const v = input.value;
+
+            // Limpiar timer anterior
+            if (__magneticCardAutoValidateTimer) {
+                clearTimeout(__magneticCardAutoValidateTimer);
+                __magneticCardAutoValidateTimer = null;
+            }
+
+            // Si el escáner inyecta \r o \n
+            if (/\r|\n/.test(v)) {
+                input.value = v.replace(/[\r\n]+/g, '').trim();
+
+                // Evitar doble validación
+                if (__sealAutoValidating) {
+                    console.log('⚠️ Validación ya en progreso (input), ignorando');
+                    return;
+                }
+
+                // Mover foco al botón Confirmar antes de validar
+                setTimeout(() => {
+                    const btnConfirmar = document.querySelector('#rutaModal .modal-footer .btn-primary');
+                    if (btnConfirmar) {
+                        btnConfirmar.focus();
+                    }
+                    setTimeout(() => validarInformacion(), 50);
+                }, 50);
+                return;
+            }
+
+            // Solo auto-validar si fue detectado como escaneo Y tiene al menos 2 caracteres
+            if (cardDetector.isScanLike && v.trim().length >= 2) {
+                lastInputTime = Date.now();
+                
+                // Esperar 200ms después del último input para asegurar que el escáner terminó
+                __magneticCardAutoValidateTimer = setTimeout(() => {
+                    const timeSinceLastInput = Date.now() - lastInputTime;
+                    // Solo validar si pasaron al menos 180ms sin nuevos inputs
+                    if (timeSinceLastInput >= 180 && !__sealAutoValidating) {
+                        // Mover foco al botón Confirmar antes de validar
+                        const btnConfirmar = document.querySelector('#rutaModal .modal-footer .btn-primary');
+                        if (btnConfirmar) {
+                            btnConfirmar.focus();
+                        }
+                        setTimeout(() => validarInformacion(), 100);
+                    }
+                }, 200);
+            }
+            // Si es escritura manual (no es escaneo), NO auto-validar
+            // El usuario debe presionar Enter o hacer clic en Confirmar
+        });
+        
+        // Asegurar foco después de que el modal esté visible
+        setTimeout(() => {
+            input.focus();
+            input.select && input.select();
+        }, 300);
+    }
+}
+
 function renderSealInputs(count) {
     const container = document.getElementById('sealsContainer');
     const expectedSealsInput = document.getElementById('expectedSeals');
@@ -477,6 +653,9 @@ function renderSealInputs(count) {
 
     container.innerHTML = '';
     expectedSeals = Math.max(1, Number(count) || 0);
+    
+    // Limpiar flag de modo "solo tarjeta magnética" - estamos en modo normal
+    document.body.dataset.magneticCardOnly = 'false';
     if (expectedSealsInput) expectedSealsInput.value = expectedSeals;
 
     const frag = document.createDocumentFragment();
@@ -496,15 +675,23 @@ function renderSealInputs(count) {
     container.appendChild(frag);
 
     attachSealInputBehaviors();       // ← listeners de escaneo y foco
-    focusFirstEmptySealInput();       // ← foco al primer vacío al abrir/renderizar
+    
+    // Delay para asegurar que el modal esté completamente visible antes de hacer focus
+    setTimeout(() => {
+        focusFirstEmptySealInput();   // ← foco al primer vacío al abrir/renderizar
+    }, 300);
 
     if (expectedSealCodesInput && !expectedSealCodesInput.value) expectedSealCodesInput.value = '';
 }
 
 // ===== Config =====
-const SCAN_MIN_CHARS = 6;       // mínimo típico que llega del escáner
+const SCAN_MIN_CHARS = 3;       // mínimo típico que llega del escáner (reducido para detección más rápida)
 const SCAN_MAX_INTERVAL = 30;   // ms máx. entre teclas para considerarlo escaneo
 const AUTO_VALIDATE_ONLY_ON_SCAN = true; // true = solo autovalida si fue escaneo
+const AUTO_ADVANCE_DELAY = 150; // ms para esperar después del escaneo antes de avanzar
+
+// Array global de detectores para cancelar timers al cerrar modal
+let __sealDetectors = [];
 
 // Estado para detectar "ritmo de escaneo"
 function makeScanDetector() {
@@ -512,7 +699,18 @@ function makeScanDetector() {
     lastTs: 0,
     streak: 0,
     isScanLike: false,
-    reset() { this.lastTs = 0; this.streak = 0; this.isScanLike = false; }
+    autoAdvanceTimer: null,
+    autoAdvanceTriggered: false, // Flag para evitar múltiples auto-avances
+    reset() {
+      this.lastTs = 0;
+      this.streak = 0;
+      this.isScanLike = false;
+      this.autoAdvanceTriggered = false;
+      if (this.autoAdvanceTimer) {
+        clearTimeout(this.autoAdvanceTimer);
+        this.autoAdvanceTimer = null;
+      }
+    }
   };
 }
 
@@ -521,11 +719,15 @@ function attachSealInputBehaviors() {
   const inputs = getAllSealInputs();
   const container = document.getElementById('sealsContainer');
 
+  // Limpiar detectores anteriores
+  __sealDetectors = [];
+
   inputs.forEach((input, idx) => {
     input.dataset.idx = String(idx);
 
     // Detector por input (se reinicia al enfocar)
     let detector = makeScanDetector();
+    __sealDetectors.push(detector);
 
     input.addEventListener('focus', () => detector.reset());
 
@@ -567,9 +769,9 @@ function attachSealInputBehaviors() {
         if (delta <= SCAN_MAX_INTERVAL) detector.streak++;
         else detector.streak = 0;
 
-        // Consideramos "scan-like" si hubo varios chars rapidísimos y tamaño decente
+        // Consideramos "scan-like" si hubo varios chars rapidísimos (reducido a 2 para detección más rápida)
         const val = input.value;
-        if (!detector.isScanLike && (detector.streak >= 3 || (val && val.length >= SCAN_MIN_CHARS))) {
+        if (!detector.isScanLike && detector.streak >= 2) {
           detector.isScanLike = true;
         }
       }
@@ -579,6 +781,12 @@ function attachSealInputBehaviors() {
     input.addEventListener('input', (e) => {
       const el = e.target;
       let v = el.value;
+
+      // Limpiar timer anterior si existe
+      if (detector.autoAdvanceTimer) {
+        clearTimeout(detector.autoAdvanceTimer);
+        detector.autoAdvanceTimer = null;
+      }
 
       // 1) Escáner mete CR/LF
       if (/\r|\n/.test(v)) {
@@ -612,7 +820,34 @@ function attachSealInputBehaviors() {
         return;
       }
 
-      // 3) ⚠️ Importante: Ya NO avanzamos por longitud mientras escriben manual.
+      // 3) Auto-avance CON DEBOUNCE: esperar a que el escáner termine de enviar todos los caracteres
+      if (detector.isScanLike && v.trim().length >= SCAN_MIN_CHARS && !detector.autoAdvanceTriggered) {
+        // Verificar que el modal sigue abierto
+        if (!isModalOpen()) {
+          return;
+        }
+
+        // Esperar 80ms después del último carácter recibido antes de avanzar
+        detector.autoAdvanceTimer = setTimeout(() => {
+          // Verificar nuevamente que el modal sigue abierto
+          if (!isModalOpen()) {
+            return;
+          }
+
+          // Marcar que ya se activó el auto-avance para este escaneo
+          detector.autoAdvanceTriggered = true;
+
+          const isLast = idx === inputs.length - 1;
+          if (isLast) {
+            autoValidateIfReady();
+          } else {
+            moveToNext(idx);
+          }
+        }, 80); // Esperar 80ms después del último input
+        return;
+      }
+
+      // 4) ⚠️ Importante: Ya NO avanzamos por longitud mientras escriben manual.
       //    Solo, si ya están todos llenos y PERMITIMOS autovalidar sin escáner:
       if (!AUTO_VALIDATE_ONLY_ON_SCAN && allSealsFilled()) {
         autoValidateIfReady();
@@ -702,15 +937,39 @@ $(document).ready(function () {
 
         $(this).find('.modal-title').text(nombreMotorista + ' - ' + nombreIngenio);
 
+        // Limpiar estados previos
+        document.body.dataset.magneticCardOnly = 'false';
+
         // ===== NUEVO: solicitar N marchamos al backend y renderizar =====
         //$("#spinner-overlay").show();
         $.getJSON('/AutorizacionPorton/Seals', { codeGen: codigoGeneracion })
             .done(function (r) {
+                console.log('[Modal Show] Respuesta GetSeals:', r);
+                
                 const codes = (r && r.codes) ? r.codes : [];
+                const currentStatus = (r && r.currentStatus) ? r.currentStatus : 0;
+                const hasReweighAuthorization = (r && r.hasReweighAuthorization) ? r.hasReweighAuthorization : false;
+                const magneticCard = (r && r.magneticCard) ? r.magneticCard : 0;
+                
+                // Guardar número de tarjeta en dataset para validación
+                document.body.dataset.expectedMagneticCard = magneticCard;
+                
+                console.log('[Modal Show] currentStatus:', currentStatus, 'hasReweighAuthorization:', hasReweighAuthorization, 'magneticCard:', magneticCard);
+                
                 $('#expectedSealCodes').val(codes.join(','));
-                renderSealInputs((r && r.count) ? r.count : 1);
+                
+                // NUEVO: Si tiene status 4 con autorización de repesaje, solo validar tarjeta
+                if (currentStatus === 4 && hasReweighAuthorization) {
+                    console.log('Status 4 con autorización de repesaje detectado - Solo validaremos tarjeta magnética');
+                    renderMagneticCardValidation();
+                } else {
+                    // Validación normal de marchamos
+                    console.log('Validación normal de marchamos - Renderizando', (r && r.count) ? r.count : 1, 'campos');
+                    renderSealInputs((r && r.count) ? r.count : 1);
+                }
             })
             .fail(function () {
+                console.log('[Modal Show] Error en GetSeals, fallback a 1 marchamo');
                 // fallback a 1
                 $('#expectedSealCodes').val('');
                 renderSealInputs(1);
@@ -806,6 +1065,56 @@ $(document).ready(function () {
    ============================== */
 function validarInformacion() {
     var codigoGeneracion = document.getElementById('codigoGeneracionInput').value;
+
+    // NUEVO: Detectar si estamos en modo "solo tarjeta magnética"
+    const magneticCardOnly = document.body.dataset.magneticCardOnly === 'true';
+    
+    if (magneticCardOnly) {
+        // Validación para tarjeta magnética
+        const magneticCardInput = document.getElementById('txt_magnetic_card');
+        if (!magneticCardInput || !magneticCardInput.value.trim()) {
+            Swal.fire({ 
+                icon: 'warning', 
+                title: 'Datos incompletos', 
+                text: 'Debe escanear la tarjeta magnética.', 
+                confirmButtonText: 'Aceptar' 
+            });
+            return;
+        }
+        
+        // Validar que la tarjeta ingresada coincida con la correcta
+        const expectedMagneticCard = document.body.dataset.expectedMagneticCard || '0';
+        const enteredCard = magneticCardInput.value.trim();
+        
+        if (enteredCard !== expectedMagneticCard) {
+            Swal.fire({ 
+                icon: 'error', 
+                title: 'Tarjeta Incorrecta', 
+                text: 'La tarjeta magnética ingresada no es válida. Por favor, intente de nuevo.', 
+                confirmButtonText: 'Aceptar' 
+            });
+            magneticCardInput.value = '';
+            magneticCardInput.focus();
+            return;
+        }
+
+        if (__sealAutoValidating && $("#spinner-overlay").is(":visible")) {
+            return;
+        }
+        __sealAutoValidating = true;
+
+        // Cerrar el modal
+        $('#rutaModal').modal('hide');
+
+        // Para repesaje, cambiar el status después de validar tarjeta correcta
+        setTimeout(() => {
+            changeStatus(codigoGeneracion);
+            document.body.dataset.magneticCardOnly = 'false'; // Limpiar flag
+            document.body.dataset.expectedMagneticCard = '0'; // Limpiar tarjeta
+        }, 300);
+        
+        return;
+    }
 
     // Limpiar errores previos
     resetErrorFieldsMarchamos([]);
@@ -1177,6 +1486,13 @@ function changeStatus(codigoGeneracion) {
         return;
     }
 
+    // Evitar múltiples llamadas simultáneas
+    if (__statusChangeInProgress) {
+        console.log('⚠️ Cambio de status ya en progreso, ignorando llamada duplicada');
+        return;
+    }
+    __statusChangeInProgress = true;
+
     $("#spinner-overlay").css("display", "flex");
 
     $.ajax({
@@ -1202,6 +1518,7 @@ function changeStatus(codigoGeneracion) {
         },
         complete: function () {
             $("#spinner-overlay").hide();
+            __statusChangeInProgress = false;
         }
     });
 }

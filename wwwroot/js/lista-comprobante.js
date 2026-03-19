@@ -223,18 +223,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
             e.stopPropagation();
 
-            const envio = (row.dataset.envio || "").trim();
+            const codeGen = (row.dataset.codegen || "").trim();
             const numeroCell = row.querySelector(".NumeroComprobante");
             const numero = numeroCell ? numeroCell.textContent.trim() : "";
 
-            if (!envio) {
-                console.warn("No hay número de envío para este comprobante, no se puede generar PDF.");
+            if (!codeGen) {
+                console.warn("No hay código de generación para este comprobante, no se puede generar PDF.");
                 return;
             }
 
-            console.log("Imprimir comprobante → envío:", envio, "número:", numero);
+            console.log("Imprimir comprobante → codeGen:", codeGen, "número:", numero);
 
-            const url = `${pdfBaseUrl}?envio=${encodeURIComponent(envio)}&numero=${encodeURIComponent(numero)}`;
+            const url = `${pdfBaseUrl}?codeGen=${encodeURIComponent(codeGen)}&numero=${encodeURIComponent(numero)}`;
             cargarPdfParaImprimir(url);
             return;
         }

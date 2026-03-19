@@ -150,9 +150,16 @@
     text-overflow: ellipsis; /* Muy útil si se alarga */
 }
 
-/* 8. Icono */
 .tabla-marchamos th:nth-child(8),
 .tabla-marchamos td:nth-child(8) {
+    width: 25%;
+    text-align: center;
+}
+
+
+/* 8. Icono */
+.tabla-marchamos th:nth-child(9),
+.tabla-marchamos td:nth-child(9) {
     width: auto;
     text-align: center;
 

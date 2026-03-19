@@ -23,13 +23,17 @@ namespace FrontendQuickpass.Models
         [JsonPropertyName("estado")]
         public string EstadoCode { get; set; } = string.Empty;
 
-        // noEnvio -> número de envío (puede ser GUID string, número, o null)
+        // noEnvio -> ID de envío (int nullable)
         [JsonPropertyName("noEnvio")]
-        public string? NumeroEnvio { get; set; }
+        public int? NumeroEnvio { get; set; }
 
         // posicion -> posición dentro del rango (no se muestra, pero puede ser útil)
         [JsonPropertyName("posicion")]
         public int? Posicion { get; set; }
+
+        [JsonPropertyName("motivoAnulacion")]
+        public string? observaciones { get; set; }
+        
 
         // canVoid -> indica si se puede anular este marchamo
         [JsonPropertyName("canVoid")]

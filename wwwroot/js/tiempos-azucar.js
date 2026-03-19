@@ -2,24 +2,24 @@
  * TIEMPOS AZÚCAR
  *************************************************************/
 
-const REFRESH_MLS           = 20000; // Refrescar datos cada 20 segundos
-const USE_INDICATORS        = false; // Indicadores de actualizacion
-const TIMER_DUR_PLANA_MLS   = 9 * 60 * 1000; // 9 minutos para unidades planas
-const TIMER_DUR_VOLTEO_MLS  = 5 * 60 * 1000; // 5 minutos para unidades de volteo
-const MAX_VOLTEO_TIMERS     = 2; // Máximo 2 cronómetros de volteo simultáneos
-const MAX_PLANA_TIMERS      = 1; // Máximo 1 cronómetro de plana simultáneo
+const REFRESH_MLS = 20000; // Refrescar datos cada 20 segundos
+const USE_INDICATORS = false; // Indicadores de actualizacion
+const TIMER_DUR_PLANA_MLS = 9 * 60 * 1000; // 9 minutos para unidades planas
+const TIMER_DUR_VOLTEO_MLS = 5 * 60 * 1000; // 5 minutos para unidades de volteo
+const MAX_VOLTEO_TIMERS = 2; // Máximo 2 cronómetros de volteo simultáneos
+const MAX_PLANA_TIMERS = 1; // Máximo 1 cronómetro de plana simultáneo
 
 let autoRefreshInterval = null;
-let autoRefreshEnabled  = true;
-let modalsOpen          = 0;
+let autoRefreshEnabled = true;
+let modalsOpen = 0;
 
 // Gestión usando shipmentId como clave principal
-const intervals            = {};  // intervals[shipmentId]
-const isRunning            = {};  // isRunning[shipmentId]
-const lastPerf             = {};  // lastPerf[shipmentId]
-const startInFlight        = {};  // startInFlight[shipmentId]
-const shipmentCodeGenMap   = {};  // shipmentCodeGenMap[shipmentId] = codeGen
-let   shipmentTimerIdMap   = {};  // shipmentTimerIdMap[shipmentId] = timerId actual (← cambiado a let)
+const intervals = {};  // intervals[shipmentId]
+const isRunning = {};  // isRunning[shipmentId]
+const lastPerf = {};  // lastPerf[shipmentId]
+const startInFlight = {};  // startInFlight[shipmentId]
+const shipmentCodeGenMap = {};  // shipmentCodeGenMap[shipmentId] = codeGen
+let shipmentTimerIdMap = {};  // shipmentTimerIdMap[shipmentId] = timerId actual (← cambiado a let)
 
 // MODIFICADO: Ahora maneja arrays de shipmentIds para permitir múltiples timers por tipo
 const activeTimerByType = { plana: [], volteo: [] }; // Guarda arrays de shipmentIds
@@ -31,8 +31,40 @@ const stopInFlight = {}; // stopInFlight[shipmentId]
 
 // Control de auto-refresh concurrente
 let refreshInFlight = false;
-let lastRefreshTs   = 0;
+let lastRefreshTs = 0;
 let currentRefreshXhr = null;
+
+/* ------------------ FEEDBACK VISUAL EN BOTONES ------------------ */
+
+/**
+ * Pone un botón en estado de carga con spinner y texto
+ */
+function setButtonLoadingState(btn, loadingText) {
+    if (!btn) return;
+    btn._originalHTML = btn.innerHTML;
+    btn._originalDisabled = btn.disabled;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + loadingText;
+    btn.style.opacity = '0.7';
+    btn.style.pointerEvents = 'none';
+}
+
+/**
+ * Restaura un botón a su estado original
+ */
+function restoreButtonState(btn) {
+    if (!btn) return;
+    if (btn._originalHTML !== undefined) {
+        btn.innerHTML = btn._originalHTML;
+        delete btn._originalHTML;
+    }
+    if (btn._originalDisabled !== undefined) {
+        btn.disabled = btn._originalDisabled;
+        delete btn._originalDisabled;
+    }
+    btn.style.opacity = '';
+    btn.style.pointerEvents = '';
+}
 
 /* ------------------ FUNCIONES AUXILIARES PARA SHIPMENT ID ------------------ */
 
@@ -122,7 +154,7 @@ class TimerSyncManager {
         try {
             const timerId = findTimerIdByShipmentId(shipmentId);
             console.log(`🚀 Registrando timer AZÚCAR en BD: shipment ${shipmentId} (${timerId}) - ${codeGen} (${tipoUnidad})`);
-            
+
             const response = await fetch('/TimerSync/start', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -136,7 +168,7 @@ class TimerSyncManager {
             });
 
             const result = await response.json();
-            
+
             if (result.success) {
                 console.log(`✅ Timer AZÚCAR registrado en BD: shipment ${shipmentId} a las ${new Date(result.data.startedAtMilliseconds).toISOString()}`);
                 return result.data;
@@ -159,7 +191,7 @@ class TimerSyncManager {
         try {
             const timerId = findTimerIdByShipmentId(shipmentId);
             console.log(`⏹️ Eliminando timer AZÚCAR de BD: shipment ${shipmentId} (${timerId})`);
-            
+
             const response = await fetch('/TimerSync/stop', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -167,7 +199,7 @@ class TimerSyncManager {
             });
 
             const result = await response.json();
-            
+
             if (result.success) {
                 console.log(`✅ Timer AZÚCAR eliminado de BD: shipment ${shipmentId}`);
                 return true;
@@ -187,13 +219,13 @@ class TimerSyncManager {
     async liberarTimerPorShipmentId(shipmentId) {
         try {
             console.log(`🔄 Liberando timer AZÚCAR por cambio de estado: shipment ${shipmentId}`);
-            
+
             const response = await fetch(`/TimerSync/liberar/${shipmentId}`, {
                 method: 'POST'
             });
 
             const result = await response.json();
-            
+
             if (result.success && result.data.liberado) {
                 console.log(`✅ Timer AZÚCAR liberado por cambio de estado: shipment ${shipmentId}`);
                 return true;
@@ -216,102 +248,114 @@ class TimerSyncManager {
             console.log(`🔗 URL llamada: /TimerSync/active/${this.tipoTimer}`);
             console.log(`🔍 Estado actual isRunning antes de sincronizar:`, isRunning);
             console.log(`🔍 Estado actual activeTimerByType antes de sincronizar:`, activeTimerByType);
-            
+
             const response = await fetch(`/TimerSync/active/${this.tipoTimer}`);
             console.log(`📡 Respuesta del servidor AZÚCAR:`, response);
             console.log(`📡 Status: ${response.status} ${response.statusText}`);
-            
+
             if (!response.ok) {
                 console.error(`❌ Error HTTP: ${response.status} - ${response.statusText}`);
                 const errorText = await response.text();
                 console.error(`❌ Error texto:`, errorText);
                 return [];
             }
-            
+
             const result = await response.json();
             console.log(`📦 Resultado JSON AZÚCAR completo:`, result);
             console.log(`📦 result.success:`, result.success);
             console.log(`📦 result.data:`, result.data);
             console.log(`📦 Array.isArray(result.data):`, Array.isArray(result.data));
-            
+
             if (result.success && Array.isArray(result.data)) {
                 console.log(`📊 Timers AZÚCAR activos en BD: ${result.data.length}`);
                 console.log(`📋 Lista completa de timers AZÚCAR:`, result.data);
-                
+
                 if (result.data.length === 0) {
                     console.log(`ℹ️ RESULTADO: No hay timers AZÚCAR activos en BD para sincronizar`);
+
+                    // LIMPIEZA: No hay timers en BD, limpiar todo localStorage residual
+                    Object.keys(localStorage).forEach(key => {
+                        const match = key.match(/^shipment_(\d+)_isRunning$/);
+                        if (match && localStorage.getItem(key) === 'true') {
+                            clearTimerStateByShipmentId(parseInt(match[1]));
+                        }
+                    });
+
                     return [];
                 }
-                
+
                 // Verificar cada timer de BD
                 for (const dbTimer of result.data) {
                     console.log(`🔍 Procesando timer AZÚCAR de BD:`, dbTimer);
-                    
+
                     const shipmentId = dbTimer.shipmentId;
                     const localRunning = isRunning[shipmentId];
                     console.log(`🔍 Timer AZÚCAR shipment ${shipmentId}: localRunning=${localRunning}`);
-                    
+
                     if (!localRunning) {
                         console.log(`🔄 Timer AZÚCAR encontrado en BD pero no localmente: shipment ${shipmentId}`);
-                        
+
                         // Verificar formato de datos
                         if (!dbTimer.startedAtMilliseconds) {
                             console.error(`❌ startedAtMilliseconds no encontrado en timer AZÚCAR:`, dbTimer);
                             continue;
                         }
-                        
+
                         console.log(`📅 StartedAtMilliseconds: ${dbTimer.startedAtMilliseconds}`);
                         console.log(`📅 Fecha de inicio en BD: ${new Date(dbTimer.startedAtMilliseconds).toISOString()}`);
                         console.log(`📅 Hora actual: ${new Date().toISOString()}`);
-                        
+
                         // Calcular tiempo transcurrido
                         const now = Date.now();
                         const startTime = dbTimer.startedAtMilliseconds;
                         const elapsedMs = Math.max(0, now - startTime);
-                        
+
                         console.log(`⏱️ now: ${now}`);
                         console.log(`⏱️ startTime: ${startTime}`);
                         console.log(`⏱️ elapsedMs: ${elapsedMs}`);
-                        console.log(`⏱️ Tiempo transcurrido calculado: ${(elapsedMs/1000/60).toFixed(1)} minutos`);
+                        console.log(`⏱️ Tiempo transcurrido calculado: ${(elapsedMs / 1000 / 60).toFixed(1)} minutos`);
                         console.log(`⏱️ Formato MM:SS:CS: ${formatTime(elapsedMs)}`);
-                        
+
                         // Detectar tipo de timer basado en el timerId o tipoUnidad
                         let tipo = 'plana'; // default
                         if (dbTimer.tipoUnidad === 'volteo' || (dbTimer.timerId && (dbTimer.timerId.toLowerCase().includes('volteo')))) {
                             tipo = 'volteo';
                         }
                         console.log(`📋 Tipo detectado para timer AZÚCAR: ${tipo}`);
-                        
+
                         // MODIFICADO: Verificar si se puede agregar otro timer del tipo según los límites
                         if (!canAddTimerOfType(tipo)) {
                             console.warn(`⚠️ No se puede agregar otro timer AZÚCAR del tipo ${tipo} (límite alcanzado), saltando shipment ${shipmentId}`);
                             continue;
                         }
-                        
+
                         // Verificar si el elemento UI existe antes de sincronizar
                         const txtEl = findTimerElementByShipmentId(shipmentId);
                         const circleEl = findCircleElementByShipmentId(shipmentId);
-                        
+
                         console.log(`🔍 Elementos UI para timer AZÚCAR shipment ${shipmentId}:`);
                         console.log(`  - txtEl:`, !!txtEl);
                         console.log(`  - circleEl:`, !!circleEl);
-                        
+
                         if (!txtEl && !circleEl) {
-                            console.warn(`⚠️ UI no disponible para timer AZÚCAR shipment ${shipmentId}, saltando sincronización`);
+                            console.warn(`⚠️ UI no disponible para timer AZÚCAR shipment ${shipmentId}, limpiando de BD...`);
+                            this.liberarTimerPorShipmentId(shipmentId).catch(err =>
+                                console.error(`⚠️ Error limpiando timer huérfano de BD: shipment ${shipmentId}`, err)
+                            );
                             continue;
                         }
-                        
+
                         // Configurar estado local completo ANTES de iniciar
                         shipmentCodeGenMap[shipmentId] = dbTimer.codeGen;
                         if (dbTimer.timerId) {
                             shipmentTimerIdMap[shipmentId] = dbTimer.timerId;
                         }
                         console.log(`📝 Configurando shipmentCodeGenMap[${shipmentId}] = ${dbTimer.codeGen}`);
-                        
+
                         // CRÍTICO: Marcar como corriendo ANTES de guardar estado
                         isRunning[shipmentId] = true;
                         addActiveTimer(shipmentId, tipo);
-                        
+
                         // Guardar estado completo en localStorage
                         saveTimerStateByShipmentId(shipmentId, {
                             cg: dbTimer.codeGen,
@@ -320,24 +364,34 @@ class TimerSyncManager {
                             run: true
                         });
                         console.log(`💾 Estado guardado en localStorage para timer AZÚCAR shipment ${shipmentId}`);
-                        
+
                         console.log(`▶️ Marcando isRunning[${shipmentId}] = true, agregando a activeTimerByType[${tipo}]`);
-                        
+
                         // Iniciar cronómetro con tiempo ya transcurrido
                         lastPerf[shipmentId] = performance.now();
                         startInterval(shipmentId, elapsedMs, tipo);
                         console.log(`🎯 startInterval llamado para timer AZÚCAR shipment ${shipmentId} con ${elapsedMs}ms (tipo: ${tipo})`);
-                        
+
                         console.log(`✅ Timer AZÚCAR sincronizado desde BD: shipment ${shipmentId}`);
                         console.log(`📊 Estado final guardado - ms: ${elapsedMs}, running: true, tipo: ${tipo}, formato: ${formatTime(elapsedMs)}`);
                     } else {
                         console.log(`ℹ️ Timer AZÚCAR shipment ${shipmentId} ya está corriendo localmente`);
                     }
                 }
-                
-                console.log(`📊 RESULTADO FINAL AZÚCAR: ${result.data.length} timers procesados`);
-                console.log(`🔍 Estado final isRunning después de sincronizar:`, isRunning);
-                console.log(`🔍 Estado final activeTimerByType después de sincronizar:`, activeTimerByType);
+
+                // Limpiar localStorage de shipments que ya no están en BD
+                const activeShipmentIds = new Set(result.data.map(t => t.shipmentId));
+                Object.keys(localStorage).forEach(key => {
+                    const match = key.match(/^shipment_(\d+)_isRunning$/);
+                    if (match && localStorage.getItem(key) === 'true') {
+                        const sid = parseInt(match[1]);
+                        if (!activeShipmentIds.has(sid)) {
+                            clearTimerStateByShipmentId(sid);
+                            isRunning[sid] = false;
+                        }
+                    }
+                });
+
                 return result.data;
             } else {
                 console.log(`⚠️ Respuesta sin éxito o datos no son array:`, result);
@@ -365,25 +419,25 @@ const timerSyncAzucar = new TimerSyncManager();
 function canAddTimerOfType(tipo) {
     const currentCount = activeTimerByType[tipo].length;
     const maxAllowed = (tipo === 'volteo') ? MAX_VOLTEO_TIMERS : MAX_PLANA_TIMERS;
-    
+
     // Verificar límite básico del tipo
     if (currentCount >= maxAllowed) {
         console.log(`⚠️ Límite de timers ${tipo} alcanzado: ${currentCount}/${maxAllowed}`);
         return false;
     }
-    
+
     // REGLA ESPECIAL: Si hay 2 volteos activos, no se puede iniciar plana
     if (tipo === 'plana' && activeTimerByType.volteo.length >= 2) {
         console.log(`⚠️ No se puede iniciar timer plana: hay ${activeTimerByType.volteo.length} volteos activos`);
         return false;
     }
-    
+
     // REGLA ESPECIAL: Si hay 1 plana activa y se quiere agregar un segundo volteo, no se permite
     if (tipo === 'volteo' && activeTimerByType.plana.length > 0 && activeTimerByType.volteo.length >= 1) {
         console.log(`⚠️ No se puede iniciar segundo timer volteo: hay ${activeTimerByType.plana.length} plana activa`);
         return false;
     }
-    
+
     return true;
 }
 
@@ -530,7 +584,7 @@ function showWaitMessage(tipo) {
     } else {
         message = 'Espera a que termine alguna unidad.';
     }
-    
+
     showWarningAlert(message);
 }
 
@@ -556,8 +610,8 @@ async function postJson(url, body) {
 }
 
 /* ------------------ Auto refresh - CORREGIDO ------------------ */
-function anyTimerRunning() { 
-    return Object.values(isRunning).some(running => running); 
+function anyTimerRunning() {
+    return Object.values(isRunning).some(running => running);
 }
 
 function startAutoRefresh() {
@@ -590,7 +644,7 @@ function refreshView() {
     }
 
     if (currentRefreshXhr) {
-        try { currentRefreshXhr.abort(); } catch { /* ignore abort errors */ }
+        try { currentRefreshXhr.abort(); } catch (_) { }
         currentRefreshXhr = null;
     }
 
@@ -606,7 +660,7 @@ function refreshView() {
         url: window.location.pathname,
         cache: false,
         timeout: 15000,
-        success: function(response) {
+        success: function (response) {
             try {
                 // Ignorar si existe un refresh más nuevo ya aplicado
                 if (startedAt < lastRefreshTs) return;
@@ -640,10 +694,13 @@ function refreshView() {
             } finally {
                 // hideRefreshIndicator();
 
+                // Detectar y limpiar timers huérfanos ANTES de restaurar desde localStorage
+                detectAndCleanOrphanedTimers();
+
                 initTimersFromStorage();
-                
+
                 // Sincronizar cronómetros AZÚCAR desde BD después del refresh
-                timerSyncAzucar.syncActiveTimersFromDB().catch(err => 
+                timerSyncAzucar.syncActiveTimersFromDB().catch(err =>
                     console.error('❌ Error en syncActiveTimersFromDB() AZÚCAR', err)
                 );
 
@@ -651,7 +708,7 @@ function refreshView() {
                 window.scrollTo(0, prevScrollY);
             }
         },
-        error: function(xhr, status, error) {
+        error: function (xhr, status, error) {
             if (status === 'abort') {
                 console.log('Refresh abortado por una nueva actualización');
             } else {
@@ -662,7 +719,7 @@ function refreshView() {
                 }
             }
         },
-        complete: function() {
+        complete: function () {
             refreshInFlight = false;
             currentRefreshXhr = null;
         }
@@ -729,18 +786,18 @@ function setupModalEvents() {
 
 /* ------------------ Timers persistentes - USANDO SHIPMENT ID - CORREGIDO ------------------ */
 function loadTimerStateByShipmentId(shipmentId) {
-    const ms  = parseInt(localStorage.getItem(`shipment_${shipmentId}_milliseconds`)) || 0;
+    const ms = parseInt(localStorage.getItem(`shipment_${shipmentId}_milliseconds`)) || 0;
     const run = localStorage.getItem(`shipment_${shipmentId}_isRunning`) === 'true';
-    const le  = parseInt(localStorage.getItem(`shipment_${shipmentId}_lastEpoch`)) || 0;
-    const cg  = localStorage.getItem(`shipment_${shipmentId}_codeGen`) || null;
+    const le = parseInt(localStorage.getItem(`shipment_${shipmentId}_lastEpoch`)) || 0;
+    const cg = localStorage.getItem(`shipment_${shipmentId}_codeGen`) || null;
     return { ms, run, le, cg };
 }
 
 function saveTimerStateByShipmentId(shipmentId, obj) {
-    if (obj.ms  !== undefined) localStorage.setItem(`shipment_${shipmentId}_milliseconds`, obj.ms.toString());
+    if (obj.ms !== undefined) localStorage.setItem(`shipment_${shipmentId}_milliseconds`, obj.ms.toString());
     if (obj.run !== undefined) localStorage.setItem(`shipment_${shipmentId}_isRunning`, obj.run ? 'true' : 'false');
-    if (obj.le  !== undefined) localStorage.setItem(`shipment_${shipmentId}_lastEpoch`,   obj.le.toString());
-    if (obj.cg  !== undefined) {
+    if (obj.le !== undefined) localStorage.setItem(`shipment_${shipmentId}_lastEpoch`, obj.le.toString());
+    if (obj.cg !== undefined) {
         if (obj.cg === null) {
             localStorage.removeItem(`shipment_${shipmentId}_codeGen`);
         } else {
@@ -750,10 +807,13 @@ function saveTimerStateByShipmentId(shipmentId, obj) {
 }
 
 function clearTimerStateByShipmentId(shipmentId) {
+    console.log(`🗑️ clearTimerStateByShipmentId(${shipmentId}) - Eliminando keys del localStorage...`);
     localStorage.removeItem(`shipment_${shipmentId}_milliseconds`);
     localStorage.removeItem(`shipment_${shipmentId}_isRunning`);
     localStorage.removeItem(`shipment_${shipmentId}_lastEpoch`);
     localStorage.removeItem(`shipment_${shipmentId}_codeGen`);
+    localStorage.removeItem(`shipment_${shipmentId}_truckType`);
+    console.log(`🗑️ Keys eliminadas: shipment_${shipmentId}_milliseconds, _isRunning, _lastEpoch, _codeGen, _truckType`);
 }
 
 /**
@@ -761,25 +821,25 @@ function clearTimerStateByShipmentId(shipmentId) {
  */
 function initTimersFromStorage() {
     console.log('🔄 Inicializando timers AZÚCAR desde localStorage usando shipmentId...');
-    
+
     // MODIFICADO: Limpiar arrays de activos antes de reconstruir
     activeTimerByType.plana = [];
     activeTimerByType.volteo = [];
 
     // Resetear mapa para evitar basura antigua tras un refresh
     shipmentTimerIdMap = {};
-    
+
     // CRÍTICO: Usar Set para evitar procesar shipmentIds duplicados
     const processedShipmentIds = new Set();
-    
+
     // Buscar todos los elementos con data-shipment-id
     document.querySelectorAll('[data-shipment-id]').forEach(element => {
         const shipmentId = parseInt(element.getAttribute('data-shipment-id'));
         const tipo = element.getAttribute('data-tipo');
         const timerId = element.getAttribute('data-timer-id');
-        
+
         if (!shipmentId || !tipo || !timerId) return;
-        
+
         // EVITAR PROCESAR DUPLICADOS
         if (processedShipmentIds.has(shipmentId)) {
             console.log(`⚠️ Shipment ${shipmentId} ya procesado, saltando elemento duplicado`);
@@ -792,7 +852,7 @@ function initTimersFromStorage() {
 
         const state = loadTimerStateByShipmentId(shipmentId);
         shipmentCodeGenMap[shipmentId] = state.cg;
-        
+
         const txtEl = findTimerElementByShipmentId(shipmentId);
         const circleEl = findCircleElementByShipmentId(shipmentId);
 
@@ -804,28 +864,114 @@ function initTimersFromStorage() {
             ms = Math.max(0, ms);
             saveTimerStateByShipmentId(shipmentId, { ms, le: Date.now(), run: true });
             lastPerf[shipmentId] = performance.now();
-            
-            // MODIFICADO: Solo asignar si se puede agregar según los nuevos límites
-            if (canAddTimerOfType(tipo)) {
-                // CRÍTICO: Marcar como corriendo ANTES de startInterval
-                isRunning[shipmentId] = true;
-                addActiveTimer(shipmentId, tipo);
-                startInterval(shipmentId, ms, tipo);
-                console.log(`▶️ Timer AZÚCAR restaurado desde localStorage: shipment ${shipmentId} (${tipo}) con ${(ms/1000/60).toFixed(1)} min`);
-            } else {
-                console.warn(`⚠️ No se puede restaurar timer ${tipo} shipment ${shipmentId} (límite alcanzado), limpiando estado`);
-                // Limpiar estado si no se puede restaurar
-                isRunning[shipmentId] = false;
-                saveTimerStateByShipmentId(shipmentId, { run: false });
-            }
+
+            // Restaurar siempre: el estado ya era válido antes del refresh.
+            // La validación de límites solo aplica al INICIAR un timer nuevo (botón start).
+            isRunning[shipmentId] = true;
+            addActiveTimer(shipmentId, tipo);
+            startInterval(shipmentId, ms, tipo);
+            console.log(`▶️ Timer AZÚCAR restaurado desde localStorage: shipment ${shipmentId} (${tipo}) con ${(ms / 1000 / 60).toFixed(1)} min`);
         } else if (txtEl) {
             updateTimerDisplay(shipmentId, state.ms);
         }
     });
-    
+
     console.log('✅ Inicialización desde localStorage completada');
     console.log('🔍 Estado activeTimerByType:', activeTimerByType);
     console.log('🔍 Estado isRunning final:', isRunning);
+}
+
+/* ------------------ Auto-limpieza de timers huérfanos ------------------ */
+
+/**
+ * Detecta timers marcados como corriendo en localStorage cuyo envío ya no
+ * está presente en el DOM (porque cambió de status externamente, ej: 8 → 11).
+ * Limpia localStorage y estado en memoria de forma SÍNCRONA para que
+ * initTimersFromStorage() no los restaure, y lanza el guardado de tiempo
+ * + limpieza de SQLite de forma ASÍNCRONA (fire-and-forget).
+ */
+function detectAndCleanOrphanedTimers() {
+    const orphaned = [];
+
+    Object.keys(localStorage).forEach(key => {
+        const match = key.match(/^shipment_(\d+)_isRunning$/);
+        if (match && localStorage.getItem(key) === 'true') {
+            const shipmentId = parseInt(match[1]);
+
+            // Si NO existe elemento DOM para este shipment → huérfano
+            const element = document.querySelector(`[data-shipment-id="${shipmentId}"]`);
+            if (!element) {
+                const state = loadTimerStateByShipmentId(shipmentId);
+                let ms = state.ms;
+                if (state.le) ms += (Date.now() - state.le);
+                ms = Math.max(0, ms);
+
+                const truckType = localStorage.getItem(`shipment_${shipmentId}_truckType`) || null;
+
+                orphaned.push({
+                    shipmentId,
+                    codeGen: state.cg,
+                    ms,
+                    truckType
+                });
+
+                // Limpieza SÍNCRONA de localStorage
+                clearTimerStateByShipmentId(shipmentId);
+
+                // Limpieza de estado en memoria
+                isRunning[shipmentId] = false;
+                removeActiveTimer(shipmentId, 'plana');
+                removeActiveTimer(shipmentId, 'volteo');
+                if (intervals[shipmentId]) {
+                    clearInterval(intervals[shipmentId]);
+                    delete intervals[shipmentId];
+                }
+                delete shipmentCodeGenMap[shipmentId];
+                delete shipmentTimerIdMap[shipmentId];
+
+                console.log(`🧹 Timer huérfano AZÚCAR detectado: shipment ${shipmentId} (${(ms / 1000 / 60).toFixed(1)} min acumulados)`);
+            }
+        }
+    });
+
+    if (orphaned.length > 0) {
+        console.log(`🧹 ${orphaned.length} timer(s) huérfano(s) AZÚCAR detectados, guardando tiempos...`);
+        saveOrphanedTimersAsync(orphaned);
+    }
+}
+
+/**
+ * Guarda el tiempo acumulado de timers huérfanos en el backend (sin cambiar status)
+ * y limpia los registros de SQLite. Es fire-and-forget: si falla, solo logea warning.
+ */
+async function saveOrphanedTimersAsync(orphaned) {
+    for (const timer of orphaned) {
+        // Guardar tiempo en backend (sin llamar changeStatusAzucar)
+        if (timer.codeGen && timer.shipmentId && timer.truckType && timer.ms > 0) {
+            try {
+                const tiempo = formatTimeForBackend(timer.ms);
+                await postJson('/TiemposAzucar/TiempoAzucar', {
+                    codigoGeneracion: timer.codeGen,
+                    tiempo: tiempo,
+                    comentario: 'Finalizar descarga/carga automaticamente',
+                    shipmentId: timer.shipmentId,
+                    truckType: timer.truckType
+                });
+                console.log(`✅ Tiempo AZÚCAR guardado automáticamente para shipment ${timer.shipmentId}: ${tiempo}`);
+            } catch (err) {
+                console.error(`⚠️ Error guardando tiempo AZÚCAR para shipment ${timer.shipmentId}:`, err);
+            }
+        } else {
+            console.warn(`⚠️ Datos incompletos para guardar tiempo de shipment ${timer.shipmentId}, limpiando sin guardar`);
+        }
+
+        // Limpiar SQLite (siempre, aunque falle el guardado de tiempo)
+        try {
+            await timerSyncAzucar.liberarTimerPorShipmentId(timer.shipmentId);
+        } catch (err) {
+            console.error(`⚠️ Error limpiando SQLite AZÚCAR para shipment ${timer.shipmentId}:`, err);
+        }
+    }
 }
 
 function startInterval(shipmentId, msStart, tipo) {
@@ -869,8 +1015,8 @@ function startInterval(shipmentId, msStart, tipo) {
         }
         updateTimerDisplay(shipmentId, ms);
     }, 50);
-    
-    console.log(`🎯 Intervalo AZÚCAR iniciado para shipment ${shipmentId} (${tipo}) con ${(ms/1000/60).toFixed(1)} min transcurridos`);
+
+    console.log(`🎯 Intervalo AZÚCAR iniciado para shipment ${shipmentId} (${tipo}) con ${(ms / 1000 / 60).toFixed(1)} min transcurridos`);
     console.log(`✅ isRunning[${shipmentId}] = ${isRunning[shipmentId]}`);
 }
 
@@ -886,10 +1032,10 @@ function updateTimerDisplay(shipmentId, ms) {
  */
 function formatTime(ms) {
     ms = Math.max(0, ms);
-    const m = Math.floor(ms/60000); // minutos
-    const s = Math.floor((ms%60000)/1000); // segundos
-    const cs = Math.floor((ms%1000)/10); // centésimas de segundo
-    return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}:${String(cs).padStart(2,'0')}`;
+    const m = Math.floor(ms / 60000); // minutos
+    const s = Math.floor((ms % 60000) / 1000); // segundos
+    const cs = Math.floor((ms % 1000) / 10); // centésimas de segundo
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}:${String(cs).padStart(2, '0')}`;
 }
 
 /**
@@ -906,18 +1052,18 @@ function formatTimeForBackend(ms) {
 
 function getColor(ms, dur, tipo) {
     const warn = (tipo === 'plana') ? TIMER_DUR_PLANA_MLS : TIMER_DUR_VOLTEO_MLS;
-    if (ms < warn/2) return "#00da5c";
-    if (ms < warn)   return "#ff7300";
+    if (ms < warn / 2) return "#00da5c";
+    if (ms < warn) return "#ff7300";
     return "#ff0000";
 }
 
 /* --------- Flujos de inicio - USANDO SHIPMENT ID - MODIFICADO --------- */
 function abrirModalBarrido(buttonStart) {
     const requires = buttonStart.getAttribute('data-requires-sweeping');
-    const codeGen  = buttonStart.getAttribute('data-codigo-generacion');
+    const codeGen = buttonStart.getAttribute('data-codigo-generacion');
     const tipo = buttonStart.getAttribute('data-tipo');
     const shipmentId = parseInt(buttonStart.getAttribute('data-shipment-id'));
-    
+
     if (!shipmentId || !tipo) {
         console.error('❌ shipmentId o tipo no encontrado en el botón');
         showErrorAlert('Datos del shipment no encontrados');
@@ -951,8 +1097,9 @@ function abrirModalBarridoCustom(shipmentId, codeGen, requires, tipo) {
     $('#barridoModal').modal('show');
 
     document.getElementById('confirmBarrido').onclick = function () {
-        const seleccion = document.getElementById('tipoBarrido').value;
-        const mismatch = (requires === 'S' && seleccion === 'N') || (requires === 'N' && seleccion === 'S');
+        const seleccion = document.getElementById('tipoBarrido').value; // "SENCILLO" o "DOBLE"
+        // requires viene como 'S' (doble) o 'N' (sencillo) del backend
+        const mismatch = (requires === 'S' && seleccion === 'SENCILLO') || (requires === 'N' && seleccion === 'DOBLE');
 
         if (mismatch) {
             Swal.fire({
@@ -965,17 +1112,17 @@ function abrirModalBarridoCustom(shipmentId, codeGen, requires, tipo) {
             }).then(result => {
                 if (result.isConfirmed) {
                     $('#barridoModal').modal('hide');
-                    pedirComentarioYIniciar(shipmentId, codeGen, requires, tipo);
+                    pedirComentarioYIniciar(shipmentId, codeGen, seleccion, tipo);
                 }
             });
         } else {
             $('#barridoModal').modal('hide');
-            startTimerFlow(shipmentId, codeGen, requires, '', tipo);
+            startTimerFlow(shipmentId, codeGen, seleccion, '', tipo);
         }
     };
 }
 
-function pedirComentarioYIniciar(shipmentId, codeGen, requires, tipo) {
+function pedirComentarioYIniciar(shipmentId, codeGen, sweepingType, tipo) {
     Swal.fire({
         title: 'Ingrese su comentario',
         input: 'textarea',
@@ -985,14 +1132,14 @@ function pedirComentarioYIniciar(shipmentId, codeGen, requires, tipo) {
         cancelButtonText: 'Cancelar'
     }).then(res => {
         if (res.isConfirmed) {
-            startTimerFlow(shipmentId, codeGen, requires, res.value || '', tipo);
+            startTimerFlow(shipmentId, codeGen, sweepingType, res.value || '', tipo);
         } else {
             $('#barridoModal').modal('show');
         }
     });
 }
 
-function startTimerFlow(shipmentId, codeGen, requiresSweeping, comentarioBarrido, tipo) {
+function startTimerFlow(shipmentId, codeGen, sweepingType, changeReason, tipo) {
     if (!shipmentId) return;
     if (startInFlight[shipmentId]) {
         console.warn(`⚠️ Start ya en proceso para shipment ${shipmentId}`);
@@ -1017,11 +1164,15 @@ function startTimerFlow(shipmentId, codeGen, requiresSweeping, comentarioBarrido
         return;
     }
 
-    sweepinglog(codeGen, requiresSweeping === 'S', comentarioBarrido || '')
+    // Feedback visual: mostrar estado de carga en el botón start
+    const startBtn = document.querySelector(`.timer-start-btn[data-shipment-id="${shipmentId}"]`);
+    setButtonLoadingState(startBtn, 'Iniciando...');
+
+    sweepinglog(codeGen, sweepingType, changeReason || '')
         .then(async () => {
             const txtEl = findTimerElementByShipmentId(shipmentId);
             const circleEl = findCircleElementByShipmentId(shipmentId);
-            
+
             if (!txtEl || !circleEl) {
                 showErrorAlert("No se encontró contenedor de cronómetro. Recarga la página.");
                 startInFlight[shipmentId] = false;
@@ -1036,20 +1187,22 @@ function startTimerFlow(shipmentId, codeGen, requiresSweeping, comentarioBarrido
 
             // PASO 2: Configurar estado local
             shipmentCodeGenMap[shipmentId] = codeGen;
+            const truckType = (tipo === 'volteo') ? 'V' : 'R';
             saveTimerStateByShipmentId(shipmentId, {
                 cg: codeGen,
                 ms: loadTimerStateByShipmentId(shipmentId).ms || 0,
                 le: Date.now(),
                 run: true
             });
+            localStorage.setItem(`shipment_${shipmentId}_truckType`, truckType);
 
             // PASO 3: MODIFICADO - Marcar como corriendo y agregar al array de activos del tipo
             isRunning[shipmentId] = true;
             addActiveTimer(shipmentId, tipo);
-            
+
             // PASO 4: Iniciar intervalo
             startInterval(shipmentId, loadTimerStateByShipmentId(shipmentId).ms || 0, tipo);
-            
+
             console.log(`✅ Cronómetro AZÚCAR iniciado exitosamente: shipment ${shipmentId} (${tipo})`);
             console.log(`📊 Estado activeTimerByType:`, activeTimerByType);
         })
@@ -1060,9 +1213,10 @@ function startTimerFlow(shipmentId, codeGen, requiresSweeping, comentarioBarrido
             } else {
                 showErrorAlert(err.message || 'Error al registrar barrido');
             }
+            restoreButtonState(startBtn);
         })
-        .finally(() => { 
-            startInFlight[shipmentId] = false; 
+        .finally(() => {
+            startInFlight[shipmentId] = false;
         });
 }
 
@@ -1094,14 +1248,14 @@ function stopTimerFlow(btnElement) {
         showErrorAlert('ID de shipment no encontrado');
         return;
     }
-    
+
     // VALIDACIÓN 2: Verificar que el código de generación esté presente
     if (!codeGen) {
         console.error('❌ Código de generación no encontrado');
         showErrorAlert('Código de generación no encontrado');
         return;
     }
-    
+
     // VALIDACIÓN 3: Verificar que el tipo de camión esté presente
     if (!truckType) {
         console.error('❌ Truck type no encontrado');
@@ -1130,6 +1284,9 @@ function stopTimerFlow(btnElement) {
 
     console.log(`✅ Timer shipment ${shipmentId} está corriendo y tiene tiempo válido (${ms}ms), puede detenerse`);
 
+    // Feedback visual: mostrar estado de carga en el botón
+    setButtonLoadingState(btn, 'Deteniendo...');
+
     // CRÍTICO: SIEMPRE usar formatTimeForBackend para enviar al servidor
     const tiempoParaBackend = formatTimeForBackend(ms);
     const tiempoParaMostrar = formatTime(ms);
@@ -1139,11 +1296,11 @@ function stopTimerFlow(btnElement) {
     console.log(`📤 Tiempo para backend (HH:MM:SS): ${tiempoParaBackend}`);
     console.log(`👀 Tiempo para mostrar (MM:SS:CS): ${tiempoParaMostrar}`);
 
-    const finalizeStop = async (motivo='') => {
+    const finalizeStop = async (motivo = '') => {
         stopInFlight[shipmentId] = true;
         try {
             console.log(`🛑 Finalizando stop para timer shipment ${shipmentId}...`);
-            
+
             // PASO 1: Detener cronómetro local
             clearInterval(intervals[shipmentId]);
             intervals[shipmentId] = null;
@@ -1156,11 +1313,11 @@ function stopTimerFlow(btnElement) {
             // PASO 3: Limpiar UI
             const circleEl = findCircleElementByShipmentId(shipmentId);
             const txtEl = findTimerElementByShipmentId(shipmentId);
-            
+
             console.log(`🧹 Limpiando UI para shipment ${shipmentId}:`);
             console.log(`  - txtEl: ${!!txtEl}`);
             console.log(`  - circleEl: ${!!circleEl}`);
-            
+
             if (circleEl) {
                 circleEl.style.background = `conic-gradient(#f0f0f0 0deg, #f0f0f0 0deg)`;
                 console.log(`✅ Círculo reseteado`);
@@ -1174,24 +1331,27 @@ function stopTimerFlow(btnElement) {
             await TiempoAzucar(codeGen, tiempoParaBackend, motivo, shipmentId, truckType);
 
             // PASO 5: Limpiar estado local después del éxito
+            console.log(`🧹 Limpiando localStorage para shipment ${shipmentId}...`);
             clearTimerStateByShipmentId(shipmentId);
-            saveTimerStateByShipmentId(shipmentId, { cg: null }); // limpiar cg si existiera
             delete shipmentCodeGenMap[shipmentId];
             delete shipmentTimerIdMap[shipmentId];
+            console.log(`✅ localStorage limpiado para shipment ${shipmentId}`);
 
             console.log(`✅ Timer AZÚCAR detenido exitosamente: shipment ${shipmentId} (${tipo})`);
             console.log(`📤 Tiempo enviado al backend: ${tiempoParaBackend}`);
             console.log(`📊 Estado final activeTimerByType:`, activeTimerByType);
-            
+
             setTimeout(refreshView, 700);
         } catch (err) {
             console.error(`❌ Error al detener timer AZÚCAR shipment ${shipmentId}:`, err);
             showErrorAlert(err.message || 'Error al enviar el tiempo');
-            
-            // MODIFICADO: Restaurar estado correctamente si hay error
+
+            // Restaurar estado y reanudar visual desde donde iba
             isRunning[shipmentId] = true;
             addActiveTimer(shipmentId, tipo);
-            saveTimerStateByShipmentId(shipmentId, { run: true });
+            saveTimerStateByShipmentId(shipmentId, { ms, le: Date.now(), run: true });
+            startInterval(shipmentId, ms, tipo);
+            restoreButtonState(btn);
         } finally {
             stopInFlight[shipmentId] = false;
         }
@@ -1201,13 +1361,56 @@ function stopTimerFlow(btnElement) {
         const modal = document.getElementById("confirmationModal");
         if (modal) {
             modal.style.display = "block";
+
+            // Manejar cambio en el select para mostrar/ocultar input de "Otro"
+            const motivoSelect = document.getElementById("motivoDetencion");
+            const motivoOtroInput = document.getElementById("motivoOtro");
+
+            motivoSelect.onchange = function () {
+                if (this.value === "otro") {
+                    motivoOtroInput.style.display = "block";
+                    motivoOtroInput.focus();
+                } else {
+                    motivoOtroInput.style.display = "none";
+                    motivoOtroInput.value = "";
+                }
+            };
+
             document.getElementById("confirmStopButton").onclick = function () {
-                const motivo = document.getElementById("motivoDetencion").value || '';
-                finalizeStop(motivo);
+                const motivoSelect = document.getElementById("motivoDetencion").value || '';
+                const motivoOtro = document.getElementById("motivoOtro").value || '';
+
+                // Determinar el motivo final
+                let motivoFinal = '';
+                if (motivoSelect === "otro") {
+                    motivoFinal = motivoOtro.trim();
+                } else {
+                    motivoFinal = motivoSelect;
+                }
+
+                // VALIDACIÓN: El motivo es requerido cuando se excede el tiempo promedio
+                // No permitir vacío ni el valor por defecto "Seleccionar"
+                if (!motivoFinal.trim()) {
+                    showWarningAlert('Debe ingresar un motivo válido para justificar el tiempo excedido');
+                    return;
+                }
+
+                finalizeStop(motivoFinal);
                 modal.style.display = "none";
+
+                // Limpiar campos al cerrar
+                document.getElementById("motivoDetencion").value = "";
+                document.getElementById("motivoOtro").value = "";
+                document.getElementById("motivoOtro").style.display = "none";
             };
             document.getElementById("cancelStopButton").onclick = function () {
                 modal.style.display = "none";
+
+                // Limpiar campos al cancelar
+                document.getElementById("motivoDetencion").value = "";
+                document.getElementById("motivoOtro").value = "";
+                document.getElementById("motivoOtro").style.display = "none";
+                restoreButtonState(btn);
             };
         } else {
             finalizeStop('');
@@ -1219,12 +1422,18 @@ function stopTimerFlow(btnElement) {
 function stopTimer(id) { stopTimerFlow(id); }
 
 /* ------------------ Backend business - ACTUALIZADO ------------------ */
-async function sweepinglog(codeGen, requiresSweepingBool, observation) {
-    return await postJson('/TiemposAzucar/sweepinglog', {
+async function sweepinglog(codeGen, sweepingType, changeReason) {
+    const body = {
         codeGen: codeGen,
-        requiresSweeping: requiresSweepingBool,
-        observation: observation || ''
-    });
+        sweepingType: sweepingType // "SENCILLO" o "DOBLE"
+    };
+
+    // Solo incluir changeReason si hay un comentario
+    if (changeReason && changeReason.trim()) {
+        body.changeReason = changeReason;
+    }
+
+    return await postJson('/TiemposAzucar/sweepinglog', body);
 }
 
 // FUNCIÓN CRÍTICA: Asegurar que el tiempo llegue en formato HH:MM:SS
@@ -1232,20 +1441,20 @@ async function TiempoAzucar(codeGen, tiempo, comentario, shipmentId, truckType) 
     if (!codeGen) throw new Error('Código de generación requerido');
     if (!shipmentId) throw new Error('ID de shipment requerido');
     if (!truckType) throw new Error('Tipo de camión requerido');
-    
+
     // VALIDACIÓN CRÍTICA: Verificar que el tiempo esté en formato HH:MM:SS
     const formatoHHMMSS = /^\d{2}:\d{2}:\d{2}$/;
     if (!formatoHHMMSS.test(tiempo)) {
         console.error(`❌ FORMATO DE TIEMPO INCORRECTO: ${tiempo} (debe ser HH:MM:SS)`);
         throw new Error(`Formato de tiempo incorrecto: ${tiempo}. Debe ser HH:MM:SS`);
     }
-    
+
     window.AlmapacUtils?.showSpinner();
     try {
         console.log(`🚀 Enviando TiempoAzucar para: ${codeGen}`);
         console.log(`⏱️ Tiempo (HH:MM:SS): ${tiempo}`);
         console.log(`🚛 ShipmentId: ${shipmentId}, TruckType: ${truckType}`);
-        
+
         const res = await postJson('/TiemposAzucar/TiempoAzucar', {
             codigoGeneracion: codeGen,
             tiempo: tiempo, // Ya debe estar en formato HH:MM:SS
@@ -1253,7 +1462,7 @@ async function TiempoAzucar(codeGen, tiempo, comentario, shipmentId, truckType) 
             shipmentId: shipmentId,
             truckType: truckType
         });
-        
+
         console.log("✅ TiempoAzucar OK:", res);
         await changeStatusAzucar(codeGen);
         return res;
@@ -1266,29 +1475,30 @@ async function changeStatusAzucar(codeGen) {
     const predefinedStatusId = 9;
     try {
         console.log(`🔄 Cambiando estado AZÚCAR para: ${codeGen}`);
-        
+
         await postJson('/TiemposAzucar/ChangeTransactionStatus', {
             codeGen: codeGen, predefinedStatusId
         });
-        
+
         console.log(`✅ Estado AZÚCAR cambiado exitosamente para: ${codeGen}`);
-        
+
         // Liberar timer de BD cuando cambie de estado exitosamente
         const shipmentId = getShipmentIdFromCodeGen(codeGen);
         if (shipmentId) {
             await timerSyncAzucar.liberarTimerPorShipmentId(shipmentId);
         }
-        
+
         showSuccessAlert('El estado se actualizó correctamente.');
     } catch (e) {
         console.error("Error cambiando estado:", e);
-        
+
         if (e.message && e.message.includes('ya fue registrado')) {
             console.log('⚠️ Estado ya registrado, continuando...');
             return;
         }
-        
+
         showErrorAlert(e.message || 'Error al cambiar estado');
+        throw e; // Propagar para que finalizeStop restaure el timer
     }
 }
 
@@ -1297,14 +1507,14 @@ function getShipmentIdFromCodeGen(codeGen) {
     if (element) {
         return parseInt(element.getAttribute('data-shipment-id'));
     }
-    
+
     // Buscar en el mapa local
     for (const [shipmentId, storedCodeGen] of Object.entries(shipmentCodeGenMap)) {
         if (storedCodeGen === codeGen) {
             return parseInt(shipmentId);
         }
     }
-    
+
     return null;
 }
 
@@ -1329,7 +1539,7 @@ async function changeStatus(codigoGeneracion) {
 /* ------------------ Contadores ------------------ */
 async function SolicitarUnidad(Tipo_Unidad, unidadesSolicitadas) {
     const tipoTexto = (Tipo_Unidad === "V") ? "Volteo" : "Plana";
-    const lockKey   = (Tipo_Unidad === "V") ? "volteo" : "plano";
+    const lockKey = (Tipo_Unidad === "V") ? "volteo" : "plano";
 
     if (counterLocks[lockKey]) {
         showWarningAlert('Operación en proceso, espere...');
@@ -1356,7 +1566,7 @@ async function SolicitarUnidad(Tipo_Unidad, unidadesSolicitadas) {
 }
 async function ReducirUnidad(Tipo_Unidad, unidadesReducidas) {
     const tipoTexto = (Tipo_Unidad === "V") ? "Volteo" : "Plana";
-    const lockKey   = (Tipo_Unidad === "V") ? "volteo" : "plano";
+    const lockKey = (Tipo_Unidad === "V") ? "volteo" : "plano";
 
     if (counterLocks[lockKey]) {
         showWarningAlert('Operación en proceso, espere...');
@@ -1384,9 +1594,9 @@ async function ReducirUnidad(Tipo_Unidad, unidadesReducidas) {
 
 function bindSolicitudesBtns() {
     let decrementCountVolteo = 0;
-    let decrementCountPlano  = 0;
+    let decrementCountPlano = 0;
     let incrementCountVolteo = 0;
-    let incrementCountPlano  = 0;
+    let incrementCountPlano = 0;
 
     const els = {
         decV: document.getElementById('decreaseButtonVolteo'),
@@ -1430,9 +1640,9 @@ function bindSolicitudesBtns() {
 
 /* ------------------ Autorización Cola ------------------ */
 function confirmAuthorization(linkButton) {
-    const transporter      = linkButton.getAttribute('data-transporter');
-    const trailerPlate     = linkButton.getAttribute('data-trailerplate');
-    const plate            = linkButton.getAttribute('data-plate');
+    const transporter = linkButton.getAttribute('data-transporter');
+    const trailerPlate = linkButton.getAttribute('data-trailerplate');
+    const plate = linkButton.getAttribute('data-plate');
     const codigoGeneracion = linkButton.getAttribute('data-codigo-generacion');
 
     const message = `
@@ -1468,21 +1678,21 @@ function confirmAuthorization(linkButton) {
 function escapeHtml(text) {
     if (!text) return '';
     return text.replace(/[&<>"'`=\/]/g, s => ({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '/': '&#x2F;', '`': '&#x60;', '=': '&#x3D;'
     })[s]);
 }
 
 /* ------------------ Init ------------------ */
 $(document).ready(function () {
     console.log('🚀 Documento listo - Inicializando aplicación AZÚCAR (USANDO SHIPMENT ID)...');
-    console.log(`⏱️ Duración PLANA: ${(TIMER_DUR_PLANA_MLS/1000/60)} min, VOLTEO: ${(TIMER_DUR_VOLTEO_MLS/1000/60)} min`);
+    console.log(`⏱️ Duración PLANA: ${(TIMER_DUR_PLANA_MLS / 1000 / 60)} min, VOLTEO: ${(TIMER_DUR_VOLTEO_MLS / 1000 / 60)} min`);
     console.log(`📊 LÍMITES: MAX_VOLTEO_TIMERS=${MAX_VOLTEO_TIMERS}, MAX_PLANA_TIMERS=${MAX_PLANA_TIMERS}`);
     console.log('🚦 REGLAS: Si hay 2 volteos → no plana. Si hay 1 plana → máx 1 volteo.');
     console.log('🌍 Zona horaria configurada: UTC-6 (El Salvador)');
     console.log('🔄 Auto-refresh: Cada 30 segundos SIEMPRE (sin pausa por cronómetros)');
     console.log('🔘 Botones: Habilitados siempre, validaciones en las funciones');
     console.log('🆔 Identificador: shipmentId como clave principal (persistente al refresh)');
-    
+
     window.AlmapacUtils?.hideSpinner();
 
     document.querySelectorAll("button").forEach(b => {
@@ -1496,17 +1706,20 @@ $(document).ready(function () {
     bindSolicitudesBtns();
     restoreSearchValue();
 
-    // PRIMERO: Inicializar timers desde localStorage
+    // PRIMERO: Detectar y limpiar timers huérfanos (envíos que cambiaron de estado externamente)
+    detectAndCleanOrphanedTimers();
+
+    // SEGUNDO: Inicializar timers visibles desde localStorage
     initTimersFromStorage();
-    
-    // SEGUNDO: Sincronizar cronómetros AZÚCAR desde BD al cargar
+
+    // TERCERO: Sincronizar cronómetros AZÚCAR desde BD al cargar
     setTimeout(() => {
         console.log('🔄 Iniciando sincronización automática AZÚCAR desde BD...');
         timerSyncAzucar.syncActiveTimersFromDB();
     }, 1500);
-    
+
     startAutoRefresh();
-    
+
     console.log('✅ Aplicación AZÚCAR (USANDO SHIPMENT ID) inicializada correctamente');
 });
 
@@ -1518,7 +1731,7 @@ function bindTimerButtons() {
         e.preventDefault();
         const shipmentId = parseInt(this.getAttribute('data-shipment-id'));
         console.log('🚀 Click en botón START AZÚCAR: shipment', shipmentId);
-        
+
         abrirModalBarrido(this);
     });
 
@@ -1526,7 +1739,7 @@ function bindTimerButtons() {
         e.preventDefault();
         const shipmentId = parseInt(this.getAttribute('data-shipment-id'));
         console.log('⏹️ Click en botón STOP AZÚCAR: shipment', shipmentId);
-        
+
         stopTimerFlow(this);
     });
 }

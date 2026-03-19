@@ -26,9 +26,9 @@
     return `${String(h).padStart(2, "0")} h ${String(m).padStart(2, "0")} min`;
   }
   function fmtMMSS(secs) {
-    if (secs == null || isNaN(secs)) return "0 min 00 seg";
+    if (secs == null || isNaN(secs)) return "0 min 00 s";
     const m = Math.floor(secs / 60), s = Math.round(secs % 60);
-    return `${m} min ${String(s).padStart(2, "0")} seg`;
+    return `${m} min ${String(s).padStart(2, "0")} s`;
   }
   function stableStringify(obj) {
     const seen = new WeakSet();
@@ -49,22 +49,16 @@
     for (let i = 0; i < str.length; i++) { h = ((h << 5) - h) + str.charCodeAt(i); h |= 0; }
     return h;
   }
+
   // === helper robusto para "cero" ===
   function isZeroLike(v) {
     if (v == null) return true;
-    if (typeof v === "number") return Math.abs(v) < 1e-9; // incluye 0.000...
+    if (typeof v === "number") return Math.abs(v) < 1e-9;
     const s = String(v).trim();
     if (!s) return true;
-
-    // 0, 0.0, 0,00
     if (/^[0]+([.,]0+)?$/.test(s)) return true;
-
-    // HH:MM:SS o MM:SS con todo en cero (00:00 o 00:00:00)
     if (/^0{1,2}\s*:\s*0{2}(\s*:\s*0{2})?$/.test(s)) return true;
-
-    // "0 min 00 seg" (o variantes)
-    if (/^0+\s*min(?:\s*0+\s*seg)?$/i.test(s)) return true;
-
+    if (/^0+\s*min(?:\s*0+\s*s)?$/i.test(s)) return true;
     return false;
   }
 
@@ -73,25 +67,94 @@
   function _todayISO() { const d = new Date(); return d.toISOString().slice(0, 10); }
   function _validDateStr(s) { return /^\d{4}-\d{2}-\d{2}$/.test(String(s || '')); }
   function _validTimeStr(s) { return /^\d{2}:\d{2}$/.test(String(s || '')); }
-  function _toMinutes(t){ const [h,m]=(t||'00:00').split(':').map(Number); return (h||0)*60+(m||0); }
-  
-  function _fromMinutes(min){
-    const h = Math.max(0, Math.min(23, Math.floor(min/60)));
-    const m = Math.max(0, Math.min(59, Math.round(min%60)));
-    return _pad2(h)+':'+_pad2(m);
+  function _toMinutes(t) { const [h, m] = (t || '00:00').split(':').map(Number); return (h || 0) * 60 + (m || 0); }
+  function _forceHourOnly(el, fallback) {
+    if (!el) return;
+
+    // fuerza step de 1 hora
+    el.step = String(60 * 60);
+
+    const v = String(el.value || fallback || '').trim();
+    const hh = (v.includes(':') ? v.split(':')[0] : v) || '00';
+    const h = Math.max(0, Math.min(23, parseInt(hh, 10) || 0));
+    el.value = _pad2(h) + ':00';
+  }
+  // ====== Hora (solo horas) con reloj + salto a "hora fin" ======
+  function _normalizeHour00(raw, fallbackHH) {
+    const s = String(raw ?? "").trim();
+
+    // "7" o "07"
+    if (/^\d{1,2}$/.test(s)) {
+      let h = Number(s);
+      if (!Number.isFinite(h)) h = Number(fallbackHH);
+      h = Math.max(0, Math.min(23, h));
+      return _pad2(h) + ":00";
+    }
+
+    // "07:15" / "07:00"
+    const m = s.match(/^(\d{1,2})(?::(\d{1,2}))?$/);
+    if (m) {
+      let h = Number(m[1]);
+      if (!Number.isFinite(h)) h = Number(fallbackHH);
+      h = Math.max(0, Math.min(23, h));
+      return _pad2(h) + ":00";
+    }
+
+    return _pad2(Number(fallbackHH) || 0) + ":00";
   }
 
-  // Construye Date local a partir de "YYYY-MM-DD" + "HH:MM"
+  function _bindHourClockInput(el, fallbackHH, nextEl) {
+    if (!el) return;
+
+    // Evitar doble bind si useDateTimeRange se llama 2 veces
+    if (el.dataset.hourClockBound === "1") return;
+    el.dataset.hourClockBound = "1";
+
+    el.step = String(60 * 60);
+    el.value = _normalizeHour00(el.value, fallbackHH);
+
+    el.addEventListener("focus", () => {
+      try { el.setSelectionRange(0, 2); } catch { }
+      try { el.showPicker && el.showPicker(); } catch { }
+    });
+
+    const normalize = () => { el.value = _normalizeHour00(el.value, fallbackHH); };
+
+    el.addEventListener("change", () => {
+      normalize();
+      if (nextEl) {
+        nextEl.focus();
+        try { nextEl.showPicker && nextEl.showPicker(); } catch { }
+      }
+    });
+
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        normalize();
+        if (nextEl) {
+          nextEl.focus();
+          try { nextEl.showPicker && nextEl.showPicker(); } catch { }
+        }
+      }
+    });
+
+    el.addEventListener("blur", normalize);
+  }
+
+  function _fromMinutes(min) {
+    const h = Math.max(0, Math.min(23, Math.floor(min / 60)));
+    const m = Math.max(0, Math.min(59, Math.round(min % 60)));
+    return _pad2(h) + ':' + _pad2(m);
+  }
   function _mkLocalDate(dStr, tStr) {
     const [y, m, d] = dStr.split('-').map(Number);
     const [hh, mm] = (tStr || '00:00').split(':').map(Number);
-    const dt = new Date(); // local
+    const dt = new Date();
     dt.setFullYear(y, m - 1, d);
     dt.setHours(hh || 0, mm || 0, 0, 0);
     return dt;
   }
-
-  // Aplica min/max a horas solo si la fecha es igual
   function _syncTimeMinMax(dateStartEl, dateEndEl, timeStartEl, timeEndEl) {
     if (!timeStartEl || !timeEndEl) return;
     const ds = dateStartEl?.value, de = dateEndEl?.value;
@@ -103,24 +166,45 @@
       timeStartEl.removeAttribute('max');
     }
   }
-
-  // API pública: devuelve rango actual (strings y Date)
   function getDateTimeRange({
     dateStartId = 'f-date-start', dateEndId = 'f-date-end',
     timeStartId = 'f-hour-start', timeEndId = 'f-hour-end'
   } = {}) {
-    const ds = document.getElementById(dateStartId)?.value || _todayISO();
-    const de = document.getElementById(dateEndId)?.value || _todayISO();
-    const ts = document.getElementById(timeStartId)?.value || '00:00';
-    const te = document.getElementById(timeEndId)?.value || '23:59';
+
+    // Normaliza cualquier "HH:mm" o "H" a "HH:00"
+    const toHour00 = (t, fallbackHH) => {
+      const s = String(t ?? '').trim();
+      const hhRaw = s.includes(':') ? s.split(':')[0] : s;
+      const h = Math.max(0, Math.min(23, parseInt(hhRaw || fallbackHH, 10) || 0));
+      return String(h).padStart(2, '0') + ':00';
+    };
+
+    const d1 = document.getElementById(dateStartId);
+    const d2 = document.getElementById(dateEndId);
+    const t1 = document.getElementById(timeStartId);
+    const t2 = document.getElementById(timeEndId);
+
+    const ds = d1?.value || _todayISO();
+    const de = d2?.value || _todayISO();
+
+    // Leemos lo que venga, pero lo forzamos a HH:00
+    const ts = toHour00(t1?.value, '00');
+    const te = toHour00(t2?.value, '23');
+
+    // Opcional: forzar visualmente el input a HH:00 y que brinque por hora
+    if (t1) { t1.step = String(60 * 60); t1.value = ts; }
+    if (t2) { t2.step = String(60 * 60); t2.value = te; }
+
     return {
-      dateStart: ds, dateEnd: de, timeStart: ts, timeEnd: te,
+      dateStart: ds,
+      dateEnd: de,
+      timeStart: ts,   // <- SIEMPRE "HH:00"
+      timeEnd: te,     // <- SIEMPRE "HH:00"
       start: _validDateStr(ds) ? _mkLocalDate(ds, ts) : null,
       end: _validDateStr(de) ? _mkLocalDate(de, te) : null
     };
   }
 
-  // API pública: inicializa controles y validación
   function useDateTimeRange({
     dateStartId = 'f-date-start', dateEndId = 'f-date-end',
     timeStartId = 'f-hour-start', timeEndId = 'f-hour-end',
@@ -130,41 +214,42 @@
     const d2 = document.getElementById(dateEndId);
     const t1 = document.getElementById(timeStartId);
     const t2 = document.getElementById(timeEndId);
-    const showErr = (msg) => { /* opcional: emite evento o log */ if (msg) console.warn('[range]', msg); };
+    const showErr = (msg) => { if (msg) console.warn('[range]', msg); };
 
-    if (!d1 || !d2) return; // fechas son obligatorias
+    if (!d1 || !d2) return;
 
-    // valores por defecto
     if (autoInitToday) {
       if (!d1.value || !_validDateStr(d1.value)) d1.value = _todayISO();
       if (!d2.value || !_validDateStr(d2.value)) d2.value = _todayISO();
       if (t1 && (!t1.value || !_validTimeStr(t1.value))) t1.value = '00:00';
-      if (t2 && (!t2.value || !_validTimeStr(t2.value))) t2.value = '23:59';
+      if (t2 && (!t2.value || !_validTimeStr(t2.value))) t2.value = '23:00';
+    }
+    // Hora con reloj: HH:00 + salto automático a hora fin
+    if (t1 && t2) {
+      _bindHourClockInput(t1, "00", t2);
+      _bindHourClockInput(t2, "23", null);
     }
 
-    // sincroniza min/max inicial
+
     d2.min = d1.value; d1.max = d2.value;
     _syncTimeMinMax(d1, d2, t1, t2);
 
-    // validación + swap si es necesario
     const validate = () => {
-      // normaliza tiempos vacíos
       const ts = t1?.value || '00:00';
-      const te = t2?.value || '23:59';
+      const te = t2?.value || '23:00';
       const ds = d1.value, de = d2.value;
 
-      // corrige min/max de fechas
+      if (!t1 || !t2) return;
+
       if (d1.value) d2.min = d1.value; else d2.removeAttribute('min');
       if (d2.value) d1.max = d2.value; else d1.removeAttribute('max');
 
-      // compara por Date (fecha+hora)
       const haveTimes = !!(t1 && t2);
       const start = _validDateStr(ds) ? _mkLocalDate(ds, haveTimes ? ts : '00:00') : null;
       const end = _validDateStr(de) ? _mkLocalDate(de, haveTimes ? te : '23:59') : null;
 
       if (start && end && start.getTime() > end.getTime()) {
         if (swapOnInvalid) {
-          // swap valores visibles
           const tmpD = d1.value; d1.value = d2.value; d2.value = tmpD;
           if (t1 && t2) { const tmpT = t1.value; t1.value = t2.value; t2.value = tmpT; }
           showErr('Intercambié los valores de inicio/fin para mantener el rango válido.');
@@ -179,15 +264,12 @@
         if (t1 && t2) { t1.classList.remove('is-invalid'); t2.classList.remove('is-invalid'); }
       }
 
-      // min/max de tiempo cuando la fecha coincide
       _syncTimeMinMax(d1, d2, t1, t2);
 
-      // callback de la app
-      try { if (typeof onChange === 'function') onChange(getDateTimeRange({ dateStartId: dateStartId, dateEndId: dateEndId, timeStartId: timeStartId, timeEndId: timeEndId })); }
+      try { if (typeof onChange === 'function') onChange(getDateTimeRange({ dateStartId, dateEndId, timeStartId, timeEndId })); }
       catch (e) { console.error('[useDateTimeRange:onChange]', e); }
     };
 
-    // listeners
     ['change', 'input'].forEach(ev => {
       d1.addEventListener(ev, validate);
       d2.addEventListener(ev, validate);
@@ -195,16 +277,13 @@
       if (t2) t2.addEventListener(ev, validate);
     });
 
-    // validación inicial
     validate();
 
-    // devuelve una API simple
     return {
       validate,
       get: () => getDateTimeRange({ dateStartId, dateEndId, timeStartId, timeEndId })
     };
   }
-
 
   // ====== Producto / tipo helpers ======
   function normalizeProductKind(value) {
@@ -244,6 +323,27 @@
     inner.style.width = width + "px";
   }
 
+  function bindHourOnlyTimeInput(id, fallbackHH) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.step = "3600";
+
+    const normalize = () => {
+      const s = String(el.value || '').trim();
+      const hh = s.includes(':') ? s.split(':')[0] : s;
+      let h = parseInt(hh || fallbackHH, 10);
+      if (Number.isNaN(h)) h = parseInt(fallbackHH, 10) || 0;
+      h = Math.max(0, Math.min(23, h));
+      el.value = String(h).padStart(2, '0') + ':00';
+    };
+
+    el.addEventListener('input', normalize);
+    el.addEventListener('change', normalize);
+    normalize();
+  }
+
+
   // ====== Escala Y agradable ======
   function calcTightScale(maxVal, { minTop = 5, headroom = 0.15 } = {}) {
     const vmax = Math.max(0, Number(maxVal) || 0);
@@ -264,7 +364,11 @@
     return {
       responsive: true,
       maintainAspectRatio: false,
-      resizeDelay: 100,
+      resizeDelay: 800,
+      animation: { duration: 600, easing: "easeInOutQuart" },
+      transitions: {
+        active: { animation: { duration: 800 } }
+      },
       interaction: { mode: "index", intersect: false },
       layout: { padding: { top: 0, right: 8, bottom: CHART_UI.padBottom, left: 8 } },
       elements: {
@@ -282,7 +386,7 @@
             font: { size: CHART_UI.fontSize }
           },
           grid: { display: true, color: COLORS.grid, lineWidth: CHART_UI.gridWidth, drawBorder: false },
-          border: { display: true, color: COLORS.axis, width: 1 }
+          border: { display: false }
         },
         y: {
           beginAtZero: true,
@@ -302,7 +406,6 @@
           mode: "index",
           intersect: false,
           filter: (item) => {
-            // Chart.js nos da item.parsed.y como número; si no, usa raw.
             const val = item?.parsed?.y ?? item?.raw;
             return !isZeroLike(val);
           },
@@ -335,6 +438,161 @@
       options: opts
     });
   }
+  function scatter2Series(canvasId, labA, labB, labC) {
+    const ctx = $(canvasId);
+    if (!ctx) return null;
+
+    const opts = baseOptions();
+
+    // Scatter: interacción por punto (NO por index)
+    opts.interaction = { mode: "nearest", intersect: true };
+    if (!opts.plugins) opts.plugins = {};
+    if (!opts.plugins.tooltip) opts.plugins.tooltip = {};
+    opts.plugins.tooltip.mode = "nearest";
+    opts.plugins.tooltip.intersect = true;
+
+    // X lineal en minutos del día (0..1439)
+    opts.scales.x.type = "linear";
+    opts.scales.x.min = 0;
+    opts.scales.x.max = 23 * 60 + 59;
+
+    // ✅ Fuerza ticks EXACTOS cada hora (0,60,120,...)
+    opts.scales.x.ticks.stepSize = 60;
+    opts.scales.x.bounds = "ticks";
+
+
+    // ✅ Muestra solo HH:00
+    opts.scales.x.ticks.callback = (val) => {
+      const m = Number(val);
+      if (!Number.isFinite(m)) return "";
+      const hh = String(Math.floor(m / 60)).padStart(2, "0");
+      return `${hh}:00`;
+    };
+
+    // (opcional pero recomendado) evita que te “salte” labels por espacio
+    opts.scales.x.ticks.autoSkip = true;
+    opts.scales.x.ticks.maxRotation = 0;
+    opts.scales.x.ticks.minRotation = 0;
+    // Mostrar ticks como HH:mm
+    opts.scales.x.ticks.callback = (val) => {
+      const m = Number(val);
+      if (!Number.isFinite(m)) return "";
+      const hh = String(Math.floor(m / 60)).padStart(2, "0");
+      const mm = String(m % 60).padStart(2, "0");
+      return `${hh}:${mm}`;
+    };
+
+    return new Chart(ctx, {
+      type: "scatter",
+      data: {
+        datasets: [
+          { label: labA, borderColor: COLORS.blue, backgroundColor: COLORS.blue, data: [] },
+          { label: labB, borderColor: COLORS.orange, backgroundColor: COLORS.orange, data: [] },
+          { label: labC, borderColor: COLORS.gray, backgroundColor: COLORS.gray, data: [] }
+        ]
+      },
+      options: opts
+    });
+  }
+
+  function lineTimeSeries(canvasId, labA, labB, labC) {
+    const ctx = $(canvasId);
+    if (!ctx) return null;
+
+    const opts = baseOptions();
+
+    // ✅ Tooltip 1 punto
+    opts.interaction = { mode: "nearest", intersect: true };
+    opts.plugins = opts.plugins || {};
+    opts.plugins.tooltip = opts.plugins.tooltip || {};
+    opts.plugins.tooltip.mode = "nearest";
+    opts.plugins.tooltip.intersect = true;
+
+    // ✅ X numérico (minutos del día)
+    opts.scales.x.type = "linear";
+    opts.scales.x.min = 0;
+    opts.scales.x.max = 23 * 60 + 59;
+
+    // ✅ Forzar ticks exactos por hora (evita 03:20 / 06:40)
+    opts.scales.x.afterBuildTicks = (scale) => {
+      const step = 60; // 60 = cada hora (usa 120 si quieres cada 2 horas)
+      const ticks = [];
+      for (let m = 0; m <= 23 * 60; m += step) ticks.push({ value: m });
+      scale.ticks = ticks;
+    };
+
+    // ✅ Mostrar SIEMPRE HH:00 en el eje X
+    opts.scales.x.ticks.autoSkip = false;
+    opts.scales.x.ticks.maxRotation = 90;
+    opts.scales.x.ticks.minRotation = 90;
+    opts.scales.x.ticks.callback = (val) => {
+      const m = Number(val);
+      if (!Number.isFinite(m)) return "";
+      const hh = String(Math.floor(m / 60)).padStart(2, "0");
+      return `${hh}:00`;
+    };
+
+    // Mostrar HH:mm
+    opts.scales.x.ticks.callback = (val) => {
+      const m = Number(val);
+      if (!Number.isFinite(m)) return "";
+      const hh = String(Math.floor(m / 60)).padStart(2, "0");
+      const mm = String(m % 60).padStart(2, "0");
+      return `${hh}:${mm}`;
+    };
+
+    return new Chart(ctx, {
+      type: "line",
+      data: {
+        datasets: [
+          { label: labA, borderColor: COLORS.blue, backgroundColor: COLORS.blue, data: [], tension: .25, fill: false },
+          { label: labB, borderColor: COLORS.orange, backgroundColor: COLORS.orange, data: [], tension: .25, fill: false },
+          { label: labC, borderColor: COLORS.gray, backgroundColor: COLORS.gray, data: [], tension: .25, fill: false }
+        ]
+      },
+      options: opts
+    });
+  }
+
+  function scatter2Series(canvasId, labA, labB, labC) {
+    const ctx = $(canvasId);
+    if (!ctx) return null;
+
+    const opts = baseOptions();
+
+    // Tooltip 1 punto
+    opts.interaction = { mode: "nearest", intersect: true };
+    opts.plugins = opts.plugins || {};
+    opts.plugins.tooltip = opts.plugins.tooltip || {};
+    opts.plugins.tooltip.mode = "nearest";
+    opts.plugins.tooltip.intersect = true;
+
+    // Eje X en minutos (0..1439)
+    opts.scales.x.type = "linear";
+    opts.scales.x.min = 0;
+    opts.scales.x.max = 23 * 60 + 59;
+    opts.scales.x.ticks.callback = (val) => {
+      const m = Number(val);
+      if (!Number.isFinite(m)) return "";
+      const hh = String(Math.floor(m / 60)).padStart(2, "0");
+      const mm = String(m % 60).padStart(2, "0");
+      return `${hh}:${mm}`;
+    };
+
+    return new Chart(ctx, {
+      type: "scatter",
+      data: {
+        datasets: [
+          { label: labA, borderColor: COLORS.blue, backgroundColor: COLORS.blue, data: [] },
+          { label: labB, borderColor: COLORS.orange, backgroundColor: COLORS.orange, data: [] },
+          { label: labC, borderColor: COLORS.gray, backgroundColor: COLORS.gray, data: [] }
+        ]
+      },
+      options: opts
+    });
+  }
+
+
   function bar2Series(canvasId, labA, labB, labC) {
     const ctx = $(canvasId);
     if (!ctx) return null;
@@ -355,7 +613,7 @@
     });
   }
 
-  // ====== Setters 3 series (Volteo, Plana, Pipa) ======
+  // ====== Setters 3 series ======
   function setLine3(chart, labels, a, b, c, yTitle = "", yOverride) {
     if (!chart) return;
     const A = (a || []).map(Number);
@@ -417,25 +675,41 @@
       });
     });
   }
-  function toggleLegendFor(canvasId, vis) {
+  function toggleLegendFor(canvasId /*, vis — ignorado: leyendas siempre visibles */) {
     const card = byId(canvasId)?.closest('.chart-card');
     if (!card) return;
     upgradeLegendMarkup(card);
-    const show = (cls, on) => {
-      card.querySelectorAll(`.legend .legend-${cls}`).forEach(el => { el.style.display = on ? '' : 'none'; });
-    };
-    show('volteo', !!vis.volteo);
-    show('plana', !!vis.plana);
-    show('pipa', !!vis.pipa);
+    card.querySelectorAll('.legend .legend-item').forEach(el => { el.style.display = ''; });
   }
 
   // ====== Utilidades varias ======
-  function refreshChartAfterResize(id) {
-    const chart = Chart.getChart(id);
-    if (chart) chart.resize();
+  // ✅ FIX: resize robusto cuando cambia el ancho del contenedor (evita “corrimiento”)
+  function refreshChartAfterResize(idOrCanvas) {
+    try {
+      const canvas =
+        (typeof idOrCanvas === 'string')
+          ? document.getElementById(idOrCanvas)
+          : idOrCanvas;
+
+      if (!canvas || !window.Chart) return;
+
+      const chart = Chart.getChart(canvas);
+      if (!chart) return;
+
+      // RAF doble = más estable cuando acabas de cambiar width del contenedor
+      requestAnimationFrame(() => {
+        chart.resize();
+        requestAnimationFrame(() => {
+          chart.resize();
+          chart.update('none');
+        });
+      });
+    } catch (e) {
+      console.warn('[refreshChartAfterResize]', e);
+    }
   }
 
-  // ====== Estado global simple (usado por histórico) ======
+  // ====== Estado global simple ======
   const state = { modalsOpen: 0 };
   function setModalOpen(isOpen) {
     state.modalsOpen = Math.max(0, isOpen ? 1 : 0);
@@ -476,13 +750,13 @@
       tab?.setAttribute('aria-expanded', 'true');
       if (backdrop) backdrop.hidden = false;
       panel?.focus();
-      incModals(); // pausa auto-refresh
+      incModals();
     };
     const close = () => {
       root.setAttribute('aria-expanded', 'false');
       tab?.setAttribute('aria-expanded', 'false');
       if (backdrop) backdrop.hidden = true;
-      decModals(); // reanuda auto-refresh
+      decModals();
     };
 
     tab?.addEventListener('click', () => (root.getAttribute('aria-expanded') === 'true' ? close() : open()));
@@ -498,125 +772,131 @@
   document.addEventListener('DOMContentLoaded', initDashSwitcher);
 
   // ====== Time-only Range helpers ======
-function _toMinutes(t){ const [h,m]=(t||'00:00').split(':').map(Number); return (h||0)*60+(m||0); }
-function _fromMinutes(min){
-  const h = Math.max(0, Math.min(23, Math.floor(min/60)));
-  const m = Math.max(0, Math.min(59, Math.round(min%60)));
-  return _pad2(h)+':'+_pad2(m);
-}
-
-/** Devuelve el rango de horas actual (sin fechas) */
-function getTimeRange({ timeStartId='f-hour-start', timeEndId='f-hour-end' } = {}) {
-  const t1 = document.getElementById(timeStartId)?.value || '00:00';
-  const t2 = document.getElementById(timeEndId)?.value   || '23:59';
-  return { timeStart: t1, timeEnd: t2, startMin: _toMinutes(t1), endMin: _toMinutes(t2) };
-}
-
-/** Inicializa validación y orden para inputs type="time" */
-function useTimeRange({
-  timeStartId='f-hour-start',
-  timeEndId='f-hour-end',
-  stepMinutes,            // p.ej. 60 (equivale a step="3600")
-  autoInit=true,          // autollenar si vienen vacíos
-  swapOnInvalid=true,     // si inicio > fin, intercambia
-  onChange                // callback al cambiar
-} = {}) {
-  const t1 = document.getElementById(timeStartId);
-  const t2 = document.getElementById(timeEndId);
-  if (!t1 || !t2) return;
-
-  if (stepMinutes && Number(stepMinutes) > 0) {
-    t1.step = String(stepMinutes * 60);
-    t2.step = String(stepMinutes * 60);
+  function getTimeRange({ timeStartId = 'f-hour-start', timeEndId = 'f-hour-end' } = {}) {
+    const t1 = document.getElementById(timeStartId)?.value || '00:00';
+    const t2 = document.getElementById(timeEndId)?.value || '23:59';
+    return { timeStart: t1, timeEnd: t2, startMin: _toMinutes(t1), endMin: _toMinutes(t2) };
   }
+  function useTimeRange({
+    timeStartId = 'f-hour-start',
+    timeEndId = 'f-hour-end',
+    stepMinutes,
+    autoInit = true,
+    swapOnInvalid = true,
+    onChange
+  } = {}) {
 
-  if (autoInit) {
-    if (!t1.value || !_validTimeStr(t1.value)) t1.value = '00:00';
-    if (!t2.value || !_validTimeStr(t2.value)) t2.value = '23:59';
-  }
+    const t1 = document.getElementById(timeStartId);
+    const t2 = document.getElementById(timeEndId);
+    if (!t1 || !t2) return;
 
-  function syncMinMax() {
-    if (t1.value) t2.min = t1.value; else t2.removeAttribute('min');
-    if (t2.value) t1.max = t2.value; else t1.removeAttribute('max');
-  }
+    _forceHourOnly(t1, '00:00');
+    _forceHourOnly(t2, '23:00');
+// 1) Hora fin < hora inicio (solo si es el mismo día)
+if (_validDateStr(ds) && _validDateStr(de) && ds === de) {
+  const a = _toMinutes(ts);
+  const b = _toMinutes(te);
 
-  function validate(fire = true) {
-    if (!_validTimeStr(t1.value)) t1.value = '00:00';
-    if (!_validTimeStr(t2.value)) t2.value = '23:59';
-
-    const a = _toMinutes(t1.value);
-    const b = _toMinutes(t2.value);
-
-    if (a > b) {
-      if (swapOnInvalid) {
-        const tmp = t1.value; t1.value = t2.value; t2.value = tmp;
-      } else {
-        t1.classList.add('is-invalid'); t2.classList.add('is-invalid');
-        return;
-      }
+  if (a > b) {
+    if (swapOnInvalid) {
+      const tmpT = t1.value; t1.value = t2.value; t2.value = tmpT;
     } else {
-      t1.classList.remove('is-invalid'); t2.classList.remove('is-invalid');
+      t1.classList.add('is-invalid'); t2.classList.add('is-invalid');
+      showErr('La hora de fin no puede ser menor que la hora de inicio.');
+      return;
     }
-
-    syncMinMax();
-
-    if (fire && typeof onChange === 'function') {
-      try { onChange(getTimeRange({ timeStartId, timeEndId })); }
-      catch(e){ console.error('[useTimeRange:onChange]', e); }
-    }
+  } else {
+    t1.classList.remove('is-invalid'); t2.classList.remove('is-invalid');
   }
-
-  ['change','input'].forEach(ev => {
-    t1.addEventListener(ev, () => validate(true));
-    t2.addEventListener(ev, () => validate(true));
-  });
-
-  validate(false);
-
-  return { validate, get: () => getTimeRange({ timeStartId, timeEndId }) };
+} else {
+  t1.classList.remove('is-invalid'); t2.classList.remove('is-invalid');
 }
+
+
+    if (stepMinutes && Number(stepMinutes) > 0) {
+      t1.step = String(stepMinutes * 60);
+      t2.step = String(stepMinutes * 60);
+    }
+
+    if (autoInit) {
+      if (!t1.value || !_validTimeStr(t1.value)) t1.value = '00:00';
+      if (!t2.value || !_validTimeStr(t2.value)) t2.value = '23:59';
+    }
+
+    function syncMinMax() {
+      if (t1.value) t2.min = t1.value; else t2.removeAttribute('min');
+      if (t2.value) t1.max = t2.value; else t1.removeAttribute('max');
+    }
+
+    function validate(fire = true) {
+      if (!_validTimeStr(t1.value)) t1.value = '00:00';
+      if (!_validTimeStr(t2.value)) t2.value = '23:59';
+
+      const a = _toMinutes(t1.value);
+      const b = _toMinutes(t2.value);
+
+      if (a > b) {
+        if (swapOnInvalid) {
+          const tmp = t1.value; t1.value = t2.value; t2.value = tmp;
+        } else {
+          t1.classList.add('is-invalid'); t2.classList.add('is-invalid');
+          return;
+        }
+      } else {
+        t1.classList.remove('is-invalid'); t2.classList.remove('is-invalid');
+      }
+
+      syncMinMax();
+
+      if (fire && typeof onChange === 'function') {
+        try { onChange(getTimeRange({ timeStartId, timeEndId })); }
+        catch (e) { console.error('[useTimeRange:onChange]', e); }
+      }
+    }
+
+    ['change', 'input'].forEach(ev => {
+      t1.addEventListener(ev, () => validate(true));
+      t2.addEventListener(ev, () => validate(true));
+    });
+
+    validate(false);
+
+    return { validate, get: () => getTimeRange({ timeStartId, timeEndId }) };
+  }
 
   // ====== Expose ======
   window.DashCore = {
-    // DOM
     $, byId,
 
-    // helpers negocio
     normalizeProductKind, normalizeTruckType,
 
-    // formato/num/hash
     num, fmtHHMM, fmtMMSS, stableStringify, simpleHash,
 
-    useDateTimeRange, 
+    useDateTimeRange,
     getDateTimeRange,
-  useTimeRange,     
-  getTimeRange,
+    useTimeRange,
+    getTimeRange,
 
-    // scroll + charts
     ensureScrollableWidth,
     line2Series, bar2Series,
     setLine3, setBar3,
     refreshChartAfterResize,
     toggleLegendFor,
-
-    // estado (modales)
+    bindHourOnlyTimeInput,
     state,
     setModalOpen, incModals, decModals,
 
-    // auto refresh
     registerAutoRefresh,
     startAutoRefresh,
     setAutoRefreshEnabled,
-
-    // configuración pública
+    scatter2Series,
+    lineTimeSeries,
     COLORS,
     CHART_UI,
 
-    // flag opcional para otros scripts
     USE_BAR_RECIBIDOS: false
   };
 
-  // Registro seguro del plugin de zoom si existe
   if (window.Chart && window.ChartZoom) {
     Chart.register(window.ChartZoom);
   } else {

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using FrontendQuickpass.JsonConverters;
 
 namespace FrontendQuickpass.Models
 {
@@ -196,7 +197,8 @@ namespace FrontendQuickpass.Models
         public string ActivityNumber { get; set; } = string.Empty;
 
         [JsonPropertyName("magneticCard")]
-        public int MagneticCard { get; set; }
+        [JsonConverter(typeof(FlexibleStringConverter))]
+        public string MagneticCard { get; set; } = string.Empty;
 
         [JsonPropertyName("currentStatus")]
         public int CurrentStatus { get; set; }
@@ -260,5 +262,30 @@ namespace FrontendQuickpass.Models
 
         [JsonPropertyName("marchamos")]
         public List<MarchamoAlmapac> Marchamos { get; set; } = new();
+
+        [JsonPropertyName("observations")]
+        public string? Observations { get; set; }
+
+        [JsonPropertyName("comprobante")]
+        public Comprobante? Comprobante { get; set; }
+
+    }
+
+    public class Comprobante
+    {
+        [JsonPropertyName("numero")]
+        public int Numero { get; set; }
+
+        [JsonPropertyName("impreso")]
+        public bool Impreso { get; set; }
+
+        [JsonPropertyName("fechaImpresion")]
+        public DateTime? FechaImpresion { get; set; }
+
+        [JsonPropertyName("impresoPor")]
+        public string? ImpresoPor { get; set; }
+
+        [JsonPropertyName("impresoPorCode")]
+        public string? ImpresoPorCode { get; set; }
     }
 }

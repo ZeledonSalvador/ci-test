@@ -291,7 +291,7 @@ namespace FrontendQuickpass.Controllers
         }
 
         [HttpPut]
-        [ValidateAntiForgeryToken]
+        [Route("ListaNegra/UpdatePenalty/{id}")]
         public async Task<IActionResult> UpdatePenalty(int id, [FromBody] UpdatePenaltyRequest request)
         {
             if (!ModelState.IsValid)

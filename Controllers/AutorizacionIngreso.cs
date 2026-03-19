@@ -16,6 +16,7 @@ namespace FrontendQuickpass.Controllers
         private readonly ILogger<AutorizacionIngresoController> _logger;
         private readonly ApiSettings _apiSettings;
         private readonly ITransactionLogService _logService;
+        private readonly IShipmentAuditService _auditService;
         private readonly LoginService _loginService;
 
         // Obtener código de usuario desde JWT en lugar de cookie
@@ -43,13 +44,51 @@ namespace FrontendQuickpass.Controllers
             ILogger<AutorizacionIngresoController> logger,
             IOptions<ApiSettings> apiOptions,
             ITransactionLogService logService,
+            IShipmentAuditService auditService,
             LoginService loginService)
         {
             _httpClientFactory = httpClientFactory;
             _logger = logger;
             _apiSettings = apiOptions.Value;
             _logService = logService;
+            _auditService = auditService;
             _loginService = loginService;
+        }
+
+        /// <summary>
+        /// Obtiene el código de usuario autenticado desde el contexto HTTP.
+        /// </summary>
+        /// <returns>Código de usuario o 0 si no está disponible</returns>
+        private int GetUserId()
+        {
+            if (HttpContext.Items.TryGetValue("UserInfo", out var userInfo))
+            {
+                try
+                {
+                    // userInfo es un objeto anónimo con la propiedad CodUsuario
+                    var expandoDict = userInfo as IDictionary<string, object>;
+                    if (expandoDict != null && expandoDict.ContainsKey("CodUsuario"))
+                    {
+                        return Convert.ToInt32(expandoDict["CodUsuario"]);
+                    }
+
+                    // Intentar acceso directo usando reflexión
+                    if (userInfo != null)
+                    {
+                        var type = userInfo.GetType();
+                        var prop = type.GetProperty("CodUsuario");
+                        if (prop != null)
+                        {
+                            return Convert.ToInt32(prop.GetValue(userInfo));
+                        }
+                    }
+                }
+                catch
+                {
+                    return 0;
+                }
+            }
+            return 0;
         }
 
         public async Task<IActionResult> Index()
@@ -58,7 +97,7 @@ namespace FrontendQuickpass.Controllers
             var validIngenios = new[] { "001001-003", "007001-001", "007001-003", "001001-001", "001001-004", "001001-002" };
 
             string token = _apiSettings.Token;
-            string url1 = $"{_apiSettings.BaseUrl}shipping/status/3?page=1&size=10000&includeAttachments=true";
+            string url1 = $"{_apiSettings.BaseUrl}shipping/status/3?page=1&size=2000&includeAttachments=true";
             string url2 = $"{_apiSettings.BaseUrl}queue/count/";
 
             try
@@ -80,7 +119,7 @@ namespace FrontendQuickpass.Controllers
                         if (item.dateTimePrecheckeo.HasValue && item.dateTimePrecheckeo.Value != DateTime.MinValue)
                         {
                             item.dateTimePrecheckeo = TimeZoneInfo.ConvertTimeFromUtc(
-                                DateTime.SpecifyKind(item.dateTimePrecheckeo.Value, DateTimeKind.Utc),
+                                DateTime.SpecifyKind(item.dateTimePrecheckeo.Value, DateTimeKind.Utc), 
                                 gmtMinus6
                             );
                         }
@@ -88,7 +127,7 @@ namespace FrontendQuickpass.Controllers
 
                     // CORECCIÓN: Ordenar solo los elementos que tienen fecha válida
                     posts = posts.OrderBy(p => p.dateTimePrecheckeo ?? DateTime.MaxValue).ToList();
-
+                    
                     model.TruckTypeR = posts.Where(p => p.vehicle?.truckType == "R").ToList();
                     model.TruckTypeV = posts.Where(p => p.vehicle?.truckType == "V").ToList();
                     model.CountPlanas = model.TruckTypeR.Count;
@@ -136,7 +175,7 @@ namespace FrontendQuickpass.Controllers
         public async Task<IActionResult> ChangeTransactionStatus([FromBody] ChangeTransactionRequest request)
         {
             var codeGen = request.CodeGen?.Trim();
-
+            
             if (string.IsNullOrWhiteSpace(request.CodeGen))
             {
                 _logService.LogActivityAsync("", request, Usuario, 0);
@@ -155,17 +194,24 @@ namespace FrontendQuickpass.Controllers
                     //leveransUsernameChangeStatus = UsuarioName,
                     observationsChangeStatus = "Autorizacion ingreso AZUCAR"
                 };
-
+                
                 var jsonContent = JsonConvert.SerializeObject(requestBody);
                 var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
                 var response = await client.PostAsync(url, content);
                 var responseContent = await response.Content.ReadAsStringAsync();
-                _logger.LogInformation("Respuesta del API - Status: {statusCode}, Content: {content}",
+                _logger.LogInformation("Respuesta del API - Status: {statusCode}, Content: {content}", 
                                     response.StatusCode, responseContent);
                 if (response.IsSuccessStatusCode)
                 {
-                    _logService.LogActivityAsync(codeGen ?? string.Empty, responseContent, Usuario, 4);
+                    // Registrar en auditoría de cambio de estado (reemplaza transactionlogs para casos exitosos)
+                    var userId = GetUserId();
+                    if (userId == 0)
+                    {
+                        _logger.LogWarning("No se pudo obtener userId para codeGen: {CodeGen}", codeGen);
+                        return StatusCode(401, new { errorMessage = "Usuario no autenticado" });
+                    }
+                    _auditService.RegisterStatusChange(codeGen ?? string.Empty, 4, userId, "internal");
                     return Ok(new { successMessage = "Cambio de estatus exitoso", response = responseContent });
                 }
 

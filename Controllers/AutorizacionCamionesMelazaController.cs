@@ -18,6 +18,7 @@ namespace FrontendQuickpass.Controllers
         private readonly ApiSettings _apiSettings;
         private readonly ILogger<AutorizacionCamionesMelazaController> _logger;
         private readonly ITransactionLogService _logService;
+        private readonly IShipmentAuditService _auditService;
         private readonly LoginService _loginService;
 
         // Obtener código de usuario desde JWT en lugar de cookie
@@ -35,12 +36,14 @@ namespace FrontendQuickpass.Controllers
             IOptions<ApiSettings> apiSettings,
             ILogger<AutorizacionCamionesMelazaController> logger,
             ITransactionLogService logService,
+            IShipmentAuditService auditService,
             LoginService loginService)
         {
             _httpClientFactory = httpClientFactory;
             _apiSettings = apiSettings.Value;
             _logger = logger;
             _logService = logService;
+            _auditService = auditService;
             _loginService = loginService;
         }
 
@@ -58,22 +61,22 @@ namespace FrontendQuickpass.Controllers
             try
             {
                 dynamic? errorData = JsonConvert.DeserializeObject(errorContent);
-
+                
                 if (errorData?.message != null)
                 {
                     return errorData.message.ToString();
                 }
-
+                
                 if (errorData?.error != null)
                 {
                     return errorData.error.ToString();
                 }
-
+                
                 if (errorData?.details != null)
                 {
                     return errorData.details.ToString();
                 }
-
+                
                 return defaultMessage;
             }
             catch
@@ -84,10 +87,10 @@ namespace FrontendQuickpass.Controllers
                     {
                         return defaultMessage;
                     }
-
+                    
                     return errorContent;
                 }
-
+                
                 return defaultMessage;
             }
         }
@@ -109,7 +112,7 @@ namespace FrontendQuickpass.Controllers
                 };
 
                 // PRIMERA LLAMADA: Obtener unidades con status 2 (operativas)
-                var urlStatus2 = $"{_apiSettings.BaseUrl}shipping/status/2?page=1&size=10000&includeAttachments=true";
+                var urlStatus2 = $"{_apiSettings.BaseUrl}shipping/status/2?page=1&size=2000&includeAttachments=true";
                 var responseStatus2 = await client.GetAsync(urlStatus2);
 
                 List<PostAutorizacionMelaza> dataStatus2 = new();
@@ -126,7 +129,7 @@ namespace FrontendQuickpass.Controllers
                 }
 
                 // SEGUNDA LLAMADA: Obtener unidades con status 13 (inconsistencias)
-                var urlStatus13 = $"{_apiSettings.BaseUrl}shipping/status/13?page=1&size=10000&reportType=PRECHECK&includeAttachments=true";
+                var urlStatus13 = $"{_apiSettings.BaseUrl}shipping/status/13?page=1&size=2000&reportType=PRECHECK&includeAttachments=true";
                 var responseStatus13 = await client.GetAsync(urlStatus13);
 
                 List<PostAutorizacionMelaza> dataStatus13 = new();
@@ -303,7 +306,7 @@ namespace FrontendQuickpass.Controllers
         public async Task<IActionResult> AsignarTarjeta([FromBody] AsignarTarjetaRequest request)
         {
             var codeGen = request.CodigoGeneracion?.Trim();
-
+            
             try
             {
                 using var client = CreateApiClient();
@@ -317,11 +320,11 @@ namespace FrontendQuickpass.Controllers
 
                 if (response.IsSuccessStatusCode)
                 {
-                    return Json(new
-                    {
-                        success = true,
+                    return Json(new 
+                    { 
+                        success = true, 
                         message = "Tarjeta asignada correctamente.",
-                        data = responseContent
+                        data = responseContent 
                     });
                 }
                 else
@@ -329,11 +332,11 @@ namespace FrontendQuickpass.Controllers
                     var errorMessage = ParseApiError(responseContent, "Error al asignar tarjeta");
                     _logger.LogWarning($"AsignarTarjeta Error: {response.StatusCode} - {errorMessage}");
                     _logService.LogActivityAsync(codeGen ?? "", request, Usuario, (int)response.StatusCode);
-
-                    return Json(new
-                    {
-                        success = false,
-                        message = errorMessage
+                    
+                    return Json(new 
+                    { 
+                        success = false, 
+                        message = errorMessage 
                     });
                 }
             }
@@ -341,11 +344,11 @@ namespace FrontendQuickpass.Controllers
             {
                 _logger.LogError(ex, "Error inesperado en AsignarTarjeta");
                 _logService.LogActivityAsync(codeGen ?? "", request, Usuario, 0);
-
-                return Json(new
-                {
-                    success = false,
-                    message = ex.Message
+                
+                return Json(new 
+                { 
+                    success = false, 
+                    message = ex.Message 
                 });
             }
         }
@@ -354,13 +357,13 @@ namespace FrontendQuickpass.Controllers
         public async Task<IActionResult> AsignarBuzzer([FromBody] AsignarBuzzerRequest request)
         {
             var codeGen = request.CodigoGeneracion?.Trim();
-
+            
             try
             {
                 using var client = CreateApiClient();
 
                 var url = $"{_apiSettings.BaseUrl}shipping/buzzers/asignar/{request.CodigoGeneracion}";
-
+                
                 var requestBody = new { buzzer = request.Buzzer };
                 var json = JsonConvert.SerializeObject(requestBody);
                 var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
@@ -386,7 +389,7 @@ namespace FrontendQuickpass.Controllers
                     var errorMessage = ParseApiError(errorContent, "Error al asignar buzzer");
                     _logger.LogWarning($"AsignarBuzzer Error: {response.StatusCode} - {errorMessage}");
                     _logService.LogActivityAsync(codeGen ?? "", request, Usuario, (int)response.StatusCode);
-
+                    
                     return Json(new
                     {
                         success = false,
@@ -399,7 +402,7 @@ namespace FrontendQuickpass.Controllers
             {
                 _logger.LogError(ex, "Error de conexión al asignar buzzer");
                 _logService.LogActivityAsync(codeGen ?? "", request, Usuario, 0);
-
+                
                 return Json(new
                 {
                     success = false,
@@ -411,7 +414,7 @@ namespace FrontendQuickpass.Controllers
             {
                 _logger.LogError(ex, "Error inesperado al asignar buzzer");
                 _logService.LogActivityAsync(codeGen ?? "", request, Usuario, 0);
-
+                
                 return Json(new
                 {
                     success = false,
@@ -425,7 +428,7 @@ namespace FrontendQuickpass.Controllers
         public async Task<IActionResult> ChangeTransactionStatus([FromBody] ChangeStatusRequest request)
         {
             var codeGen = request.CodeGen?.Trim();
-
+            
             try
             {
                 using var client = CreateApiClient();
@@ -449,7 +452,14 @@ namespace FrontendQuickpass.Controllers
 
                 if (response.IsSuccessStatusCode)
                 {
-                    _logService.LogActivityAsync(codeGen ?? "", request, Usuario, request.PredefinedStatusId);
+                    // Registrar en auditoría de cambio de estado (reemplaza transactionlogs para casos exitosos)
+                    var userId = GetUserId();
+                    if (userId == 0)
+                    {
+                        _logger.LogWarning("No se pudo obtener userId para codeGen: {CodeGen}", codeGen);
+                        return Json(new { success = false, message = "Error: Usuario no autenticado" });
+                    }
+                    _auditService.RegisterStatusChange(codeGen ?? "", request.PredefinedStatusId, userId, "internal");
 
                     return Json(new
                     {
@@ -464,11 +474,11 @@ namespace FrontendQuickpass.Controllers
                     var errorMessage = ParseApiError(responseContent, "Error al cambiar el estado");
                     _logger.LogWarning($"ChangeTransactionStatus Error: {response.StatusCode} - {errorMessage}");
                     _logService.LogActivityAsync(codeGen ?? "", request, Usuario, (int)response.StatusCode);
-
-                    return Json(new
-                    {
-                        success = false,
-                        message = errorMessage
+                    
+                    return Json(new 
+                    { 
+                        success = false, 
+                        message = errorMessage 
                     });
                 }
             }
@@ -476,20 +486,20 @@ namespace FrontendQuickpass.Controllers
             {
                 _logger.LogError(ex, "Error inesperado en ChangeTransactionStatus");
                 _logService.LogActivityAsync(codeGen ?? "", request, Usuario, 0);
-
-                return Json(new
-                {
-                    success = false,
-                    message = ex.Message
+                
+                return Json(new 
+                { 
+                    success = false, 
+                    message = ex.Message 
                 });
             }
         }
-
+        
         [HttpPost]
         public async Task<IActionResult> GuardarReporteInconsistencia([FromBody] ReporteInconsistenciaRequest request)
         {
             var codeGen = request.CodigoGeneracion?.Trim();
-
+            
             try
             {
                 // Obtener userId desde el contexto (ya validado por el middleware)
@@ -535,7 +545,9 @@ namespace FrontendQuickpass.Controllers
 
                 if (response.IsSuccessStatusCode)
                 {
-                    _logService.LogActivityAsync(codeGen ?? "", request, Usuario, 12);
+                    // Registrar en auditoría de cambio de estado
+                    // El predefinedStatusId 13 es para inconsistencias/reportes
+                    _auditService.RegisterStatusChange(codeGen ?? "", 13, userId, "internal");
 
                     return Json(new
                     {
@@ -549,7 +561,7 @@ namespace FrontendQuickpass.Controllers
                     var errorMessage = ParseApiError(responseContent, "Error al enviar reporte");
                     _logger.LogWarning($"GuardarReporteInconsistencia Error: {response.StatusCode} - {errorMessage}");
                     _logService.LogActivityAsync(codeGen ?? "", request, Usuario, (int)response.StatusCode);
-
+                    
                     return Json(new
                     {
                         success = false,

@@ -10,7 +10,7 @@ namespace FrontendQuickpass.Models
         public List<PostAutorizacion> UnidadesPlanas { get; set; } = new();
         public List<PostAutorizacion> UnidadesVolteo { get; set; } = new();
         public List<PostAutorizacion> UnidadesPipa { get; set; } = new();
-
+        
         public int CountPlanas { get; set; }
         public int CountVolteo { get; set; }
         public int CountPipa { get; set; }
@@ -30,19 +30,19 @@ namespace FrontendQuickpass.Models
     public class Status
     {
         public int id { get; set; }
-        public string status { get; set; } = string.Empty;
+        public string status { get; set; }
         public DateTime createdAt { get; set; }
-        public string date { get; set; } = string.Empty;
-        public string time { get; set; } = string.Empty;
+        public string date { get; set; }
+        public string time { get; set; }
     }
 
     public class ShipmentAttachment
     {
         public int id { get; set; }
-        public string fileUrl { get; set; } = string.Empty;
-        public string fileName { get; set; } = string.Empty;
-        public string fileType { get; set; } = string.Empty;
-        public string attachmentType { get; set; } = string.Empty;
+        public string fileUrl { get; set; }
+        public string fileName { get; set; }
+        public string fileType { get; set; }
+        public string attachmentType { get; set; }
         public DateTime createdAt { get; set; }
         public DateTime updatedAt { get; set; }
     }

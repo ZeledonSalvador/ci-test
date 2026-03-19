@@ -5,6 +5,10 @@ var informacionEnvioGlobal = {
     nombreIngenio: ''
 };
 
+// Variables para control del botón Confirmar
+var btnConfirmarGlobal = null;
+var textoOriginalBtnConfirmar = 'Confirmar';
+
 // Variables para auto-refresh automático
 let autoRefreshEnabled = true;
 let autoRefreshInterval = null;
@@ -205,18 +209,29 @@ function logPollingStatus() {
 function setupModalEvents() {
     // Remover listeners previos para evitar duplicados
     $('.modal').off('show.bs.modal hidden.bs.modal');
-    
+
     // Evento para cualquier modal que se abre
     $('.modal').on('show.bs.modal', function() {
         modalsOpen++;
         console.log('Modal abierto. Total modales:', modalsOpen);
     });
-    
+
     // Evento para cualquier modal que se cierra
     $('.modal').on('hidden.bs.modal', function() {
         modalsOpen = Math.max(0, modalsOpen - 1);
         console.log('Modal cerrado. Total modales:', modalsOpen);
     });
+
+    // Event listener para botón Confirmar
+    const btnConfirmar = document.getElementById('btnConfirmar');
+    if (btnConfirmar) {
+        // Remover listener previo si existe
+        const newBtn = btnConfirmar.cloneNode(true);
+        btnConfirmar.parentNode.replaceChild(newBtn, btnConfirmar);
+
+        // Agregar nuevo listener
+        newBtn.addEventListener('click', validarInformacion);
+    }
 }
 
 // FILTRADO POR INGENIO CON TARJETAS CLICKEABLES
@@ -643,7 +658,34 @@ function validarPlacaCamion() {
     }
 }
 
+// Helper para reactivar el botón Confirmar
+function reactivarBotonConfirmar() {
+    if (btnConfirmarGlobal) {
+        btnConfirmarGlobal.disabled = false;
+        btnConfirmarGlobal.textContent = textoOriginalBtnConfirmar;
+        console.log('Botón Confirmar reactivado');
+    }
+}
+
 function validarInformacion() {
+    // Obtener y deshabilitar botón para prevenir múltiples clicks
+    const btnConfirmar = document.getElementById('btnConfirmar');
+    if (!btnConfirmar) return;
+
+    // Si ya está deshabilitado, hay una petición en proceso
+    if (btnConfirmar.disabled) {
+        console.log('Ya hay una validación en proceso');
+        return;
+    }
+
+    // Guardar referencia global del botón
+    btnConfirmarGlobal = btnConfirmar;
+    textoOriginalBtnConfirmar = btnConfirmar.textContent;
+
+    // Deshabilitar botón y cambiar texto
+    btnConfirmar.disabled = true;
+    btnConfirmar.textContent = 'Procesando...';
+
     var codigoGeneracion = document.getElementById('codigoGeneracionInput').value;
     var licencia = document.getElementById('txt_licencia').value.trim();
     var placaRemolque = document.getElementById('txt_placaremolque').value.trim();
@@ -694,9 +736,12 @@ function validarInformacion() {
 
     // Mostrar todos los errores a la vez
     if (errores.length > 0) {
+        // Reactivar botón
+        reactivarBotonConfirmar();
+
         Swal.fire({
             icon: 'error',
-            title: 'Campos con error',
+            title: 'Errores de Validación',
             html: '<div style="text-align: left;">' + errores.join('<br>') + '</div>',
             confirmButtonText: 'Aceptar'
         });
@@ -755,6 +800,9 @@ function validarInformacion() {
                     }
                 });
 
+                // Reactivar botón
+                reactivarBotonConfirmar();
+
                 // Mostrar todos los errores consolidados
                 Swal.fire({
                     title: 'Validación de Datos',
@@ -762,12 +810,16 @@ function validarInformacion() {
                     confirmButtonText: 'Aceptar'
                 });
             } else {
+                // Éxito - el botón se mantendrá deshabilitado ya que la página se recargará
                 return asignarbuzzer(codigoGeneracion, buzzer, tarjeta);
             }
         },
         error: function(xhr, status, error) {
             console.error("Error en ValidarDatos:", xhr.responseText);
-            
+
+            // Reactivar botón
+            reactivarBotonConfirmar();
+
             var errorMessage = parseErrorMessage(xhr, 'Ocurrió un error al validar los datos.');
 
             Swal.fire({
@@ -785,7 +837,8 @@ function resetErrorFields(camposConError) {
         'txt_licencia',
         'txt_placaremolque',
         'txt_placamion',
-        'txt_tarjeta'
+        'txt_tarjeta',
+        'txt_buzzer'
     ];
 
     campos.forEach(function(campo) {
@@ -886,6 +939,9 @@ function asignarbuzzer(codigoGeneracion, buzzer, tarjeta) {
                     }
                 }
 
+                // Reactivar botón
+                reactivarBotonConfirmar();
+
                 Swal.fire({
                     icon: 'error',
                     title: 'Error al Asignar Buzzer',
@@ -896,6 +952,10 @@ function asignarbuzzer(codigoGeneracion, buzzer, tarjeta) {
             }
             else {
                 console.warn("Estructura de respuesta inesperada:", response);
+
+                // Reactivar botón
+                reactivarBotonConfirmar();
+
                 Swal.fire({
                     icon: 'warning',
                     title: 'Respuesta Inesperada',
@@ -907,6 +967,9 @@ function asignarbuzzer(codigoGeneracion, buzzer, tarjeta) {
         },
         error: function(xhr, status, error) {
             console.log("Error en AsignarBuzzer:", xhr.responseText);
+
+            // Reactivar botón
+            reactivarBotonConfirmar();
 
             var errorMessage = parseErrorMessage(xhr, 'Ocurrió un error al asignar el buzzer.');
 
@@ -939,6 +1002,10 @@ function asignartarjeta(codigoGeneracion, tarjeta) {
 
             if (parseResult.isError) {
                 console.error("Error en AsignarTarjeta:", parseResult.message);
+
+                // Reactivar botón
+                reactivarBotonConfirmar();
+
                 Swal.fire({
                     icon: 'error',
                     title: 'Error al Asignar Tarjeta',
@@ -955,6 +1022,9 @@ function asignartarjeta(codigoGeneracion, tarjeta) {
         },
         error: function(xhr, status, error) {
             console.log("Error en AsignarTarjeta:", xhr.responseText);
+
+            // Reactivar botón
+            reactivarBotonConfirmar();
 
             var errorMessage = parseErrorMessage(xhr, 'Ocurrió un error al asignar la tarjeta.');
 
@@ -1005,6 +1075,10 @@ function changeStatus(codigoGeneracion) {
             
             if (parseResult.isError) {
                 console.error("Error en ChangeTransactionStatus:", parseResult.message);
+
+                // Reactivar botón
+                reactivarBotonConfirmar();
+
                 Swal.fire({
                     icon: 'error',
                     title: 'Error al Cambiar Estado',
@@ -1031,9 +1105,12 @@ function changeStatus(codigoGeneracion) {
         },
         error: function(xhr, status, error) {
             console.error("Error en ChangeTransactionStatus:", error);
-            
+
+            // Reactivar botón
+            reactivarBotonConfirmar();
+
             var errorMessage = parseErrorMessage(xhr, 'Hubo un problema al cambiar el estado.');
-            
+
             Swal.fire({
                 icon: 'error',
                 title: 'Error al Cambiar Estado',

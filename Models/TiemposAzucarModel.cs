@@ -30,6 +30,7 @@ namespace FrontendQuickpass.Models
         public int currentStatus { get; set; }
         public DateTime dateTimeCurrentStatus { get; set; }
         public DateTime? dateTimePrecheckeo { get; set; }
+        public DateTime? dateTimeEntry { get; set; }
         public int? idPreTransaccionLeverans { get; set; }
         public int? idNavRecord { get; set; }
         public bool mapping { get; set; }
@@ -40,7 +41,7 @@ namespace FrontendQuickpass.Models
         public List<ShipmentAttachmentTiemposAzucar> shipmentAttachments { get; set; } = new();
         public List<ShipmentSealTiemposAzucar> shipmentSeals { get; set; } = new();
         public NavRecordTiemposAzucar navRecord { get; set; } = new();
-
+        
         // Propiedades adicionales
         public string TimeForId2 { get; set; } = string.Empty;
         public bool IsFirst { get; set; }
@@ -245,8 +246,9 @@ namespace FrontendQuickpass.Models
     public class SweepingLogRequest
     {
         public string CodeGen { get; set; } = string.Empty;
-        public bool RequiresSweeping { get; set; }
-        public string Observation { get; set; } = string.Empty;
+        public string SweepingType { get; set; } = string.Empty; // "SIMPLE" o "DOBLE"
+        public string? ChangeReason { get; set; } // Opcional, requerido solo si hay cambio de decisión
+        // Nota: UserId se obtiene automáticamente de la sesión en el controller
     }
 
     public class TiempoAzucarRequest

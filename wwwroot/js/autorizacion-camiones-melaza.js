@@ -5,6 +5,10 @@ var informacionEnvioGlobal = {
     nombreIngenio: ''
 };
 
+// Variables para control del botón Confirmar
+var btnConfirmarGlobal = null;
+var textoOriginalBtnConfirmar = 'Confirmar';
+
 // Variables para auto-refresh automático
 let autoRefreshEnabled = true;
 let autoRefreshInterval = null;
@@ -224,18 +228,29 @@ function logPollingStatus() {
 function setupModalEvents() {
     // Remover listeners previos para evitar duplicados
     $('.modal').off('show.bs.modal hidden.bs.modal');
-    
+
     // Evento para cualquier modal que se abre
     $('.modal').on('show.bs.modal', function() {
         modalsOpen++;
         console.log('Modal abierto. Total modales:', modalsOpen);
     });
-    
+
     // Evento para cualquier modal que se cierra
     $('.modal').on('hidden.bs.modal', function() {
         modalsOpen = Math.max(0, modalsOpen - 1);
         console.log('Modal cerrado. Total modales:', modalsOpen);
     });
+
+    // Event listener para botón Confirmar
+    const btnConfirmar = document.getElementById('btnConfirmar');
+    if (btnConfirmar) {
+        // Remover listener previo si existe
+        const newBtn = btnConfirmar.cloneNode(true);
+        btnConfirmar.parentNode.replaceChild(newBtn, btnConfirmar);
+
+        // Agregar nuevo listener
+        newBtn.addEventListener('click', validarInformacion);
+    }
 }
 
 // BUSCADOR Y FILTRADO
@@ -575,7 +590,34 @@ function validarPlacaCamion() {
     }
 }
 
+// Helper para reactivar el botón Confirmar
+function reactivarBotonConfirmar() {
+    if (btnConfirmarGlobal) {
+        btnConfirmarGlobal.disabled = false;
+        btnConfirmarGlobal.textContent = textoOriginalBtnConfirmar;
+        console.log('Botón Confirmar reactivado');
+    }
+}
+
 function validarInformacion() {
+    // Obtener y deshabilitar botón para prevenir múltiples clicks
+    const btnConfirmar = document.getElementById('btnConfirmar');
+    if (!btnConfirmar) return;
+
+    // Si ya está deshabilitado, hay una petición en proceso
+    if (btnConfirmar.disabled) {
+        console.log('Ya hay una validación en proceso');
+        return;
+    }
+
+    // Guardar referencia global del botón
+    btnConfirmarGlobal = btnConfirmar;
+    textoOriginalBtnConfirmar = btnConfirmar.textContent;
+
+    // Deshabilitar botón y cambiar texto
+    btnConfirmar.disabled = true;
+    btnConfirmar.textContent = 'Procesando...';
+
     var codigoGeneracion = document.getElementById('codigoGeneracionInput').value;
     var licencia = document.getElementById('txt_licencia').value.trim();
     var placaRemolque = document.getElementById('txt_placaremolque').value.trim();
@@ -589,26 +631,49 @@ function validarInformacion() {
     // Limpiar errores previos
     resetErrorFields([]);
 
-    // Validaciones
-    if (!licencia) document.getElementById('txt_licencia').classList.add('error-field');
+    // Array para acumular errores
+    var errores = [];
+
+    // Validaciones - ORDEN: Primero datos del envío, luego tarjeta/buzzer
+    // 1. Validar datos del envío
+    if (!licencia){
+        document.getElementById('txt_licencia').classList.add('error-field');
+        errores.push('• Licencia es obligatoria');
+    }
     if (!placaRemolque) {
         document.getElementById('txt_placaremolque').classList.add('error-field');
+        errores.push('• Placa Remolque es obligatoria');
     } else if (!regexRemolque.test(placaRemolque)) {
         document.getElementById('txt_placaremolque').classList.add('error-field');
+        errores.push('• Placa Remolque debe comenzar con "RE" seguido de números');
     }
     if (!placaCamion) {
         document.getElementById('txt_placamion').classList.add('error-field');
+        errores.push('• Placa Camión es obligatoria');
     } else if (!regexCamion.test(placaCamion)) {
         document.getElementById('txt_placamion').classList.add('error-field');
+        errores.push('• Placa Camión debe comenzar con "C" seguido de números');
     }
-    if (!tarjeta) document.getElementById('txt_tarjeta').classList.add('error-field');
-    if (!buzzer) document.getElementById('txt_buzzer').classList.add('error-field');
 
-    if (document.querySelectorAll('.error-field').length > 0) {
+    // 2. Validar tarjeta y buzzer
+    if (!tarjeta){
+        document.getElementById('txt_tarjeta').classList.add('error-field');
+        errores.push('• No. Tarjeta es obligatoria');
+    }
+    if (!buzzer) {
+        document.getElementById('txt_buzzer').classList.add('error-field');
+        errores.push('• No. Buzzer es obligatoria');
+    }
+
+    // Mostrar todos los errores a la vez
+    if (errores.length > 0) {
+        // Reactivar botón
+        reactivarBotonConfirmar();
+
         Swal.fire({
             icon: 'error',
-            title: 'Campos con error',
-            text: 'Por favor, complete todos los campos correctamente.',
+            title: 'Errores de Validación',
+            html: '<div style="text-align: left;">' + errores.join('<br>') + '</div>',
             confirmButtonText: 'Aceptar'
         });
         return;
@@ -641,30 +706,38 @@ function validarInformacion() {
 
                 resetErrorFields(response.camposConError);
 
-                response.camposConError.forEach(function(campo) {
-                    switch (campo) {
-                        case "licencia":
-                            document.getElementById('txt_licencia').classList.add('error-field');
-                            errores.push('• Licencia inválida');
-                            break;
-                        case "placaRemolque":
-                            document.getElementById('txt_placaremolque').classList.add('error-field');
-                            errores.push('• Placa Remolque inválida');
-                            break;
-                        case "placaCamion":
-                            document.getElementById('txt_placamion').classList.add('error-field');
-                            errores.push('• Placa Camión inválida');
-                            break;
-                        case "tarjeta":
-                            document.getElementById('txt_tarjeta').classList.add('error-field');
-                            errores.push('• Tarjeta inválida o ya asignada');
-                            break;
-                        case "buzzer":
-                            document.getElementById('txt_buzzer').classList.add('error-field');
-                            errores.push('• Buzzer inválido o ya asignado');
-                            break;
+                // Procesar errores en orden: primero datos del envío, luego tarjeta/buzzer
+                var ordenCampos = ['licencia', 'placaRemolque', 'placaCamion', 'tarjeta', 'buzzer'];
+
+                ordenCampos.forEach(function(campo) {
+                    if (response.camposConError.includes(campo)) {
+                        switch (campo) {
+                            case "licencia":
+                                document.getElementById('txt_licencia').classList.add('error-field');
+                                errores.push('• Licencia inválida');
+                                break;
+                            case "placaRemolque":
+                                document.getElementById('txt_placaremolque').classList.add('error-field');
+                                errores.push('• Placa Remolque inválida');
+                                break;
+                            case "placaCamion":
+                                document.getElementById('txt_placamion').classList.add('error-field');
+                                errores.push('• Placa Camión inválida');
+                                break;
+                            case "tarjeta":
+                                document.getElementById('txt_tarjeta').classList.add('error-field');
+                                errores.push('• Tarjeta inválida o ya asignada');
+                                break;
+                            case "buzzer":
+                                document.getElementById('txt_buzzer').classList.add('error-field');
+                                errores.push('• Buzzer inválido o ya asignado');
+                                break;
+                        }
                     }
                 });
+
+                // Reactivar botón
+                reactivarBotonConfirmar();
 
                 // Mostrar todos los errores consolidados
                 Swal.fire({
@@ -673,12 +746,16 @@ function validarInformacion() {
                     confirmButtonText: 'Aceptar'
                 });
             } else {
+                // Éxito - el botón se mantendrá deshabilitado ya que la página se recargará
                 return asignarbuzzer(codigoGeneracion, buzzer, tarjeta);
             }
         },
         error: function(xhr, status, error) {
             console.error("Error en ValidarDatos:", xhr.responseText);
-            
+
+            // Reactivar botón
+            reactivarBotonConfirmar();
+
             var errorMessage = parseErrorMessage(xhr, 'Ocurrió un error al validar los datos.');
 
             Swal.fire({
@@ -696,7 +773,8 @@ function resetErrorFields(camposConError) {
         'txt_licencia',
         'txt_placaremolque',
         'txt_placamion',
-        'txt_tarjeta'
+        'txt_tarjeta',
+        'txt_buzzer'
     ];
 
     campos.forEach(function(campo) {
@@ -797,6 +875,9 @@ function asignarbuzzer(codigoGeneracion, buzzer, tarjeta) {
                     }
                 }
 
+                // Reactivar botón
+                reactivarBotonConfirmar();
+
                 Swal.fire({
                     icon: 'error',
                     title: 'Error al Asignar Buzzer',
@@ -807,6 +888,10 @@ function asignarbuzzer(codigoGeneracion, buzzer, tarjeta) {
             }
             else {
                 console.warn("Estructura de respuesta inesperada:", response);
+
+                // Reactivar botón
+                reactivarBotonConfirmar();
+
                 Swal.fire({
                     icon: 'warning',
                     title: 'Respuesta Inesperada',
@@ -820,6 +905,9 @@ function asignarbuzzer(codigoGeneracion, buzzer, tarjeta) {
             console.log("Error en AsignarBuzzer:", xhr.responseText);
 
             var errorMessage = parseErrorMessage(xhr, 'Ocurrió un error al asignar el buzzer.');
+
+            // Reactivar botón
+            reactivarBotonConfirmar();
 
             Swal.fire({
                 icon: 'error',
@@ -850,6 +938,10 @@ function asignartarjeta(codigoGeneracion, tarjeta) {
 
             if (parseResult.isError) {
                 console.error("Error en AsignarTarjeta:", parseResult.message);
+
+                // Reactivar botón
+                reactivarBotonConfirmar();
+
                 Swal.fire({
                     icon: 'error',
                     title: 'Error al Asignar Tarjeta',
@@ -867,6 +959,9 @@ function asignartarjeta(codigoGeneracion, tarjeta) {
             console.log("Error en AsignarTarjeta:", xhr.responseText);
 
             var errorMessage = parseErrorMessage(xhr, 'Ocurrió un error al asignar la tarjeta.');
+
+            // Reactivar botón
+            reactivarBotonConfirmar();
 
             Swal.fire({
                 icon: 'error',
@@ -915,6 +1010,10 @@ function changeStatus(codigoGeneracion) {
             
             if (parseResult.isError) {
                 console.error("Error en ChangeTransactionStatus:", parseResult.message);
+
+                // Reactivar botón
+                reactivarBotonConfirmar();
+
                 Swal.fire({
                     icon: 'error',
                     title: 'Error al Cambiar Estado',
@@ -941,9 +1040,12 @@ function changeStatus(codigoGeneracion) {
         },
         error: function(xhr, status, error) {
             console.error("Error en ChangeTransactionStatus:", error);
-            
+
             var errorMessage = parseErrorMessage(xhr, 'Hubo un problema al cambiar el estado.');
-            
+
+            // Reactivar botón
+            reactivarBotonConfirmar();
+
             Swal.fire({
                 icon: 'error',
                 title: 'Error al Cambiar Estado',

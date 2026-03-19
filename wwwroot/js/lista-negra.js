@@ -891,7 +891,7 @@
       const token = tokenInput ? tokenInput.value : '';
 
       const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['RequestVerificationToken'] = token;
+      if (token) headers['X-CSRF-TOKEN'] = token;
 
       const response = await fetch(`/ListaNegra/UpdatePenalty/${currentReport.id}`, {
         method: 'PUT',

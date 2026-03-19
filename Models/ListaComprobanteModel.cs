@@ -16,16 +16,17 @@ namespace FrontendQuickpass.Models
         [JsonPropertyName("noComprobante")]
         public int NumeroComprobante { get; set; }
 
-        // IMPORTANTE: noEnvio es string
         [JsonPropertyName("noEnvio")]
-        public string NumeroEnvio { get; set; } = string.Empty;
+        public int? NumeroEnvio { get; set; }
+
+        // codeGen -> código de generación del envío (string, necesario para PDF)
+        [JsonPropertyName("codeGen")]
+        public string? CodeGen { get; set; }
 
         // estado -> código de estado en inglés (AVAILABLE, ASSIGNED, VOIDED)
         [JsonPropertyName("estado")]
         public string EstadoCode { get; set; } = string.Empty;
 
-        // Propiedad calculada para la vista:
-        // mapea los códigos de estado en inglés a texto en español
         [JsonIgnore]
         public string Estado
         {
@@ -63,6 +64,9 @@ namespace FrontendQuickpass.Models
         [JsonPropertyName("canVoid")]
         public bool CanVoid { get; set; }
 
+        [JsonPropertyName("motivoAnulacion")]
+        public string? Observaciones { get; set; }
+
         public DateTime? FechaEntrada { get; set; }
         public string HoraEntrada { get; set; } = string.Empty;
         public decimal PesoEntrada { get; set; }
@@ -82,7 +86,7 @@ namespace FrontendQuickpass.Models
         public string Licencia { get; set; } = string.Empty;
         public string Marchamos { get; set; } = string.Empty;
         public decimal? PorcentajeHumedad { get; set; }
-
+        public string Pesador { get; set; } = string.Empty;
 
     }
     public class ListaComprobanteApiResponse

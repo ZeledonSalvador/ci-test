@@ -1,144 +1,167 @@
 /* =========================
-   Variables de color/espaciado
+   Variables
    ========================= */
 :root {
-  --bg: #0f0f10;
-  /* fondo KPI */
-  --card: #141519;
-  /* fondo contenedor oscuro */
+  --bg: #f0f2f5;
+  --card-blue-1: #1E3A8A;
+  --card-blue-2: #1E40AF;
+  --card-blue-3: #2563EB;
   --text: #ffffff;
-  /* texto / fondo de cards claras */
-  --muted: #9aa3b2;
+  --muted: #4B5563;
   --brand: #FD6104;
-  /* naranja corporativo */
-  --blue: #0000A3;
-  /* azul corporativo */
-  --grid-gap: 16px;
+  --blue: #0000A3;  /* coincide con el color de Volteo en dash-core.js */
   --pipa: #82807F;
-  --filter-w: 200px;   /* ancho uniforme */
-  --filter-h: 38px;    /* alto uniforme */
+  --grid-gap: 16px;
+  --filter-w: 200px;
+  --filter-h: 38px;
+}
+
+html, body {
+  height: auto !important;
+  max-width: 100%;
+  overflow-x: hidden !important;
+}
+
+body {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  background: var(--bg);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+img, svg, video, canvas {
+  max-width: 100%;
 }
 
 /* =========================
-   Layout general
+   Layout general (vertical stacked)
    ========================= */
 .dash-wrapper {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  /* panel KPI + contenido */
+  display: flex;
+  flex-direction: column;
   gap: var(--grid-gap);
   font-family: 'Gilroy-Bold', sans-serif;
   padding: 16px;
 }
 
-.main-panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--grid-gap);
+/* Transparentes para compatibilidad con HTML viejo */
+.kpi-panel  { display: contents; }
+.main-panel { display: contents; }
+
+/* =========================
+   Etiquetas de sección
+   ========================= */
+.dash-section-label {
+  font-size: 13px;
+  letter-spacing: 1.2px;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 400;
+  margin-bottom: 4px;
 }
 
 /* =========================
-   Panel KPI
+   Sección KPI
    ========================= */
-.kpi-panel {
+.kpi-section {
   display: flex;
   flex-direction: column;
+  gap: 8px;
+}
+
+/* Fila con dos grupos lado a lado — siempre 2 columnas */
+.kpi-groups-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--grid-gap);
+  align-items: start;
+}
+
+/* Grupo individual */
+.kpi-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Grid de cards dentro del grupo — siempre 2 columnas fijas */
+.kpi-group-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
+/* =========================
+   KPI Card — gradiente azul
+   ========================= */
 .kpi {
-  background: #000;
-  color: var(--text);
-  padding: 10px;
+  background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 60%, #2563EB 100%);
+  border-bottom: 3px solid #FD6104;
+  color: #fff;
+  padding: 14px 16px 12px;
   border-radius: 14px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, .25);
-  text-align: center;
+  box-shadow: 0 4px 16px rgba(30, 58, 138, 0.25);
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* Círculos decorativos */
+.kpi::before,
+.kpi::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+.kpi::before {
+  width: 80px;
+  height: 80px;
+  top: -20px;
+  right: -20px;
+}
+.kpi::after {
+  width: 50px;
+  height: 50px;
+  top: 10px;
+  right: 40px;
+}
+
+/* Card que ocupa 2 columnas */
+.kpi--wide {
+  grid-column: 1 / -1;
+}
+
+.kpi-label {
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.78);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  line-height: 1.3;
 }
 
 .kpi-value {
   font-size: 26px;
   font-weight: 800;
+  color: #fff;
   line-height: 1;
-  margin-bottom: 6px;
-}
-
-.kpi-label {
-  font-size: 14px;
-  color: #bfc6d4;
-}
-
-
-/* =========================
-   Filtros
-   ========================= */
-.filters {
-  background: var(--text);
-  color: var(--card);
-  border-radius: 14px;
-  box-sizing: border-box;
-  padding: 14px;
-  display: grid;
-  grid-template-columns: max-content max-content max-content;
-  justify-content: start;
-  column-gap: 12px;
-  row-gap: 8px;
-}
-
-.filter label {
-  display: block;
-  font-size: 13px;
-  color: var(--muted);
-  margin-bottom: 6px;
-}
-
-.filters .date-range.time-range > span{
-  padding: 0 6px;
-  line-height: 1;
-}
-
-.date-range {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: auto;
-}
-
-.date-range span {
-  padding: 0 4px;
-}
-
-.time-range input[type="time"]{
-  width: var(--filter-w) !important;
-  min-width: 0 !important;
-  height: var(--filter-h) !important;
-  padding: 8px 12px;
-  border: 1px solid #242833;
-  border-radius: 10px;
-  background: #fff;
-  color: #141519;
   font-family: 'Gilroy-Bold', sans-serif;
 }
 
-.time-range span { 
-  padding: 0 6px; 
+/* =========================
+   Sección Charts
+   ========================= */
+.charts-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
-
-.filters input[type="date"],
-.filters select {
-  width: var(--filter-w) !important;
-  /* no estirar a 100% en desktop */
-  min-width: 0 !important;
-  height: var(--filter-h) !important;
-  background: #fff;
-  color: var(--card);
-  border: 1px solid #242833;
-  border-radius: 10px;
-  padding: 8px 12px;
-}
-
-/* (opcional) reduce padding interno del control nativo para que no “crezca” visualmente en WebKit */
-.filters input[type="date"]::-webkit-datetime-edit,
-.filters input[type="time"]::-webkit-datetime-edit{ padding: 0 2px; }
 
 /* =========================
    Grid de charts
@@ -146,89 +169,87 @@
 .charts-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  /* 2 columnas */
-  grid-auto-rows: auto;
   gap: var(--grid-gap);
+  min-width: 0;
+}
+
+.charts-grid--single,
+.charts-grid--single.one-col {
+  display: grid;
+  grid-template-columns: 1fr !important;
+  gap: var(--grid-gap);
+}
+
+.charts-grid--single .chart-card {
+  grid-column: 1 / -1;
 }
 
 /* =========================
    Tarjeta de chart
    ========================= */
 .chart-card {
-  background: var(--text);
-  /* card clara */
-  color: var(--card);
+  background: #fff;
+  color: #1a1a2e;
   border-radius: 14px;
-  padding: 4px 12px 6px 12px;
+  padding: 14px 16px 10px;
   display: grid;
   grid-template-rows: auto 1fr auto;
-  /* header | gráfico | leyenda */
   width: 100%;
   max-width: 100%;
-  margin: 0 auto;
-  text-align: left;
+  min-width: 0;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
   position: relative;
-  height: auto;
-  /* sin altura fija */
 }
 
-/* Encabezado del chart */
+/* Header con barra izquierda azul */
 .chart-card header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin: 0;
-  padding: 4px 0 0 0;
+  margin: 0 0 8px 0;
+  padding: 2px 0 2px 10px;
   font-weight: 800;
+  font-size: 15px;
+  border-left: 4px solid var(--blue);
+  line-height: 1.2;
 }
 
-/* ===== Leyenda abajo del gráfico ===== */
-.chart-card>.legend {
+/* ===== Leyenda ===== */
+.chart-card > .legend {
   display: flex;
   align-items: flex-start;
-  /* antes: left */
   justify-content: flex-end;
   column-gap: 2px;
-  /* separación entre grupos (título | items) */
   row-gap: 0;
   padding: 4px 6px 0 0;
-  /* la levanta más al gráfico */
   line-height: 0.8;
-  font-size: 15px;
-  /* ajusta si quieres más pequeño */
+  font-size: 14px;
 }
 
-/* Cada item (● Volteo / ● Plana / ● Pipa) bien pegado */
 .chart-card .legend .legend-item {
   display: inline-flex;
   align-items: left;
   gap: 0;
-  /* distancia punto ↔ texto */
   margin-left: 2px;
-  /* separación mínima entre items */
 }
 
 .chart-card .legend .legend-item:first-of-type {
   margin-left: 20px;
 }
 
-/* Título “Tipo Camión” con poco margen a la derecha */
 .chart-card .legend .legend-title {
   font-weight: 800;
   margin-right: 8px;
-  /* muy cerca de Volteo */
 }
 
-/* Punto pequeño y con poco margen */
-.chart-card>.legend .dot {
+.chart-card > .legend .dot {
   width: 9px;
   height: 9px;
   margin: 0 4px 0 2px;
-  /* MUY pegado al texto */
   transform: translateY(1px);
 }
 
-/* puntos de leyenda */
+/* Puntos de leyenda */
 .dot {
   display: inline-block;
   width: 10px;
@@ -239,16 +260,142 @@
   top: 1px;
 }
 
-.dot-blue {
-  background: var(--blue);
+.dot-blue   { background: var(--blue); }
+.dot-orange { background: var(--brand); }
+.dot-black  { background: var(--pipa); }
+
+/* =========================
+   Filtros
+   ========================= */
+.filters {
+  color: #1a1a2e;
+  box-sizing: border-box;
+  padding: 4px 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  align-items: end;
+  max-width: 100%;
 }
 
-.dot-orange {
-  background: var(--brand);
+.filter {
+  min-width: 0;
 }
 
-.dot-black {
-  background: var(--pipa);
+/* Columna de filtro con rango de fechas: ocupa 2 columnas del grid para que el año no se corte */
+.filter:has(.date-range:not(.time-range)) {
+  grid-column: span 2;
+}
+
+.filter label {
+  display: block;
+  font-size: 13px;
+  letter-spacing: .8px;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 400;
+  margin-bottom: 6px;
+}
+
+.filters .date-range.time-range > span {
+  padding: 0 6px;
+  line-height: 1;
+}
+
+.date-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+  min-width: 0;
+}
+
+/* Rango de solo fechas: el contenedor se expande con el grid */
+.date-range:not(.time-range) {
+  width: 100%;
+}
+
+.date-range span {
+  padding: 0 4px;
+}
+
+.filters input[type="date"],
+.filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+  height: var(--filter-h) !important;
+  background: #fff;
+  color: #1a1a2e;
+  border: 1px solid #e2e5ef;
+  border-radius: 10px;
+  padding: 8px 12px;
+  display: block;
+}
+
+/* Inputs de fecha dentro de un rango: flex igualado */
+.date-range input[type="date"] {
+  flex: 1 1 0;
+  min-width: 0 !important;
+  width: 0 !important;
+}
+
+.time-range span { padding: 0 6px; }
+
+.time-range input[type="time"],
+.time-range select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: var(--filter-h) !important;
+  padding: 8px 12px;
+  border: 1px solid #e2e5ef;
+  border-radius: 10px;
+  background: #fff;
+  color: #1a1a2e;
+  font-family: 'Gilroy-Bold', sans-serif;
+}
+
+.filters input[type="time"] {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: var(--filter-h) !important;
+  padding: 8px 12px;
+  padding-right: 40px;
+  border: 1px solid #e2e5ef;
+  border-radius: 10px;
+  background: #fff;
+  color: #1a1a2e;
+  font-family: 'Gilroy-Bold', sans-serif;
+}
+
+.filters input[type="date"]::-webkit-datetime-edit,
+.filters input[type="time"]::-webkit-datetime-edit { padding: 0 2px; }
+
+/* Input de fecha suelto (no dentro de date-range): mínimo para mostrar el año completo */
+.filter > input[type="date"] {
+  min-width: 150px;
+}
+
+.filters button,
+.filters .btn,
+.filters .btn-primary {
+  height: var(--filter-h);
+  border-radius: 10px;
+  padding: 0 20px;
+  font-weight: 400;
+  background: #182A6E;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: background .15s ease;
+  font-family: 'Gilroy-Bold', sans-serif;
+}
+
+.filters button:hover,
+.filters .btn:hover,
+.filters .btn-primary:hover {
+  background: #0f1d4d;
 }
 
 /* =========================
@@ -256,77 +403,187 @@
    ========================= */
 .chart-scroll {
   overflow-x: auto;
-  /* scroll horizontal si hay muchas etiquetas */
   overflow-y: hidden;
   height: 300px;
-  /* alto base del área del gráfico */
   scrollbar-gutter: stable both-edges;
 }
 
 .chart-scrollH {
   overflow-x: auto;
-  /* scroll horizontal si hay muchas etiquetas */
   overflow-y: hidden;
   height: 250px;
-  /* alto base del área del gráfico */
   scrollbar-gutter: stable both-edges;
 }
 
-/* el canvas ocupa ese alto exacto */
-.chart-scroll canvas {
+.chart-scroll canvas,
+.chart-scrollH canvas {
   display: block;
   height: 100% !important;
   width: 100% !important;
 }
 
-/* contenedor interior del canvas */
 .chart-inner {
   height: 100%;
+  min-width: 100%;
   padding-bottom: 0;
   box-sizing: border-box;
 }
 
-/* Evita que otras reglas externas cambien el alto del canvas */
-.chart-card canvas {
-  height: auto !important;
-  /* el alto lo manda .chart-scroll */
+.chart-scroll::-webkit-scrollbar          { height: 10px; }
+.chart-scroll::-webkit-scrollbar-track    { background: #eee; }
+.chart-scroll::-webkit-scrollbar-thumb    { background: #bbb; border-radius: 8px; }
+.chart-scroll::-webkit-scrollbar-thumb:hover { background: #9a9a9a; }
+
+/* =========================
+   No-data overlay (is-empty)
+   canvas permanece visible — el overlay va encima
+   ========================= */
+.chart-card.is-empty .chart-scroll {
+  position: relative;
+  overflow-x: hidden;
 }
 
-/* Fallback general */
-canvas {
-  width: 100% !important;
+.chart-empty-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  /* shift right/up to compensate for Chart.js Y-axis tick labels + bottom time labels */
+  padding-left: 40px;
+  padding-bottom: 28px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.chart-card.is-empty .chart-empty-overlay {
+  display: flex;
+}
+
+.chart-card.is-empty .chart-inner {
+  filter: blur(2px);
+  transition: filter 0.25s ease;
+}
+
+.chart-empty-overlay__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 14px 22px 12px;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.chart-empty-overlay__icon {
+  font-size: 2rem;
+  color: #82807F;
+  opacity: 0.6;
+}
+
+.chart-empty-overlay__title {
+  font-family: 'Gilroy-Bold', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #595a5b;
+  letter-spacing: 0.2px;
+}
+
+.chart-empty-overlay__sub {
+  font-family: 'Gilroy-Bold', sans-serif;
+  font-size: 0.8rem;
+  color: #6B7280;
+}
+
+/* =========================
+   Panel sin recepciones (placas)
+   ========================= */
+.placas-no-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 52px 24px 44px;
+  text-align: center;
+}
+
+.placas-no-data__icon {
+  font-size: 2.2rem;
+  color: #9CA3AF;
+  opacity: 0.65;
+  margin-bottom: 4px;
+}
+
+.placas-no-data__title {
+  font-family: 'Gilroy-Bold', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #374151;
+  margin: 0;
+}
+
+.placas-no-data__sub {
+  font-size: 0.8rem;
+  color: #6B7280;
+  margin: 0;
+}
+
+.placas-no-data__filters {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.placas-no-data__chip {
+  font-size: 0.72rem;
+  background: #F3F4F6;
+  color: #374151;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid #E5E7EB;
+}
+
+.placas-no-data__chip strong {
+  font-family: 'Gilroy-Bold', sans-serif;
+}
+
+/* =========================
+   Y-axis fijo
+   ========================= */
+.chart-wrap-yfixed {
+  display: flex;
+  width: 100%;
+}
+
+.chart-y-axis {
+  width: 72px;
+  flex: 0 0 72px;
+  background: #fff;
+  position: sticky;
+  left: 0;
+  z-index: 5;
+}
+
+.chart-y-axis canvas {
+  width: 72px !important;
   height: 100% !important;
-  display: block;
 }
 
-/* Scrollbar (WebKit/Chromium) */
-.chart-scroll::-webkit-scrollbar {
-  height: 10px;
-}
-
-.chart-scroll::-webkit-scrollbar-track {
-  background: #eee;
-}
-
-.chart-scroll::-webkit-scrollbar-thumb {
-  background: #bbb;
-  border-radius: 8px;
-}
-
-.chart-scroll::-webkit-scrollbar-thumb:hover {
-  background: #9a9a9a;
-}
-
-/* ============ DASH SWITCHER (menú lateral) ============ */
+/* ============ DASH SWITCHER ============ */
 .dash-switcher {
   position: fixed;
-  inset: 0 0 0 auto;      /* anclado al lado derecho */
+  inset: 0 0 0 auto;
   z-index: 60;
-  pointer-events: none;   /* bloquea clics fuera del panel/lengueta */
+  pointer-events: none;
 }
 
-/* Lengüeta (flecha) */
-.dash-switcher__tab{
+.dash-switcher__tab {
   position: fixed;
   right: 8px;
   top: 50%;
@@ -343,47 +600,43 @@ canvas {
   display: grid;
   place-items: center;
   transition: right .28s ease, background .18s ease, box-shadow .18s ease, transform .18s ease;
-  z-index: 61; /* por encima del panel */
+  z-index: 61;
   outline: none;
 }
 
-/* barrita naranja al pasar el mouse por la pestaña */
-.dash-switcher__tab::before{
-  content:"";
-  position:absolute;
-  left:6px;
-  top:6px;
-  bottom:6px;
+.dash-switcher__tab::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  bottom: 6px;
   width: 0;
-  background:#FD6104;
+  background: #FD6104;
   border-radius: 3px;
   transition: width .18s ease;
 }
-.dash-switcher__tab:hover::before,
-.dash-switcher__tab:focus-visible::before{
-  width: 4px;
-}
-.dash-switcher__tab:hover{
-  box-shadow: 0 8px 22px rgba(0,0,0,.22);
-}
 
-/* Al abrir: la lengüeta queda visible adelante y en #FDE104 */
+.dash-switcher__tab:hover::before,
+.dash-switcher__tab:focus-visible::before { width: 4px; }
+
+.dash-switcher__tab:hover { box-shadow: 0 8px 22px rgba(0,0,0,.22); }
+
 .dash-switcher[aria-expanded="true"] .dash-switcher__tab {
   background: #FD6104;
   color: #111;
   box-shadow: 0 8px 24px rgba(253, 225, 4, .35);
 }
+
 .dash-switcher[aria-expanded="true"] .dash-switcher__tab svg {
   transform: rotate(180deg);
   transition: transform .2s ease;
 }
 
-/* Panel (centrado verticalmente respecto a la lengüeta) */
 .dash-switcher__panel {
   position: fixed;
   top: 50%;
   right: 0;
-  transform: translate(102%, -50%);  /* fuera de pantalla + centrado vertical */
+  transform: translate(102%, -50%);
   width: 360px;
   max-width: 86vw;
   max-height: 72vh;
@@ -396,16 +649,16 @@ canvas {
   flex-direction: column;
   overflow: hidden;
   transition: transform .28s ease;
-  pointer-events: auto;          /* permite clics dentro del panel */
+  pointer-events: auto;
   z-index: 60;
 }
+
 .dash-switcher[aria-expanded="true"] .dash-switcher__panel {
-  transform: translate(0, -50%); /* entra y queda centrado a la altura del botón */
+  transform: translate(0, -50%);
 }
 
-/* Header del panel */
 .dash-switcher__header {
-  background: #0000A3;          /* solicitado */
+  background: var(--blue);
   color: #fff;
   display: flex;
   align-items: center;
@@ -414,6 +667,7 @@ canvas {
   font-weight: 800;
   border-bottom: 1px solid #eaecef;
 }
+
 .dash-switcher__close {
   border: 0;
   background: transparent;
@@ -423,7 +677,6 @@ canvas {
   cursor: pointer;
 }
 
-/* Lista de opciones */
 .dash-switcher__list {
   list-style: none;
   margin: 0;
@@ -434,23 +687,21 @@ canvas {
   overflow: auto;
 }
 
-/* Enlaces: sin subrayado (todas las variantes) */
 .dash-switcher a,
 .dash-switcher a:link,
 .dash-switcher a:visited,
 .dash-switcher a:hover,
 .dash-switcher a:focus,
 .dash-switcher a:active {
-  text-decoration: none !important;   /* elimina las líneas */
+  text-decoration: none !important;
   outline: none;
 }
 
-/* Tarjeta de cada opción */
 .dash-switcher__link {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 14px;
+  padding: 14px;
   border-radius: 14px;
   color: #121212;
   background: #f6f7fb;
@@ -458,18 +709,19 @@ canvas {
   box-shadow: 0 2px 10px rgba(0,0,0,.04);
   transition: transform .08s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
 }
+
 .dash-switcher__link:hover {
   background: #eef1f8;
   transform: translateY(-1px);
   box-shadow: 0 6px 18px rgba(0,0,0,.10);
   border-color: #e7eaf2;
 }
+
 .dash-switcher__link.is-active {
   border-color: #FD6104;
   box-shadow: 0 10px 26px rgba(253, 97, 4, .18);
 }
 
-/* Icono de cada item */
 .dash-switcher__link .ico {
   display: grid;
   place-items: center;
@@ -480,6 +732,7 @@ canvas {
   background: #182A6E;
   box-shadow: 0 4px 12px rgba(0,0,0,.15);
 }
+
 .dash-switcher__link .icoh {
   display: grid;
   place-items: center;
@@ -490,10 +743,9 @@ canvas {
   background: #242424;
   box-shadow: 0 4px 12px rgba(0,0,0,.15);
 }
-/* Texto y la “pill” opcional */
-.dash-switcher__link .txt {
-  font-weight: 800;
-}
+
+.dash-switcher__link .txt  { font-weight: 800; }
+
 .dash-switcher__link .pill {
   margin-left: auto;
   font-size: 12px;
@@ -504,16 +756,145 @@ canvas {
   border-radius: 999px;
 }
 
-/* Cuando el switcher está abierto, todo el bloque acepta clics */
-.dash-switcher[aria-expanded="true"] {
-  pointer-events: auto;
-}
+.dash-switcher[aria-expanded="true"] { pointer-events: auto; }
 .dash-switcher[aria-expanded="true"] .dash-switcher__panel,
-.dash-switcher[aria-expanded="true"] .dash-switcher__tab {
-  pointer-events: auto;
+.dash-switcher[aria-expanded="true"] .dash-switcher__tab { pointer-events: auto; }
+
+/* =========================
+   Responsive
+   ========================= */
+
+/* ── Tablet (769 px – 1100 px) ── */
+@media (min-width: 769px) and (max-width: 1100px) {
+  /* Filtros: máximo 2 columnas para evitar que queden muy angostos */
+  .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* El rango de fechas ocupa ambas columnas igual que en desktop */
+  .filter:has(.date-range:not(.time-range)) {
+    grid-column: span 2;
+  }
+
+  /* Botón ocupa toda la fila */
+  .filter:has(button) {
+    grid-column: 1 / -1;
+  }
+
+  /* Las 2 columnas de charts se mantienen pero las cards se achican un poco */
+  .chart-card {
+    padding: 10px 12px 8px;
+  }
+
+  .chart-card header {
+    font-size: 13px;
+    padding-left: 8px;
+  }
+
+  .chart-card > .legend {
+    font-size: 12px;
+  }
+
+  .chart-scroll  { height: 240px; }
+  .chart-scrollH { height: 200px; }
 }
 
-/* Responsive */
+/* ── Mobile (≤ 768 px) ── */
+@media (max-width: 768px) {
+  /* Todas las secciones en 1 columna */
+  .charts-grid,
+  .kpi-groups-row,
+  .kpi-group-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Chart card: menos padding, cabecera más compacta */
+  .chart-card {
+    padding: 10px 12px 8px;
+  }
+
+  .chart-card header {
+    font-size: 13px;
+    padding-left: 8px;
+    margin-bottom: 6px;
+  }
+
+  /* Leyenda: se permite que envuelva y se lee más pequeño */
+  .chart-card > .legend {
+    font-size: 11px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    padding-top: 6px;
+    gap: 4px;
+  }
+
+  .chart-scroll  { height: 230px; }
+  .chart-scrollH { height: 190px; }
+
+  .chart-inner { min-width: 100%; }
+
+  .filters {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Cancelar span 2 del rango de fechas — en 1 columna no tiene sentido */
+  .filter:has(.date-range:not(.time-range)) {
+    grid-column: span 1;
+  }
+
+  /* El rango de fechas apila los dos inputs en columna */
+  .filter .date-range:not(.time-range) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Cada input de fecha ocupa el ancho completo */
+  .date-range input[type="date"] {
+    flex: none;
+    width: 100% !important;
+  }
+
+  /* Botón Aplicar ocupa todo el ancho */
+  .filter:has(button) {
+    grid-column: span 1;
+  }
+
+  .filters button,
+  .filters .btn,
+  .filters .btn-primary {
+    width: 100%;
+  }
+
+  .filters input[type="date"],
+  .filters input[type="time"],
+  .filters select {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+/* ── Mobile pequeño (≤ 480 px) ── */
+@media (max-width: 480px) {
+  .chart-card header {
+    font-size: 12px;
+    padding-left: 7px;
+  }
+
+  .chart-card > .legend {
+    font-size: 10px;
+  }
+
+  .chart-scroll  { height: 200px; }
+  .chart-scrollH { height: 170px; }
+}
+
+/* ── Desktop grande (≥ 1400 px) ── */
+@media (min-width: 1400px) {
+  .chart-scroll  { height: 360px; }
+  .chart-scrollH { height: 300px; }
+}
+
 @media (max-width: 640px) {
   .dash-switcher__panel {
     width: 320px;
@@ -525,66 +906,3 @@ canvas {
     height: 48px;
   }
 }
-
-
-/* =========================
-   Responsivo
-   ========================= */
-@media (max-width: 1100px) {
-  .dash-wrapper {
-    grid-template-columns: 1fr;
-  }
-
-  .kpi-panel {
-    order: 2;
-  }
-
-  .main-panel {
-    order: 1;
-  }
-
-  .charts-grid {
-    grid-template-columns: 1fr;
-  }
-  /* Un gráfico por fila (siempre) */
-.charts-grid--single {
-  grid-template-columns: 1fr !important;
-}
-
-/* Si quieres más alto el lienzo en esta vista */
-.charts-grid--single .chart-scroll {
-  height: 360px; /* ajusta si lo prefieres más alto/bajo */
-}
-
-
-  /* 1 columna */
-  .chart-scroll {
-    height: 260px;
-  }
-
-  /* un poco más bajo en mobile */
-}
-
-@media (min-width: 1400px) {
-  .chart-scroll {
-    height: 360px;
-  }
-
-  /* más alto en pantallas grandes */
-}
-
-@media (max-width: 900px) {
-  .filters {
-    grid-template-columns: 1fr;
-  }
-
-  .filters input[type="date"],
-  .filters select {
-    width: 100%;
-    min-width: 0;
-  }
-}
-
-/* al final de dashboard.css */
-.charts-grid--single { grid-template-columns: 1fr !important; }
-.charts-grid--single .chart-card { grid-column: 1 / -1; }

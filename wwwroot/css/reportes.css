@@ -1,10 +1,11 @@
 /* ==============================
    Variables & Base
-============================== */
+==============================#03249c */
 :root{
   --brand: #182A6E;      /* azul header */
   --accent:#FD6104;      /* naranja acciones */
   --bg:#FFFFFF;
+  --th: #E7E7E7;
   --text:#0f172a;
   --muted:#64748b;
   --border:#e5e7eb;
@@ -51,9 +52,108 @@ body{
 }
 
 /* ==============================
-   Filtros (tu vista usa utilidades tailwind;
-   aquí damos toques a inputs/selects)
+   Filtros (tailwind + ajustes)
 ============================== */
+
+/* ==============================
+   Contenedor de Filtros Principal
+============================== */
+.filters-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+  padding: 0 40px;
+  margin: 1.5rem 0;
+}
+
+/* Cada filtro individual */
+.filter-item {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+/* Filtro de fecha - más ancho */
+.filter-item.filters-date {
+  flex: 2 1 280px;
+}
+
+/* Botón buscar - crece para tomar espacio restante, alinea contenido a la derecha */
+.filter-btn {
+  flex: 1 0 auto !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+}
+
+/* Contenedor del rango de fechas */
+.date-range-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.date-input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  background: #fff;
+  outline: none;
+  transition: box-shadow .15s, border-color .15s;
+}
+
+.date-input:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(24,42,110,.15);
+}
+
+.date-separator {
+  font-weight: 700;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+/* ✅ SOLO esta pantalla: permite wrap + deja que los filtros encogan para que el botón quede arriba */
+.filters-row{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+  row-gap: 16px;
+}
+
+/* Todos los bloques de filtros pueden encoger */
+.filters-row > div{
+  min-width: 0;          /* clave */
+  flex: 1 1 180px;       /* base 180px, crece y encoge */
+}
+
+/* Fecha: un poco más ancha */
+.filters-row > .filters-date{
+  flex: 2 1 260px;
+}
+
+/* Botón: no crece y no se encoge */
+.filters-row > .filters-btn{
+  flex: 0 0 auto;
+}
+
+/* ===== Estilos específicos para Recepciones ===== */
+/* 1) Reducir espaciado vertical del contenedor de filtros */
+.flex.items-end.gap-4.btn-right {
+  margin-top: 0.5rem;           /* Reduce mt-6 (1.5rem) */
+  row-gap: 6px;                 /* Reduce row-gap para compactar */
+  padding-right: 2.5rem;        /* Simetría con el borde derecho */
+}
+
+/* Reducir espacio entre filtros y resumen/estado en Recepciones */
+.flex.items-end.gap-4.btn-right ~ .resumen-container,
+.flex.items-end.gap-4.btn-right ~ .reportes-estado {
+  margin-top: 12px;
+}
+
 label{ color: var(--text); }
 
 input[type="date"],
@@ -89,7 +189,7 @@ input.qp-disabled-field {
   align-items:center;
   justify-content:center;
   gap:.5rem;
-  border:0;
+  border:none;
   border-radius:12px;
   background: var(--accent);
   color:#fff;
@@ -99,6 +199,10 @@ input.qp-disabled-field {
 #btn-generar:hover{ filter: brightness(1.02); }
 #btn-generar:active{ transform: translateY(1px); }
 #btn-generar:disabled{ opacity:.5; cursor:not-allowed; }
+#btn-generar:focus{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(253, 97, 4, 0.4);  /* Borde naranja suave en focus */
+}
 
 /* Si agregas un spinner dentro del botón */
 #spin{
@@ -178,71 +282,289 @@ input.qp-disabled-field {
   100% { transform: rotate(360deg); }
 }
 
+
 /* ==============================
-   Resumen del Reporte
+   Encabezado del Reporte (estilo título)
 ============================== */
-.resumen-container {
-  margin: 20px 40px;
+.report-header {
+  margin: 20px 40px 10px 40px;
+  padding: 0;
   transition: opacity 0.3s ease;
 }
 
-.resumen-container.hidden {
+.report-header.hidden {
   display: none;
 }
 
-.resumen-card {
-  background: #FFF;
-  border-radius: 14px;
-  padding: 20px 30px;
+.report-header-row {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 25px;
-  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.25);
+  margin-bottom: 8px;
 }
 
-.resumen-icon {
-  font-size: 3rem;
-  color: var(--brand);
-  flex-shrink: 0;
-}
-
-.resumen-content {
-  display: flex;
-  gap: 35px;
-  flex-wrap: wrap;
-  flex: 1;
-}
-
-.resumen-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.resumen-label {
-  font-size: 13px;
+.report-title {
+  margin: 0;
+  font-size: 5rem;
+  font-weight: 800;
   color: var(--text);
-  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.resumen-valor {
-  font-size: 22px;
-  color:var(--text);
+.exports-inline {
+  display: flex;
+  gap: 10px;
+}
+
+.report-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
+  align-items: center;
+  padding: 0;
+}
+
+.summary-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.summary-label {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.summary-value {
+  font-size: 14px;
+  color: var(--text);
   font-weight: 700;
 }
 
 @media (max-width: 768px) {
-  .resumen-card {
-    flex-direction: column;
-    text-align: center;
+  .report-header {
+    margin: 16px;
   }
 
-  .resumen-content {
+  .report-header-row {
     flex-direction: column;
-    gap: 15px;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .report-summary-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .exports-inline {
     width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* ==============================
+   Table Card (Header + Tabla integrados)
+============================== */
+#resumen-container.table-card {
+  margin: 20px 40px !important;
+  background: black !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--shadow) !important;
+  overflow: hidden !important;
+  display: block;
+}
+
+#resumen-container.table-card.hidden {
+  display: none !important;
+}
+
+#resumen-container .table-card__header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 20px 8px 20px !important;
+  background: var(--th) !important;
+  border-bottom: none !important;
+}
+
+#resumen-container .table-card__title-group {
+  display: flex !important;
+  align-items: center !important;
+  font-size: 50px !important; 
+  gap: 12px;
+}
+
+#resumen-container .table-card__accent {
+  display: inline-block !important;
+  width: 4px !important;
+  height: 20px !important;
+  background: var(--accent) !important;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+
+
+#resumen-container .table-card__heading {
+  margin: 0 !important;
+  font-size: 1.35rem !important;  /* <-- Cambia aquí el tamaño del título */
+  font-weight: 700 !important;
+  color: black !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#resumen-container .totales-title {
+  margin: 0 0 8px 0 !important;
+}
+
+#resumen-container .totales-title h4 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--brand);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+
+
+#resumen-container .table-card__actions {
+  display: flex !important;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+#resumen-container .table-card__body {
+  overflow: auto;
+}
+
+/* ==============================
+   Sección de Totales
+============================== */
+.totales-section {
+  padding: 8px 20px 16px 20px;
+  background: var(--th);
+  border-bottom: 1px solid var(--border);
+}
+
+.totales-section.hidden {
+  display: none;
+}
+
+.totales-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+
+.totales-container {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.total-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 160px;
+}
+
+.total-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--brand);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.total-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: black;
+}
+
+@media (max-width: 640px) {
+  .totales-section {
+    padding: 8px 16px 12px 16px;
+  }
+
+  .totales-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .totales-container {
+    gap: 20px;
+  }
+
+  .total-item {
+    min-width: 140px;
+  }
+
+  .total-value {
+    font-size: 1rem;
+  }
+
+  #resumen-container .table-card__actions {
+    width: 100%;
+    margin-top: 12px;
+  }
+}
+
+/* Quitar margen y bordes del table-wrapper cuando está dentro de table-card */
+#resumen-container.table-card .table-wrapper {
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Quitar borde superior de la tabla dentro de table-card (evita duplicar con header) */
+#resumen-container.table-card .tabla thead {
+  border-top: none;
+}
+
+/* Responsive para table-card */
+@media (max-width: 768px) {
+  #resumen-container.table-card {
+    margin: 16px !important;
+    border-radius: 10px !important;
+  }
+
+  #resumen-container .table-card__header {
+    padding: 12px 16px !important;
+  }
+
+  #resumen-container .table-card__heading {
+    font-size: 1rem !important;
+  }
+
+  #resumen-container .table-card__actions {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  #resumen-container .table-card__header {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+
+  #resumen-container .table-card__actions {
+    justify-content: flex-start;
   }
 }
 
@@ -270,30 +592,36 @@ input.qp-disabled-field {
   color:#fff;
   box-shadow: 0 6px 20px rgba(24,42,110,.15);
 }
-
-.btn-pdf:active {
-    transform: scale(1.05);
-}
+.btn-pdf:active { transform: scale(1.05); }
 
 .btn-excel{
   appearance: none;
   border: 1px solid var(--brand);
   background: #00B050 !important;
   color: #fff;
-  padding: 10px 14px;
+  padding: 10px 16px;
   border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: background .15s, color .15s, transform .04s, box-shadow .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 .btn-excel:hover{
   background: #008E31 !important;
   color:#fff;
   box-shadow: 0 6px 20px rgba(24,42,110,.15);
 }
+.btn-excel:active { transform: scale(1.05); }
 
-.btn-excel:active {
-    transform: scale(1.05);
+.btn-excel__icon {
+  flex-shrink: 0;
+}
+
+.btn-excel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn-export{
@@ -322,60 +650,77 @@ input.qp-disabled-field {
 }
 
 /* ==============================
-   Resultados / Tabla
+   Resultados / Tabla - Estilo ListaTransacciones
 ============================== */
 .table-wrapper{
   margin: 8px 40px 8px 40px;
-  border:1px solid var(--border);
-  border-radius:14px;
+  border-radius: 1px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   overflow:auto; /* scroll horizontal si hace falta */
-  box-shadow: var(--shadow);
   background:#fff;
+  border: none;
 }
 
 .tabla{
   width:100%;
   border-collapse: collapse;
-  table-layout: auto; /* deja que crezca según contenido */
-  font-size: 14px;
+  min-width: 1100px;
+}
+
+/* Encabezado - Estilo ListaTransacciones */
+.tabla thead {
+  background-color: #f8f6f6;
+  border-bottom: 3px solid #F28C00; /* Línea naranja bajo el encabezado */
 }
 
 .tabla thead th{
-  position: sticky;
-  top: 0;
-  background: var(--header);
-  color: var(--text);
-  text-align: left;
+  padding: 0.75rem 0.5rem;
+  text-align: center;
   font-weight: 700;
-  font-size: 12.5px;
+  color: #182A6E; /* Headers en azul corporativo */
+  font-size: 0.85rem;
   text-transform: uppercase;
-  letter-spacing: .02em;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.5px;
   white-space: nowrap;
-}
-
-.tabla tbody td{
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
   vertical-align: middle;
-  /* permite multilinea sin romper el layout */
+  border-top: none;
+  cursor: text;
+}
+
+/* Filas del cuerpo - Estilo ListaTransacciones */
+.tabla tbody tr {
+  background-color: #fff;
+  border-bottom: 1px solid #CDCAC7;
+  transition: all 0.3s ease;
+}
+
+.tabla tbody tr:hover {
+  background-color: #dcdcdc;
+  box-shadow: inset 0 0 0 1px #182A6E;
+}
+
+.tabla tbody tr:last-child {
+  border-bottom: none;
+}
+
+/* Celdas - Estilo ListaTransacciones */
+.tabla tbody td{
+  padding: 0.75rem 0.5rem;
+  color: #242424;
+  font-size: 0.85rem;
+  text-align: center;
+  vertical-align: middle;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-top: none;
+  text-transform: uppercase;
 }
 
-.tabla tbody tr:nth-child(2n){
-  background: #fafafa;
-}
-.tabla tbody tr:hover{
-  background: #f4f7ff;
-}
-
-/* Alineaciones útiles (si decides agregarlas vía class en <th>/<td>) */
 .text-center{ text-align:center; }
 .text-right{  text-align:right;  }
 .nowrap{ white-space: nowrap; }
 
-/* Celdas con contenido muy largo (opcional) */
 .truncate{
   max-width: 380px;
   white-space: nowrap;
@@ -407,37 +752,134 @@ input.qp-disabled-field {
   box-shadow: 0 0 0 3px rgba(24,42,110,.15);
 }
 
-/* ====== Paginador ====== */
-.paginador-wrapper {
-  margin-top: 150px !important;
-  margin-bottom: 40px !important;
-  margin-left: 40px !important;
-  margin-right: 40px !important;
-  padding-top: 20px !important;
+/* ====== Paginador (Estilo Correlativo Marchamo) ====== */
+#pager {
+  margin: 20px 40px 10px 40px;
 }
 
-#pager{ margin: 200px 40px 40px 40px; }
-.pager{
-  display:grid;
-  grid-template-columns: 1fr auto auto;
-  align-items:center;
-  gap:12px;
+#pager.hidden {
+  display: none !important;
 }
-.pager__info{ color: var(--muted); }
-.pager__controls{
-  display:flex; gap:6px; flex-wrap: wrap;
+
+.rpt-pagination-controls {
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+  margin-top: 1rem;
+  width: 100%;
 }
-.pager__btn{
-  border:1px solid var(--border);
-  background:#fff; color: var(--text);
-  border-radius:10px; padding:8px 12px; cursor:pointer;
+
+.rpt-pagination-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  min-height: 40px;
+  gap: 1rem;
 }
-.pager__btn:hover{ background: var(--header); }
-.pager__btn:disabled{ opacity:.5; cursor:not-allowed; }
-.pager__btn.is-active{ border-color: var(--brand); color: var(--brand); font-weight:700; }
-.pager__size{ justify-self: end; }
-.pager__select{
-  border:1px solid var(--border); border-radius:10px; padding:6px 8px; background:#fff;
+
+.rpt-pagination-spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+.rpt-pagination {
+  user-select: none;
+}
+
+.rpt-pagination a {
+  text-decoration: none;
+}
+
+.rpt-pagination a.page-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--brand);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--brand);
+  transition: background .15s, color .15s;
+  cursor: pointer;
+}
+
+.rpt-pagination a.page-nav:hover {
+  background: var(--brand);
+  color: #fff;
+}
+
+.rpt-pagination a.page-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 .5rem;
+  border: 1px solid var(--brand);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--brand);
+  font-weight: 600;
+  transition: background .15s, color .15s;
+  cursor: pointer;
+}
+
+.rpt-pagination a.page-num:hover {
+  background: var(--brand);
+  color: #fff;
+}
+
+.rpt-pagination a.page-num.current {
+  background: var(--brand);
+  color: #fff;
+}
+
+.rpt-pagination .ellipsis {
+  padding: 0 .4rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.rpt-pagination a.disabled {
+  opacity: .45;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.rpt-pagination-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.rpt-page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.rpt-page-size-selector label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.rpt-page-size-selector select {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #fff;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.rpt-page-size-selector select:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(24,42,110,.15);
 }
 
 @media (max-width: 640px){
@@ -445,21 +887,378 @@ input.qp-disabled-field {
   #pager{ margin-left:16px; margin-right:16px; }
 }
 
-
 /* ==============================
-   Responsivo
+   Responsivo - Breakpoints
 ============================== */
-@media (max-width: 1024px){
-  .custom-banner{ width: 100%; }
-  .exports, .table-wrapper{ margin-left: 16px; margin-right: 16px; }
+
+/* Tablets y pantallas medianas */
+@media (max-width: 1024px) {
+  .custom-banner {
+    width: 100%;
+  }
+
+  .exports,
+  .table-wrapper {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+
+  .filters-container {
+    padding: 0 16px;
+  }
+
+  .reportes-estado {
+    margin: 20px 16px;
+  }
+
+  #resumen-container.table-card {
+    margin: 20px 16px !important;
+  }
+
+  #pager {
+    margin: 20px 16px 40px 16px;
+  }
+
+  .toolbar {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
 }
 
-@media (max-width: 640px){
-  .exports{
+/* Tablets pequeñas */
+@media (max-width: 768px) {
+  .banner-wrapper {
+    flex-direction: column;
+  }
+
+  .custom-banner {
+    width: 100%;
+    text-align: center;
+    padding: 1rem;
+  }
+
+  .custom-banner h1 {
+    font-size: 1.25rem;
+  }
+
+  .filters-container {
+    gap: 12px;
+  }
+
+  .filter-item {
+    flex: 1 1 140px;
+  }
+
+  .filter-item.filters-date {
+    flex: 1 1 100%;
+  }
+
+  /* Fechas en columna en tablets */
+  .date-range-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .date-separator {
+    text-align: center;
+  }
+
+  .reportes-estado {
+    margin: 16px;
+    padding: 24px 16px;
+  }
+
+  .estado-icon {
+    font-size: 2rem;
+  }
+
+  .estado-texto {
+    font-size: 14px;
+  }
+
+  /* Tabla scroll horizontal */
+  .tabla {
+    min-width: 800px;
+  }
+}
+
+/* Móviles grandes */
+@media (max-width: 640px) {
+  .custom-banner {
+    padding: 0.8rem;
+  }
+
+  .custom-banner h1 {
+    font-size: 1.1rem;
+  }
+
+  .filters-container {
+    padding: 0 12px;
+    gap: 10px;
+  }
+
+  /* Filtros a 2 columnas */
+  .filter-item {
+    flex: 1 1 calc(50% - 10px);
+    min-width: calc(50% - 10px);
+  }
+
+  /* Fecha y botón ocupan todo el ancho */
+  .filter-item.filters-date,
+  .filter-btn {
+    flex: 1 1 100%;
+    min-width: 100%;
+  }
+
+  /* Botón buscar a ancho completo */
+  #btn-generar {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .exports {
     flex-direction: column;
     align-items: stretch;
   }
-  .btn-export{ width:100%; }
-  .tabla{ font-size: 13px; }
-  .tabla thead th, .tabla tbody td{ padding: 8px 10px; }
+
+  .btn-export,
+  .btn-pdf,
+  .btn-excel {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .tabla {
+    font-size: 13px;
+    min-width: 600px;
+  }
+
+  .tabla thead th,
+  .tabla tbody td {
+    padding: 8px 6px;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #f-busqueda {
+    width: 100%;
+  }
+
+  #pager {
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+
+  .reportes-estado {
+    margin: 12px;
+    padding: 20px 12px;
+  }
+
+  #resumen-container.table-card {
+    margin: 12px !important;
+    border-radius: 10px !important;
+  }
+
+  #resumen-container .table-card__header {
+    padding: 12px !important;
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 10px;
+  }
+
+  #resumen-container .table-card__heading {
+    font-size: 0.95rem !important;
+  }
+
+  .totales-section {
+    padding: 8px 12px 12px 12px;
+  }
+
+  .totales-container {
+    gap: 16px;
+    width: 100%;
+  }
+
+  .total-item {
+    min-width: 0;
+    flex: 1 1 calc(50% - 8px);
+  }
+
+  .total-value {
+    font-size: 0.95rem;
+  }
+
+  /* Paginación */
+  .rpt-pagination-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .rpt-pagination-spacer {
+    display: none;
+  }
+
+  .rpt-pagination a.page-nav,
+  .rpt-pagination a.page-num {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    font-size: 0.8rem;
+  }
+}
+
+/* Móviles pequeños */
+@media (max-width: 480px) {
+  .custom-banner h1 {
+    font-size: 1rem;
+  }
+
+  .filters-container {
+    padding: 0 10px;
+    gap: 8px;
+  }
+
+  /* Todos los filtros a 1 columna */
+  .filter-item {
+    flex: 1 1 100%;
+    min-width: 100%;
+  }
+
+  label {
+    font-size: 0.875rem;
+  }
+
+  .date-input,
+  input[type="date"],
+  select {
+    height: 40px;
+    font-size: 0.875rem;
+  }
+
+  #btn-generar {
+    height: 44px;
+  }
+
+  .reportes-estado {
+    margin: 10px;
+    padding: 16px 10px;
+    border-radius: 10px;
+  }
+
+  .estado-icon {
+    font-size: 1.75rem;
+  }
+
+  .estado-texto {
+    font-size: 13px;
+  }
+
+  #resumen-container.table-card {
+    margin: 10px !important;
+    border-radius: 8px !important;
+  }
+
+  #resumen-container .table-card__header {
+    padding: 10px !important;
+  }
+
+  #resumen-container .table-card__heading {
+    font-size: 0.85rem !important;
+  }
+
+  .totales-section {
+    padding: 6px 10px 10px 10px;
+  }
+
+  .totales-title h4 {
+    font-size: 0.75rem;
+  }
+
+  .total-label {
+    font-size: 0.65rem;
+  }
+
+  .total-value {
+    font-size: 0.85rem;
+  }
+
+  .total-item {
+    flex: 1 1 100%;
+  }
+
+  .table-wrapper {
+    margin: 0 !important;
+  }
+
+  .tabla {
+    font-size: 12px;
+    min-width: 500px;
+  }
+
+  .tabla thead th {
+    font-size: 0.7rem;
+    padding: 6px 4px;
+  }
+
+  .tabla tbody td {
+    font-size: 0.75rem;
+    padding: 6px 4px;
+  }
+
+  #pager {
+    margin: 10px;
+  }
+
+  .rpt-pagination-controls {
+    padding-top: 1rem;
+  }
+
+  .rpt-page-size-selector label {
+    font-size: 0.75rem;
+  }
+
+  .rpt-page-size-selector select {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+  }
+}
+
+/* Pantallas muy pequeñas (320px) */
+@media (max-width: 360px) {
+  .custom-banner {
+    padding: 0.6rem;
+  }
+
+  .custom-banner h1 {
+    font-size: 0.9rem;
+  }
+
+  .filters-container {
+    padding: 0 8px;
+  }
+
+  .date-input,
+  input[type="date"],
+  select {
+    height: 38px;
+    padding: 0 8px;
+    font-size: 0.8rem;
+  }
+
+  .reportes-estado {
+    margin: 8px;
+    padding: 14px 8px;
+  }
+
+  #resumen-container.table-card {
+    margin: 8px !important;
+  }
+
+  .tabla {
+    min-width: 450px;
+  }
 }

@@ -23,8 +23,13 @@ builder.Services.AddHostedService<BlacklistExpirationService>();
 // 👉 REGISTRAR CACHÉ EN MEMORIA para optimizar validación de JWT
 builder.Services.AddMemoryCache();
 
-// Habilitar sesiones (opcional, si vas a usar HttpContext.Session)
-builder.Services.AddSession();
+// Habilitar sesiones con timeout alineado al JWT (8 horas)
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromHours(8);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
 
 // Agregar controladores y vistas
 builder.Services.AddControllersWithViews();
@@ -35,18 +40,18 @@ builder.Services.AddDbContext<PiletasDbContext>(options =>
 {
     // Obtener la ruta del proyecto (donde está el .dll)
     var contentRoot = builder.Environment.ContentRootPath;
-
+    
     // Crear directorio App_Data si no existe
     var appDataPath = Path.Combine(contentRoot, "App_Data");
     Directory.CreateDirectory(appDataPath);
-
+    
     // Ruta completa de la base de datos
     var dbPath = Path.Combine(appDataPath, "piletas.db");
-
+    
     var connectionString = $"Data Source={dbPath}";
-
+    
     Console.WriteLine($"📁 Base de datos SQLite: {dbPath}");
-
+    
     options.UseSqlite(connectionString);
 });
 
@@ -59,6 +64,9 @@ builder.Services.AddScoped<ITimerSyncService, TimerSyncService>();
 
 // Servicio de logging
 builder.Services.AddSingleton<ITransactionLogService, TransactionLogService>();
+
+// Servicio de auditoría de cambios de estado y acciones sobre envíos
+builder.Services.AddSingleton<IShipmentAuditService, ShipmentAuditService>();
 
 var app = builder.Build();
 

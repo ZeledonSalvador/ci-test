@@ -20,6 +20,7 @@ namespace FrontendQuickpass.Controllers
         private readonly ApiSettings _apiSettings;
         private readonly ILogger<PrechequeoController> _logger;
         private readonly ITransactionLogService _logService;
+        private readonly IShipmentAuditService _auditService;
 
         // Regex UUID - Acepta UUIDs con 8-10 caracteres en el primer segmento
         private static readonly Regex UuidRe = new Regex(
@@ -135,12 +136,13 @@ namespace FrontendQuickpass.Controllers
             return url;
         }
 
-        public PrechequeoController(IHttpClientFactory httpClientFactory, IOptions<ApiSettings> apiSettings, ILogger<PrechequeoController> logger, ITransactionLogService logService)
+        public PrechequeoController(IHttpClientFactory httpClientFactory, IOptions<ApiSettings> apiSettings, ILogger<PrechequeoController> logger, ITransactionLogService logService, IShipmentAuditService auditService)
         {
             _httpClientFactory = httpClientFactory;
             _apiSettings = apiSettings.Value;
             _logger = logger;
             _logService = logService;
+            _auditService = auditService;
         }
 
         public IActionResult Index()
@@ -524,15 +526,11 @@ namespace FrontendQuickpass.Controllers
                 if (response.IsSuccessStatusCode)
                 {
                     var responseContent = await response.Content.ReadAsStringAsync();
-                    var successData = new
-                    {
-                        codeGen = codeGen,
-                        predefinedStatusId = predefinedStatusId,
-                        newStatus = predefinedStatusId,
-                        apiResponse = responseContent,
-                        action = "Cambio de estado exitoso"
-                    };
-                    _logService.LogActivityAsync(codeGen, successData, motoristaName, predefinedStatusId);
+
+                    // Registrar en auditoría de cambio de estado (reemplaza transactionlogs para casos exitosos)
+                    // Para Prechequeo, el userType es "driver" (no se envía userId)
+                    _auditService.RegisterStatusChange(codeGen, predefinedStatusId, userType: "driver");
+
                     hasLogged = true;
                     return Json("Cambio de estatus realizado con éxito");
                 }

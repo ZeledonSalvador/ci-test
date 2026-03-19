@@ -29,12 +29,15 @@
 }
 
 
+
 @section Styles {
     <link rel="stylesheet" href="~/css/lista-marchamos.css" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/dropzone.min.css" />
 }
 
-
+<section class="ln-banner">
+    <h1>Lista de Marchamos</h1>
+</section>
 
 <!-- Contenedor principal con flex para paginación pegada al footer -->
 <div class="conteiner cc-content-wrapper">
@@ -81,7 +84,8 @@
                             <th>Fecha registro</th>
                             <th>Marchamo</th>
                             <th>Estado</th>
-                            <th>N° Envío</th>
+                            <th>ID</th>
+                            <th>Observaciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -94,7 +98,8 @@
                                     <td>@item.FechaRegistro.ToString("dd/MM/yyyy HH:mm")</td>
                                     <td>@item.Marchamo</td>
                                     <td>@item.Estado</td>
-                                    <td>@(string.IsNullOrWhiteSpace(item.NumeroEnvio) ? "—" : item.NumeroEnvio)</td>
+                                    <td>@(item.NumeroEnvio.HasValue && item.NumeroEnvio.Value > 0 ? item.NumeroEnvio.Value.ToString() : "—")</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.observaciones) ? "—" : item.observaciones)</td>
                                 </tr>
                             }
                         }

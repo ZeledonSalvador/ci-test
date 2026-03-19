@@ -92,6 +92,9 @@ namespace FrontendQuickpass.Models
         [JsonPropertyName("fullName")]
         public string FullName { get; set; } = string.Empty;
 
+        [JsonPropertyName("userCode")]
+        public string UserCode { get; set; } = string.Empty;
+
         [JsonPropertyName("category")]
         public Category? Category { get; set; }
 

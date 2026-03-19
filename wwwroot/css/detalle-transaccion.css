@@ -15,19 +15,30 @@
     --dt-white: #fff;
 
     /* Paleta de colores profesionales para botones de la vista */
-    --dt-primary: #2c3e50;          /* Azul oscuro profesional - Guardar */
+    --dt-primary: #2c3e50;
+    /* Azul oscuro profesional - Guardar */
     --dt-primary-hover: #1a252f;
-    --dt-success: #27ae60;          /* Verde profesional - Imprimir */
+    --dt-success: #27ae60;
+    /* Verde profesional - Imprimir */
     --dt-success-hover: #229954;
-    --dt-complete: #3498db;         /* Azul claro profesional - Completar */
+    --dt-complete: #3498db;
+    /* Azul claro profesional - Completar */
     --dt-complete-hover: #2980b9;
-    --dt-warning: #34495e;          /* Gris azulado profesional - Agregar */
+    --dt-warning: #34495e;
+    /* Gris azulado profesional - Agregar */
     --dt-warning-hover: #2c3e50;
-    --dt-secondary: #95a5a6;        /* Gris neutral */
+    --dt-secondary: #95a5a6;
+    /* Gris neutral */
     --dt-secondary-hover: #7f8c8d;
-    --dt-outline: #bdc3c7;          /* Gris claro - Cerrar */
+    --dt-outline: #bdc3c7;
+    /* Gris claro - Cerrar */
     --dt-outline-hover: #95a5a6;
     --dt-outline-text: #2c3e50;
+
+    /* Estado deshabilitado/bloqueado - valores estándar */
+    --dt-disabled-bg: #e9ecef;
+    --dt-disabled-opacity: 0.85;
+    --dt-disabled-text: #1a252f;
 }
 
 /* ==========================================
@@ -36,6 +47,7 @@
 .lt-banner {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     background-color: #182A6E;
     color: #fff;
     padding: 1.2rem 1.2rem;
@@ -46,6 +58,40 @@
     font-size: 1rem;
     font-weight: 500;
     text-transform: capitalize;
+}
+
+.dt-btn-close-banner {
+    background-color: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 0.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+
+.dt-btn-close-banner:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.dt-btn-close-banner:hover i {
+    transform: rotate(90deg);
+}
+
+.dt-btn-close-banner:active {
+    background-color: rgba(255, 255, 255, 0.25);
+    transform: scale(0.97);
+}
+
+.dt-btn-close-banner i {
+    transition: transform 0.3s ease;
 }
 
 /* ==========================================
@@ -145,7 +191,7 @@
     color: var(--dt-text-muted);
     margin-bottom: 0.5rem;
     display: block;
-    font-weight:600;
+    font-weight: 600;
 }
 
 .dt-value {
@@ -225,14 +271,14 @@
     color: #82807F;
 }
 
-/* Peso neto (segunda fila) */
+/* Peso tara (segunda fila) */
 .dt-table tbody tr:nth-child(2) td {
-    color: #495057;
+    color: #82807F;
 }
 
-/* Peso tara (tercera fila) */
+/* Peso neto (tercera fila) */
 .dt-table tbody tr:nth-child(3) td {
-    color: #82807F;
+    color: #495057;
 }
 
 /* Última fila sin borde inferior */
@@ -334,6 +380,109 @@
     background-color: var(--dt-gray-light);
 }
 
+/* Sección de historial de pesajes */
+.dt-historial-section {
+    margin-bottom: 0;
+}
+
+.dt-historial-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--dt-text-dark);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--dt-gray-border);
+}
+
+/* Sección de consolidado de pesos */
+.dt-consolidado-section {
+    margin-bottom: 0;
+}
+
+.dt-consolidado-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--dt-text-dark);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--dt-gray-border);
+}
+
+/* Tabla de consolidado - misma estructura que historial para alineación exacta */
+.dt-consolidado-table {
+    width: 100%;
+    table-layout: fixed;
+}
+
+/* Usar colgroup para replicar anchos del historial de pesajes */
+.dt-pesos-table col.dt-col-1 {
+    width: 10%;
+}
+
+.dt-pesos-table col.dt-col-2 {
+    width: 25%;
+}
+
+.dt-pesos-table col.dt-col-3 {
+    width: 20%;
+}
+
+.dt-pesos-table col.dt-col-4 {
+    width: 20%;
+}
+
+.dt-pesos-table col.dt-col-5 {
+    width: 25%;
+}
+
+/* Reglas compartidas para historial y consolidado */
+.dt-pesos-table th:nth-child(1),
+.dt-pesos-table td:nth-child(1) {
+    width: 10%;
+    text-align: left;
+    padding-left: 1rem;
+    padding-right: 0.5rem;
+}
+
+.dt-pesos-table th:nth-child(2),
+.dt-pesos-table td:nth-child(2) {
+    width: 25%;
+    text-align: center;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+.dt-pesos-table th:nth-child(3),
+.dt-pesos-table td:nth-child(3) {
+    width: 20%;
+    text-align: center;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+.dt-pesos-table th:nth-child(4),
+.dt-pesos-table td:nth-child(4) {
+    width: 20%;
+    text-align: center;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+.dt-pesos-table th:nth-child(5),
+.dt-pesos-table td:nth-child(5) {
+    width: 25%;
+    text-align: center;
+    padding-left: 0.5rem;
+    padding-right: 1rem;
+}
+
+/* Fila de Total en consolidado - mismo estilo que fila Peso neto del historial */
+.dt-consolidado-total td {
+    border-top: 2px solid #9CA3AF;
+    font-weight: 600 !important;
+    color: #495057 !important;
+}
+
 /* ==========================================
    INPUTS Y CONTROLES
    ========================================== */
@@ -349,6 +498,113 @@
     width: 100%;
 }
 
+/* Asegurar que los select tengan el mismo padding que los inputs */
+select.dt-input {
+    padding: 0.5rem 0.75rem;
+    padding-right: 2rem;
+    /* Espacio para la flecha del select */
+}
+
+/* Custom Searchable Select */
+.custom-searchable-select {
+    position: relative;
+    display: block;
+}
+
+.custom-searchable-select[data-disabled="true"] {
+    opacity: var(--dt-disabled-opacity);
+    pointer-events: none;
+}
+
+.custom-searchable-select[data-disabled="true"] .dt-input {
+    background-color: var(--dt-disabled-bg);
+    color: var(--dt-disabled-text);
+    cursor: default;
+}
+
+.custom-searchable-select .dt-input {
+    cursor: pointer !important;
+    padding-right: 2.5rem;
+    width: 100%;
+    height: 38px;
+}
+
+.custom-searchable-select:not([data-disabled="true"]) .dt-input[readonly] {
+    cursor: pointer !important;
+}
+
+.dt-input-wrapper .custom-searchable-select {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: calc(100% - 70px);
+}
+
+.custom-searchable-select .dropdown-arrow {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--dt-text-muted);
+    font-size: 0.75rem;
+}
+
+.custom-dropdown-options {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--dt-gray-border);
+    border-radius: 4px;
+    margin-bottom: 2px;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    max-height: 300px;
+    overflow: hidden;
+}
+
+.dropdown-search {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: none;
+    border-bottom: 1px solid var(--dt-gray-border);
+    font-size: 0.875rem;
+    outline: none;
+}
+
+.dropdown-search:focus {
+    border-bottom-color: var(--dt-blue);
+}
+
+.dropdown-options-list {
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.dropdown-option {
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--dt-text-dark);
+    transition: background-color 0.2s;
+}
+
+.dropdown-option:hover {
+    background-color: var(--dt-blue);
+    color: white;
+}
+
+.dropdown-option.selected {
+    background-color: var(--dt-blue);
+    color: white;
+}
+
+.dropdown-option.hidden {
+    display: none;
+}
+
 .dt-input:focus {
     background-color: var(--dt-white);
     border-color: var(--dt-blue);
@@ -356,9 +612,26 @@
     outline: none;
 }
 
-.dt-input[readonly] {
-    background-color: #f8f9fa;
-    cursor: not-allowed;
+/* Quitar flechas (spinners) del input de humedad */
+#txtHumedad[type="number"]::-webkit-outer-spin-button,
+#txtHumedad[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+#txtHumedad[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.dt-input[readonly],
+.dt-input:disabled,
+.form-control.dt-input[readonly],
+.form-control.dt-input:disabled {
+    background-color: var(--dt-disabled-bg);
+    color: var(--dt-disabled-text);
+    opacity: var(--dt-disabled-opacity);
+    cursor: default;
     border: 1px solid var(--dt-gray-border);
 }
 
@@ -377,6 +650,81 @@
     max-width: calc(100% - 70px);
 }
 
+/* Override para custom-searchable-select - debe tomar ancho completo */
+.dt-input-group .custom-searchable-select {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: calc(100% - 70px);
+}
+
+/* Textarea de observaciones */
+.dt-observaciones-container {
+    position: relative;
+    width: 100%;
+}
+
+.dt-textarea {
+    width: 100%;
+    max-width: calc(100% - 70px);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--dt-text-dark);
+    background-color: var(--dt-white);
+    border: 1px solid var(--dt-gray-border);
+    border-radius: 4px;
+    resize: vertical;
+    min-height: 32px;
+    max-height: 120px;
+    box-sizing: border-box;
+}
+
+.dt-textarea:focus {
+    background-color: var(--dt-white);
+    border-color: var(--dt-blue);
+    box-shadow: 0 0 0 0.2rem rgba(24, 42, 110, 0.1);
+    outline: none;
+}
+
+.dt-textarea[readonly],
+.dt-textarea:disabled,
+.form-control.dt-textarea[readonly],
+.form-control.dt-textarea:disabled {
+    background-color: var(--dt-disabled-bg);
+    color: var(--dt-disabled-text);
+    opacity: var(--dt-disabled-opacity);
+    cursor: default;
+}
+
+.dt-char-counter {
+    display: block;
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--dt-text-muted);
+    margin-top: 0.25rem;
+    max-width: calc(100% - 70px);
+}
+
+/* Input con sufijo (%) */
+.dt-input-with-suffix {
+    padding-right: 2rem;
+}
+
+.dt-input-suffix {
+    position: absolute;
+    right: 80px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--dt-text-dark);
+    pointer-events: none;
+}
+
+.dt-input-group {
+    position: relative;
+}
+
 /* Wrapper para inputs sin botón - mantiene la misma altura */
 .dt-input-wrapper {
     display: flex;
@@ -387,9 +735,8 @@
 
 .dt-input-wrapper .form-control,
 .dt-input-wrapper .dt-input {
-    width: 100%;
-    height: 100%;
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 /* Espaciador para mantener consistencia con inputs que tienen botón anular */
@@ -412,6 +759,12 @@
     text-decoration: underline;
 }
 
+.dt-btn-anular[disabled] {
+    opacity: var(--dt-disabled-opacity);
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 /* ==========================================
    TIMELINE / BITÁCORA
    ========================================== */
@@ -429,7 +782,7 @@
     margin-bottom: 0.75rem;
 }
 
-/* Línea conectora entre iconos (no en el último item) */
+/* Línea conectora entre iconos */
 .dt-timeline-item:not(:last-child)::after {
     content: '';
     position: absolute;
@@ -437,7 +790,7 @@
     top: 1.75rem;
     height: calc(100% + 0.75rem - 1.75rem);
     width: 2px;
-    background: #e0e0e0;
+    background: var(--dt-gray-border);
 }
 
 .dt-timeline-item:last-child {
@@ -455,19 +808,20 @@
     align-items: center;
     justify-content: center;
     z-index: 2;
-    background: #fff;
+    background: var(--dt-white);
 }
 
 .dt-timeline-icon i {
     font-size: 1.1rem;
-    color: #888;
+    color: var(--dt-text-muted);
 }
 
 .dt-timeline-content {
-    display: flex;
+    display: grid;
+    grid-template-columns: 170px 250px 1fr;
+    column-gap: 0.75rem;
     align-items: center;
-    gap: 1.25rem;
-    flex-wrap: wrap;
+    width: 100%;
 }
 
 .dt-timeline-header {
@@ -479,22 +833,18 @@
     font-weight: 600;
     color: var(--dt-text-dark);
     white-space: nowrap;
-    min-width: 150px;
 }
 
 .dt-timeline-user {
     font-size: 0.9rem;
     color: var(--dt-blue);
     font-weight: 600;
-    white-space: nowrap;
-    min-width: 130px;
 }
 
 .dt-timeline-action {
     font-size: 0.9rem;
     font-weight: 500;
-    color: #666;
-    flex: 1;
+    color: var(--dt-text-muted);
 }
 
 /* ==========================================
@@ -516,8 +866,8 @@
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
 }
 
-/* Botón de agregar pesaje al extremo izquierdo */
-.dt-action-bar #btnAgregarPesaje {
+/* Espaciador para empujar botones a la derecha */
+.dt-action-spacer {
     margin-right: auto;
 }
 
@@ -545,9 +895,9 @@
     color: var(--dt-white);
 }
 
-/* Botón Pesaje - Agregar pesaje (Gris azulado profesional) */
-.dt-btn-pesaje {
-    background-color: var(--dt-warning);
+/* Botón Repesaje (Gris azulado) */
+.dt-btn-repesaje {
+    background-color: #34495e;
     color: var(--dt-white);
     padding: 0.45rem 1.25rem;
     border-radius: 4px;
@@ -561,7 +911,7 @@
     transition: all 0.2s ease;
 }
 
-.dt-btn-pesaje i {
+.dt-btn-repesaje i {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -570,8 +920,8 @@
     vertical-align: middle;
 }
 
-.dt-btn-pesaje:hover:not(:disabled) {
-    background-color: var(--dt-warning-hover);
+.dt-btn-repesaje:hover:not(:disabled) {
+    background-color: #2c3e50;
     box-shadow: 0 4px 8px rgba(52, 73, 94, 0.3);
     transform: translateY(-1px);
 }
@@ -669,6 +1019,37 @@
     transform: translateY(-1px);
 }
 
+/* Botón Sync - Sincronizar NAV (Azul institucional) */
+.dt-btn-sync {
+    background-color: #182A6E;
+    color: var(--dt-white);
+    padding: 0.45rem 1.25rem;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: none;
+    box-shadow: 0 2px 4px rgba(24, 42, 110, 0.2);
+    transition: all 0.2s ease;
+}
+
+.dt-btn-sync i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    line-height: 1;
+    vertical-align: middle;
+}
+
+.dt-btn-sync:hover:not(:disabled) {
+    background-color: #0f1d4a;
+    box-shadow: 0 4px 8px rgba(24, 42, 110, 0.3);
+    transform: translateY(-1px);
+}
+
 /* Botón Outline - Cerrar (Borde gris del sistema) */
 .dt-btn-outline {
     background-color: var(--dt-white);
@@ -702,7 +1083,8 @@
 .dt-btn-primary:disabled,
 .dt-btn-success:disabled,
 .dt-btn-complete:disabled,
-.dt-btn-pesaje:disabled,
+.dt-btn-repesaje:disabled,
+.dt-btn-sync:disabled,
 .dt-btn-secondary:disabled,
 .dt-btn-outline:disabled {
     opacity: 0.5;
@@ -710,6 +1092,11 @@
     pointer-events: none;
     box-shadow: none;
     transform: none;
+}
+
+/* Ocultar botones con restricción de rol para pesadores */
+.dt-btn-sync[data-role-restricted].hidden-for-role {
+    display: none !important;
 }
 
 /* ==========================================
@@ -884,7 +1271,6 @@ select.form-control {
     .dt-timeline-item {
         padding-left: 2rem;
         min-height: 1.75rem;
-        margin-bottom: 0.5rem;
     }
 
     .dt-timeline-content {
@@ -901,3 +1287,114 @@ select.form-control {
     }
 }
 
+/* ==========================================
+   ATAJOS DE TECLADO - PANEL FLOTANTE
+   ========================================== */
+.dt-shortcuts-panel {
+    position: fixed;
+    bottom: 5rem;
+    right: 1.5rem;
+    z-index: 2000;
+    width: 260px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+    border: 1px solid #dee2e6;
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.dt-shortcuts-panel.dt-shortcuts-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.dt-shortcuts-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: var(--dt-blue);
+    color: #fff;
+    border-radius: 12px 12px 0 0;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.dt-shortcuts-header i {
+    margin-right: 0.4rem;
+}
+
+.dt-shortcuts-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.15s;
+}
+
+.dt-shortcuts-close:hover {
+    color: #fff;
+}
+
+.dt-shortcuts-body {
+    padding: 0.75rem 1rem;
+}
+
+.dt-shortcut-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.35rem 0;
+}
+
+.dt-shortcut-keys {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+}
+
+.dt-shortcut-keys kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    padding: 2px 6px;
+    font-size: 0.75rem;
+    font-family: inherit;
+    font-weight: 600;
+    color: var(--dt-blue);
+    background: #f0f3ff;
+    border: 1px solid #c5cde8;
+    border-radius: 5px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    white-space: nowrap;
+}
+
+.dt-shortcut-desc {
+    font-size: 0.82rem;
+    color: var(--dt-text-dark);
+    flex: 1;
+    text-align: right;
+    padding-left: 0.5rem;
+}
+
+.dt-shortcut-divider {
+    margin: 0.4rem 0;
+    border-color: #dee2e6;
+}
+
+@media (max-width: 576px) {
+    .dt-shortcuts-panel {
+        right: 1rem;
+        width: calc(100vw - 2rem);
+        bottom: 4rem;
+    }
+}

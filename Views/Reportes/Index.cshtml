@@ -10,62 +10,60 @@
 
 <!-- Banner y pestañas -->
 <div class="banner-wrapper">
-    <!-- Banner Izquierdo -->
+<!-- Banner Izquierdo -->
     <section class="custom-banner">
         <h1>Reportes Quickpass</h1>
     </section>
 </div>
 
-<div class="flex items-end gap-4 mt-6 ml-10">
+<div class="filters-container flex items-end gap-4 mt-6 mx-10">
     <!-- Reporte -->
-    <div class="min-w-[220px]">
+    <div class="filter-item">
         <label for="f-reporte" class="block font-semibold mb-2">Reporte</label>
         <select id="f-reporte" class="w-full h-11 px-3 border border-gray-300 rounded-xl">
             <option value="">Seleccione</option>
-            <option value="1">Lista Negra Motoristas</option>
-            <option value="2">Ingreso de Camiones</option>
-            <option value="3">Requiere Barrido</option>
+            <option value="1">Recepciones</option>
         </select>
     </div>
 
     <!-- Ingenio -->
-    <div class="min-w-[200px]">
-        <label for="f-ingenio" class="block font-semibold mb-2">Ingenio</label>
+    <div class="filter-item">
+        <label for="f-ingenio" class="block font-semibold mb-2">Cliente</label>
         <select id="f-ingenio" class="w-full h-11 px-3 border border-gray-300 rounded-xl">
             <option value="">Todos</option>
-            <option value="JB">Ingenio Central Azucarero Jiboa</option>
-            <option value="ILC">Ingenio La Cabaña</option>
-            <option value="IEA">Ingenio El Ángel</option>
-            <option value="ILM">Ingenio La Magdalena</option>
-            <option value="ICHP">Ingenio Chaparrastique</option>
-            <option value="CASSA">Compañía Azucarera Salvadoreña</option>
         </select>
     </div>
 
     <!-- Producto -->
-    <div class="min-w-[140px]">
+    <div class="filter-item">
         <label for="f-producto" class="block font-semibold mb-2">Producto</label>
         <select id="f-producto" class="w-full h-11 px-3 border border-gray-300 rounded-xl">
             <option value="">Todos</option>
-            <option value="AZ-001">Azúcar</option>
-            <option value="MEL-001">Melaza</option>
+        </select>
+    </div>
+
+    <!-- Punto de almacenaje (solo visible para Recepciones) -->
+    <div id="punto-almacenaje-container" class="filter-item hidden">
+        <label for="f-punto-almacenaje" class="block font-semibold mb-2">Almacén</label>
+        <select id="f-punto-almacenaje" class="w-full h-11 px-3 border border-gray-300 rounded-xl">
+            <option value="">Todos</option>
         </select>
     </div>
 
     <!-- Fecha -->
-    <div class="min-w-[260px]">
+    <div class="filter-item filters-date">
         <label class="block font-semibold mb-2">Fecha</label>
-        <div class="flex items-center gap-2">
-            <input type="date" id="f-desde" class="w-full h-11 px-3 border border-gray-300 rounded-xl">
-            <span class="font-bold">–</span>
-            <input type="date" id="f-hasta" class="w-full h-11 px-3 border border-gray-300 rounded-xl">
+        <div class="date-range-wrapper">
+            <input type="date" id="f-desde" class="date-input">
+            <span class="date-separator">–</span>
+            <input type="date" id="f-hasta" class="date-input">
         </div>
     </div>
 
     <!-- Botón en la misma fila -->
-    <div>
+    <div class="filter-btn">
         <button id="btn-generar"
-                class="h-11 px-3 rounded-xl text-white bg-[#FD6104] hover:opacity-90 active:opacity-80 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                class="h-11 px-5 rounded-xl text-white bg-[#FD6104] hover:opacity-90 active:opacity-80 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
             <span id="btn-text">Buscar</span>
         </button>
     </div>
@@ -86,54 +84,62 @@
 </div>
 -->
 
-<!-- Resumen del reporte -->
-<div id="resumen-container" class="resumen-container hidden">
-    <div class="resumen-card">
-        <div class="resumen-icon">
-            <i class="fas fa-chart-bar"></i>
-        </div>
-        <div class="resumen-content">
-            <div class="resumen-item">
-                <span class="resumen-label">Total de registros:</span>
-                <span class="resumen-valor" id="resumen-total">0</span>
-            </div>
-            <div class="resumen-item">
-                <span class="resumen-label">Primera entrada:</span>
-                <span class="resumen-valor" id="resumen-min-entrada">-</span>
-            </div>
-            <div class="resumen-item">
-                <span class="resumen-label">Última salida:</span>
-                <span class="resumen-valor" id="resumen-max-salida">-</span>
-            </div>
-        </div>
-        <section id="exports" class="exports hidden">
-            <button id="btn-pdf" class="btn-pdf" disabled>Descargar PDF</button>
-            <button id="btn-excel" class="btn-excel" disabled>Descargar Excel</button>
-        </section>
-    </div>
-</div>
-
-
-
+<!-- Contenedor Card que integra header + tabla -->
 <section id="result">
-    <div class="table-wrapper hidden">
-        <table id="tabla" class="tabla">
-            <thead id="thead"></thead>
-            <tbody id="tbody"></tbody>
-        </table>
+    <div id="resumen-container" class="table-card hidden">
+        <!-- Header de la card -->
+        <div class="table-card__header">
+            <div class="table-card__title-group">
+                <span class="table-card__accent"></span>
+                <h3 id="report-title" class="table-card__heading">RECEPCIONES</h3>
+            </div>
+        </div>
+        <!-- Totales del reporte (oculto hasta que haya datos) -->
+        <div id="totales-section" class="totales-section hidden">
+            <div class="totales-title">
+                <h4>Totales:</h4>
+            </div>
+            <div class="totales-row">
+                <div class="totales-container">
+                    <div class="total-item">
+                        <span class="total-label">Peso Bruto Almapac</span>
+                        <span id="total-peso-bruto" class="total-value">0 KG</span>
+                    </div>
+                    <div class="total-item">
+                        <span class="total-label">Peso Tara Almapac</span>
+                        <span id="total-peso-tara" class="total-value">0 KG</span>
+                    </div>
+                    <div class="total-item">
+                        <span class="total-label">Peso Neto Almapac</span>
+                        <span id="total-peso-neto" class="total-value">0 KG</span>
+                    </div>
+                </div>
+                <section id="exports" class="table-card__actions">
+                    <button id="btn-pdf" class="btn-pdf hidden" disabled>Descargar PDF</button>
+                    <button id="btn-excel" class="btn-excel" disabled>
+                        <svg class="btn-excel__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zM8.5 19l2.5-4-2.5-4h1.7l1.8 3 1.8-3h1.7l-2.5 4 2.5 4h-1.7l-1.8-3-1.8 3H8.5z"/>
+                        </svg>
+                        Descargar Excel
+                    </button>
+                </section>
+            </div>
+        </div>
+        <!-- Body de la card (tabla) -->
+        <div class="table-card__body">
+            <div class="table-wrapper">
+                <table id="tabla" class="tabla">
+                    <thead id="thead"></thead>
+                    <tbody id="tbody"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
+    <!-- Paginación (se llena desde reportes.js, oculta hasta que haya datos) -->
+    <div id="pager" class="hidden"></div>
 </section>
 
 @section Scripts
 {
-    <script>
-        // Forzar ocultar spinner inmediatamente antes de cargar el script principal
-        (function() {
-            const spinner = document.getElementById('spinner-overlay');
-            if (spinner) {
-                spinner.style.display = 'none';
-            }
-        })();
-    </script>
     <script src="~/js/reportes.js"></script>
 }

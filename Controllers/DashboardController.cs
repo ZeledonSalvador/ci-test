@@ -37,8 +37,14 @@ namespace FrontendQuickpass.Controllers
         [HttpGet("/Dashboard/Recepcion")]
         public IActionResult Index() => View();
 
-        [HttpGet("/Dashboard/tiempos-hoy-detalle")]
+        [HttpGet("/Dashboard/TiemposHoyDetalle")]
         public IActionResult Descarga() => View();
+
+        [HttpGet("/Dashboard/PesosHistorico")]
+        public IActionResult PesosHistorico() => View();
+
+        [HttpGet("/Dashboard/HistoricoDiarioHoras")]
+        public IActionResult HistoricoDiarioHoras() => View();
 
         // --- API ROUTES centralizadas ---
         private static class ApiRoutes
@@ -54,6 +60,16 @@ namespace FrontendQuickpass.Controllers
             public const string PromediosAtencionHoy = "/dashboard/promedios-atencion-hoy";
             public const string PromedioDescargaHoy = "/dashboard/promedio-descarga-hoy";
             public const string PesosPorStatusHoy = "/dashboard/pesos-por-status-hoy";
+
+            // Diario - Pesos y Promedios
+            public const string DiarioCantidadesPromedios = "/dashboard/diario/cantidades-promedios";
+
+            // Histórico diario por horas (por fecha)
+            public const string StatusPorFecha = "/dashboard/status-por-fecha";
+            public const string RecibidoPorHora = "/dashboard/recibido-por-hora";
+            public const string PromedioDescargaPorHora = "/dashboard/promedio-descarga-por-hora";
+            public const string PromediosAtencionPorFecha = "/dashboard/promedios-atencion-por-fecha";
+
         }
 
         // ============================
@@ -83,7 +99,7 @@ namespace FrontendQuickpass.Controllers
                 bool useRecepcion = hourFrom.HasValue || hourTo.HasValue;
 
                 // Si es Index (por fechas), calcula start/end por día completo como antes
-                string? startIso = null, endIso = null;
+                string startIso = null, endIso = null;
                 if (!useRecepcion)
                 {
                     DateTime dFrom = ParseDateOrToday(from);
@@ -129,10 +145,10 @@ namespace FrontendQuickpass.Controllers
                 else
                 {
                     // --- INDEX: usar endpoints por fechas ---
-                    tResumen = ApiGet($"/dashboard/resumen-estatus?start={Uri.EscapeDataString(startIso ?? "")}&end={Uri.EscapeDataString(endIso ?? "")}{Opt(productId, "product")}{Opt(ingenioId, "ingenioId")}");
-                    tProm = ApiGet($"/dashboard/promedios-atencion?start={Uri.EscapeDataString(startIso ?? "")}&end={Uri.EscapeDataString(endIso ?? "")}{Opt(productId, "product")}{Opt(ingenioId, "ingenioId")}");
-                    tDesc = ApiGet($"/dashboard/promedio-descarga-historico?start={Uri.EscapeDataString(startIso ?? "")}&end={Uri.EscapeDataString(endIso ?? "")}{Opt(productId, "product")}{Opt(ingenioId, "ingenioId")}");
-                    tPesos = ApiGet($"/dashboard/pesos-por-status?start={Uri.EscapeDataString(startIso ?? "")}&end={Uri.EscapeDataString(endIso ?? "")}{Opt(productId, "product")}{Opt(ingenioId, "ingenioId")}&minStatus=9");
+                    tResumen = ApiGet($"/dashboard/resumen-estatus?start={Uri.EscapeDataString(startIso)}&end={Uri.EscapeDataString(endIso)}{Opt(productId, "product")}{Opt(ingenioId, "ingenioId")}");
+                    tProm = ApiGet($"/dashboard/promedios-atencion?start={Uri.EscapeDataString(startIso)}&end={Uri.EscapeDataString(endIso)}{Opt(productId, "product")}{Opt(ingenioId, "ingenioId")}");
+                    tDesc = ApiGet($"/dashboard/promedio-descarga-historico?start={Uri.EscapeDataString(startIso)}&end={Uri.EscapeDataString(endIso)}{Opt(productId, "product")}{Opt(ingenioId, "ingenioId")}");
+                    tPesos = ApiGet($"/dashboard/pesos-por-status?start={Uri.EscapeDataString(startIso)}&end={Uri.EscapeDataString(endIso)}{Opt(productId, "product")}{Opt(ingenioId, "ingenioId")}");
                 }
 
                 await Task.WhenAll(tResumen, tProm, tDesc, tPesos);
@@ -155,6 +171,74 @@ namespace FrontendQuickpass.Controllers
                 var promV3 = SafeDeserialize<PromediosAtencionV3>(rawProm);    // NUEVO promedios
                 var desc = SafeDeserialize<PromDescargaHistApi>(rawDesc);
                 var pesos = SafeDeserialize<PesosPorStatusApi>(rawPesos);
+
+                // ===== FIX: fallback cuando pesos-por-status no viene con shape { PesosPorStatus: { Dias/Horas } } =====
+                if ((pesos?.PesosPorStatus?.Dias == null || pesos.PesosPorStatus.Dias.Count == 0) &&
+                    !string.IsNullOrWhiteSpace(rawPesos))
+                {
+                    try
+                    {
+                        var jo = Newtonsoft.Json.Linq.JObject.Parse(rawPesos);
+
+                        // Caso 1: viene como objeto, pero con nombres diferentes (por si acaso)
+                        var diasTok = jo.SelectToken("PesosPorStatus.Dias") ?? jo.SelectToken("pesosPorStatus.dias");
+                        var horasTok = jo.SelectToken("PesosPorStatus.Horas") ?? jo.SelectToken("pesosPorStatus.horas");
+
+                        if (diasTok is Newtonsoft.Json.Linq.JArray diasArr || horasTok is Newtonsoft.Json.Linq.JArray horasArr)
+                        {
+                            pesos ??= new PesosPorStatusApi();
+                            pesos.PesosPorStatus ??= new PesosSection();
+
+                            if (diasTok is Newtonsoft.Json.Linq.JArray dArr)
+                                pesos.PesosPorStatus.Dias = dArr.ToObject<List<PesoDia>>() ?? new List<PesoDia>();
+
+                            if (horasTok is Newtonsoft.Json.Linq.JArray hArr)
+                                pesos.PesosPorStatus.Horas = hArr.ToObject<List<PesoHora>>() ?? new List<PesoHora>();
+                        }
+                        else
+                        {
+                            // Caso 2: viene como Rows (legacy)
+                            var rowsTok = jo.SelectToken("Rows") ?? jo.SelectToken("rows");
+                            if (rowsTok is Newtonsoft.Json.Linq.JArray rowsArr && rowsArr.Count > 0)
+                            {
+                                // Intento: agrupar por fecha+producto y crear "Dias"
+                                var dias = new List<PesoDia>();
+
+                                // Campos comunes que he visto: fecha, product, totalKg/total_kg/TotalKg
+                                var groups = rowsArr
+                                    .Select(r => new
+                                    {
+                                        Fecha = (string?)r["fecha"] ?? (string?)r["Fecha"],
+                                        Product = (string?)r["product"] ?? (string?)r["Product"],
+                                        Kg = (double?)r["totalKg"] ?? (double?)r["TotalKg"] ?? (double?)r["total_kg"] ?? 0
+                                    })
+                                    .Where(x => !string.IsNullOrWhiteSpace(x.Fecha))
+                                    .GroupBy(x => new { x.Fecha, x.Product });
+
+                                foreach (var g in groups)
+                                {
+                                    dias.Add(new PesoDia
+                                    {
+                                        Fecha = g.Key.Fecha!,
+                                        Product = g.Key.Product,
+                                        TotalKg = g.Sum(x => x.Kg),
+                                        TotalRegistros = g.Count()
+                                    });
+                                }
+
+                                pesos ??= new PesosPorStatusApi();
+                                pesos.PesosPorStatus ??= new PesosSection();
+                                pesos.PesosPorStatus.Dias = dias;
+                                pesos.PesosPorStatus.Horas = new List<PesoHora>();
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // si no se puede parsear, dejamos pesos como estaba (y seguirá en 0)
+                    }
+                }
+
 
                 // ===== 5) Labels y series =====
                 List<string> labels;
@@ -393,6 +477,20 @@ namespace FrontendQuickpass.Controllers
             }
         }
 
+        // /dashboard/diario/cantidades-promedios?start=YYYY-MM-DD&end=YYYY-MM-DD&product=&ingenioId=
+        [HttpGet("/dashboard/diario/cantidades-promedios")]
+        public Task<IActionResult> DiarioCantidadesPromedios(
+            [FromQuery] string start,
+            [FromQuery] string end,
+            [FromQuery] string? product = null,
+            [FromQuery] string? ingenioId = null
+        ) => ProxyGetRaw(ApiRoutes.DiarioCantidadesPromedios,
+                ("start", start),
+                ("end", end),
+                ("product", product),
+                ("ingenioId", ingenioId));
+
+
         public class TiempoDetalleRow
         {
             public string placa { get; set; } = "";
@@ -615,7 +713,14 @@ namespace FrontendQuickpass.Controllers
             add(r?.Finalizado?.Dias?.Select(z => z.Fecha));
             add(r?.EnProceso?.Dias?.Select(z => z.Fecha));
             add(d?.PromedioDescarga?.Dias?.Select(z => z.Fecha));
-            add(p?.PesosPorStatus?.Dias?.Select(z => z.Fecha));
+            // Normaliza fechas ISO de pesos a "dd-MM-yy" para evitar labels duplicados
+            add(p?.PesosPorStatus?.Dias?.Select(z =>
+            {
+                var raw = z.Fecha ?? "";
+                return DateTime.TryParseExact(raw, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var isoDate)
+                    ? Label(isoDate)
+                    : raw;
+            }));
 
             return all
                 .Select(s => (s, dt: DateTime.TryParseExact(s, fmt, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dd) ? dd : (DateTime?)null))
@@ -667,9 +772,13 @@ namespace FrontendQuickpass.Controllers
             {
                 foreach (var d in dias)
                 {
-                    var kg = Convert.ToDecimal(d.TotalKg);
-                    if (map.TryGetValue(d.Fecha, out var cur)) map[d.Fecha] = cur + kg;
-                    else map[d.Fecha] = kg;
+                    var rawKey = d.Fecha ?? "";
+                    var key = DateTime.TryParseExact(rawKey, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var isoDate)
+                        ? Label(isoDate)
+                        : rawKey;
+                    var kg = Convert.ToDecimal(d.TotalKgRaw > 0 ? d.TotalKgRaw : d.TotalKg);
+                    if (map.TryGetValue(key, out var cur)) map[key] = cur + kg;
+                    else map[key] = kg;
                 }
             }
             return labels.Select(l => map.TryGetValue(l, out var v) ? v : 0m).ToList();
@@ -766,8 +875,14 @@ namespace FrontendQuickpass.Controllers
             {
                 foreach (var d in dias)
                 {
-                    var key = d.Fecha ?? "";
-                    var kg = Convert.ToDecimal(d.TotalKg);
+                    var rawKey = d.Fecha ?? "";
+                    // Normaliza fechas ISO "yyyy-MM-dd" al mismo formato "dd-MM-yy" que usan los labels
+                    var key = DateTime.TryParseExact(rawKey, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var isoDate)
+                        ? Label(isoDate)
+                        : rawKey;
+                    // Usar TotalKgRaw (peso neto real por transacción) cuando esté disponible.
+                    // TotalKg es un acumulado running-total y no debe sumarse directamente.
+                    var kg = Convert.ToDecimal(d.TotalKgRaw > 0 ? d.TotalKgRaw : d.TotalKg);
                     var kind = NormalizeProduct(d.Product);
                     if (kind == "azucar") A[key] = (A.TryGetValue(key, out var v) ? v : 0m) + kg;
                     else if (kind == "melaza") M[key] = (M.TryGetValue(key, out var v2) ? v2 : 0m) + kg;
@@ -827,23 +942,23 @@ namespace FrontendQuickpass.Controllers
         // ============================
         class ResumenEstatusApi
         {
-            public SectionApi EnTransito { get; set; } = new();
-            public SectionApi Prechequeado { get; set; } = new();
-            public SectionApi Autorizado { get; set; } = new();
-            public SectionApi EnProceso { get; set; } = new();
-            public SectionApi Finalizado { get; set; } = new();
-            public SectionApi EnEnfriamiento { get; set; } = new();
+            public SectionApi EnTransito { get; set; }
+            public SectionApi Prechequeado { get; set; }
+            public SectionApi Autorizado { get; set; }
+            public SectionApi EnProceso { get; set; }
+            public SectionApi Finalizado { get; set; }
+            public SectionApi EnEnfriamiento { get; set; }
         }
         class SectionApi
         {
             public int? Total { get; set; }
-            public List<ResDia> Dias { get; set; } = new();
+            public List<ResDia> Dias { get; set; }
         }
         class ResDia
         {
-            public string Fecha { get; set; } = string.Empty;  // "dd-MM-yy"
+            public string Fecha { get; set; }  // "dd-MM-yy"
             public int? Total { get; set; }
-            public TruckTypeCounts TruckType { get; set; } = new();
+            public TruckTypeCounts TruckType { get; set; }
         }
         class TruckTypeCounts
         {
@@ -855,53 +970,53 @@ namespace FrontendQuickpass.Controllers
 
         class PromediosAtencionApi
         {
-            public PromoGroup PromedioEspera { get; set; } = new();
-            public PromoGroup PromedioAtencion { get; set; } = new();
+            public PromoGroup PromedioEspera { get; set; }
+            public PromoGroup PromedioAtencion { get; set; }
         }
         class PromoGroup
         {
-            public PromoGlobal Global { get; set; } = new();
-            public List<PromoDia> Dias { get; set; } = new();
+            public PromoGlobal Global { get; set; }
+            public List<PromoDia> Dias { get; set; }
         }
         class PromoGlobal
         {
             [JsonProperty("total_pares")] public int TotalPares { get; set; }
             [JsonProperty("promedio_seg")] public double PromedioSeg { get; set; }
-            [JsonProperty("promedio_hhmmss")] public string PromedioHHMMSS { get; set; } = string.Empty;
+            [JsonProperty("promedio_hhmmss")] public string PromedioHHMMSS { get; set; }
         }
         class PromoDia
         {
-            public string fecha { get; set; } = string.Empty;
+            public string fecha { get; set; }
             public int cantidad { get; set; }
             [JsonProperty("promedio_seg")] public double PromedioSeg { get; set; }
-            [JsonProperty("promedio_hhmmss")] public string PromedioHHMMSS { get; set; } = string.Empty;
+            [JsonProperty("promedio_hhmmss")] public string PromedioHHMMSS { get; set; }
         }
 
         class PromDescargaHistApi
         {
-            public PromDescSection PromedioDescarga { get; set; } = new();
+            public PromDescSection PromedioDescarga { get; set; }
         }
         class PromDescSection
         {
             public int Total { get; set; }
-            public List<PromDescDia> Dias { get; set; } = new();
+            public List<PromDescDia> Dias { get; set; }
         }
         class PromDescDia
         {
-            public string Fecha { get; set; } = string.Empty; // "dd-MM-yy"
+            public string Fecha { get; set; } // "dd-MM-yy"
             public int Total { get; set; }
-            public TruckTypeTimes TruckType { get; set; } = new();
+            public TruckTypeTimes TruckType { get; set; }
         }
         class TruckTypeTimes
         {
-            public string Planas { get; set; } = string.Empty;
-            public string Volteo { get; set; } = string.Empty;
-            public string Pipa { get; set; } = string.Empty;
+            public string Planas { get; set; }
+            public string Volteo { get; set; }
+            public string Pipa { get; set; }
         }
 
         class PesosPorStatusApi
         {
-            public PesosSection PesosPorStatus { get; set; } = new();
+            public PesosSection PesosPorStatus { get; set; }
         }
 
         class PesosSection
@@ -910,24 +1025,25 @@ namespace FrontendQuickpass.Controllers
             public double TotalKg { get; set; }
 
             // Histórico por día
-            public List<PesoDia> Dias { get; set; } = new();
+            public List<PesoDia> Dias { get; set; }
 
             // Día actual por hora
-            public List<PesoHora> Horas { get; set; } = new();
+            public List<PesoHora> Horas { get; set; }
         }
 
         class PesoDia
         {
-            public string Fecha { get; set; } = string.Empty; // "dd-MM-yy"
+            public string Fecha { get; set; } // "dd-MM-yy"
             public int TotalRegistros { get; set; }
-            public double TotalKg { get; set; }
-            public string Product { get; set; } = string.Empty;  // por producto
+            public double TotalKg { get; set; }      // acumulado (running total) — no usar para sumas
+            public double TotalKgRaw { get; set; }   // peso neto real por transacción
+            public string Product { get; set; }  // por producto
         }
 
         // Coincide con JSON ("Hora": "HH:00")
         class PesoHora
         {
-            public string Hora { get; set; } = string.Empty;           // "HH:00"
+            public string Hora { get; set; }           // "HH:00"
             public int TotalRegistros { get; set; }
             public double TotalKg { get; set; }
         }
@@ -937,10 +1053,10 @@ namespace FrontendQuickpass.Controllers
         // ============================
         class ResumenEstatusV2
         {
-            public string Producto { get; set; } = string.Empty;
-            public string Ingenio { get; set; } = string.Empty;
-            public RangoV2 Rango { get; set; } = new();
-            public EstatusV2 Estatus { get; set; } = new();
+            public string Producto { get; set; }
+            public string Ingenio { get; set; }
+            public RangoV2 Rango { get; set; }
+            public EstatusV2 Estatus { get; set; }
             public List<RowV2> Rows { get; set; } = new();
         }
         class RangoV2
@@ -963,10 +1079,10 @@ namespace FrontendQuickpass.Controllers
         class RowV2
         {
             [JsonProperty("fecha")] public DateTime Fecha { get; set; }
-            [JsonProperty("hora")] public string Hora { get; set; } = string.Empty;   // "HH:mm:ss" o "previos"
-            [JsonProperty("ingenio_id")] public string IngenioId { get; set; } = string.Empty;
-            [JsonProperty("product")] public string Product { get; set; } = string.Empty;
-            [JsonProperty("truck_type")] public string TruckType { get; set; } = string.Empty;    // "V"|"R"|"P"
+            [JsonProperty("hora")] public string Hora { get; set; }   // "HH:mm:ss" o "previos"
+            [JsonProperty("ingenio_id")] public string IngenioId { get; set; }
+            [JsonProperty("product")] public string Product { get; set; }
+            [JsonProperty("truck_type")] public string TruckType { get; set; }    // "V"|"R"|"P"
             [JsonProperty("predefined_status_id")] public int PredefStatusId { get; set; } // 2 o 12
             [JsonProperty("current_status")] public int CurrentStatusId { get; set; } // fallback
             [JsonProperty("total")] public int Total { get; set; }
@@ -1169,13 +1285,77 @@ namespace FrontendQuickpass.Controllers
             return serie;
         }
 
+        // /dashboard/status-por-fecha?date=YYYY-MM-DD&product=&ingenioId=&hourFrom=0&hourTo=23
+        [HttpGet("/dashboard/status-por-fecha")]
+        public Task<IActionResult> StatusPorFecha(
+            [FromQuery] string date,
+            [FromQuery] string? product = null,
+            [FromQuery] string? ingenioId = null,
+            [FromQuery] int hourFrom = 0,
+            [FromQuery] int hourTo = 23
+        ) => ProxyGetRaw(ApiRoutes.StatusPorFecha,
+                ("date", date),
+                ("product", product),
+                ("ingenioId", ingenioId),
+                ("hourFrom", hourFrom.ToString()),
+                ("hourTo", hourTo.ToString()));
+
+
+        // /dashboard/recibido-por-hora?date=YYYY-MM-DD&ingenioId=&hourFrom=0&hourTo=23&product=
+        [HttpGet("/dashboard/recibido-por-hora")]
+        public Task<IActionResult> RecibidoPorHora(
+            [FromQuery] string date,
+            [FromQuery] int hourFrom = 0,
+            [FromQuery] int hourTo = 23,
+            [FromQuery] string? ingenioId = null,
+            [FromQuery] string? product = null
+        ) => ProxyGetRaw(ApiRoutes.RecibidoPorHora,
+                ("date", date),
+                ("hourFrom", hourFrom.ToString()),
+                ("hourTo", hourTo.ToString()),
+                ("ingenioId", ingenioId),
+                ("product", product));
+
+
+        // /dashboard/promedio-descarga-por-hora?date=YYYY-MM-DD&product=&ingenioId=&hourFrom=0&hourTo=23
+        [HttpGet("/dashboard/promedio-descarga-por-hora")]
+        public Task<IActionResult> PromedioDescargaPorHora(
+            [FromQuery] string date,
+            [FromQuery] string? product = null,
+            [FromQuery] string? ingenioId = null,
+            [FromQuery] int hourFrom = 0,
+            [FromQuery] int hourTo = 23
+        ) => ProxyGetRaw(ApiRoutes.PromedioDescargaPorHora,
+                ("date", date),
+                ("product", product),
+                ("ingenioId", ingenioId),
+                ("hourFrom", hourFrom.ToString()),
+                ("hourTo", hourTo.ToString()));
+
+
+        // /dashboard/promedios-atencion-por-fecha?date=YYYY-MM-DD&product=&ingenioId=&hourFrom=0&hourTo=23
+        [HttpGet("/dashboard/promedios-atencion-por-fecha")]
+        public Task<IActionResult> PromediosAtencionPorFecha(
+            [FromQuery] string date,
+            [FromQuery] string? product = null,
+            [FromQuery] string? ingenioId = null,
+            [FromQuery] int hourFrom = 0,
+            [FromQuery] int hourTo = 23
+        ) => ProxyGetRaw(ApiRoutes.PromediosAtencionPorFecha,
+                ("date", date),
+                ("product", product),
+                ("ingenioId", ingenioId),
+                ("hourFrom", hourFrom.ToString()),
+                ("hourTo", hourTo.ToString()));
+
+
         // ============================
         // DTO de salida (frontend)
         // ============================
         public class DashboardSummaryDto
         {
-            public KpiDto kpi { get; set; } = new();
-            public ChartsDto charts { get; set; } = new();
+            public KpiDto kpi { get; set; }
+            public ChartsDto charts { get; set; }
 
             public static DashboardSummaryDto Empty() => new DashboardSummaryDto
             {
@@ -1251,15 +1431,15 @@ namespace FrontendQuickpass.Controllers
         // ====== DTOs NUEVO formato de /dashboard/promedios-atencion ======
         class PromediosAtencionV3
         {
-            public string Producto { get; set; } = string.Empty;
-            public string Ingenio { get; set; } = string.Empty;
-            public RangoV3 Rango { get; set; } = new();
+            public string Producto { get; set; }
+            public string Ingenio { get; set; }
+            public RangoV3 Rango { get; set; }
 
             [JsonProperty("PromedioEspera")]
-            public PromoGroupV3 PromedioEspera { get; set; } = new();
+            public PromoGroupV3 PromedioEspera { get; set; }
 
             [JsonProperty("PromedioAtencion")]
-            public PromoGroupV3 PromedioAtencion { get; set; } = new();
+            public PromoGroupV3 PromedioAtencion { get; set; }
         }
 
         class RangoV3
@@ -1278,17 +1458,17 @@ namespace FrontendQuickpass.Controllers
         {
             [JsonProperty("total_pares")] public int TotalPares { get; set; }
             [JsonProperty("promedio_seg")] public double PromedioSeg { get; set; }
-            [JsonProperty("promedio_hhmmss")] public string PromedioHHMMSS { get; set; } = string.Empty;
+            [JsonProperty("promedio_hhmmss")] public string PromedioHHMMSS { get; set; }
             [JsonProperty("cantidad_promedio")] public double CantidadPromedio { get; set; } // promedio global de kg
         }
 
         class PromoDiaV3
         {
-            public string fecha { get; set; } = string.Empty;        // "YYYY-MM-DD"
-            public string producto { get; set; } = string.Empty;     // por día
+            public string fecha { get; set; }        // "YYYY-MM-DD"
+            public string producto { get; set; }     // por día
             public double cantidad { get; set; }     // suma día+producto (kg)
             [JsonProperty("promedio_seg")] public double PromedioSeg { get; set; }
-            [JsonProperty("promedio_hhmmss")] public string PromedioHHMMSS { get; set; } = string.Empty;
+            [JsonProperty("promedio_hhmmss")] public string PromedioHHMMSS { get; set; }
         }
     }
 }

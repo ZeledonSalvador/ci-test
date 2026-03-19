@@ -5,8 +5,9 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 
     // Información General
-    var transaccion = ViewBag.Transaccion as string ?? "-";
+    var envio = ViewBag.Envio as string ?? "-";
     var cliente = ViewBag.Cliente as string ?? "-";
+    var ingenioCode = ViewBag.IngenioCode as string ?? "";
     var producto = ViewBag.Producto as string ?? "-";
     var codigoGeneracion = ViewBag.CodigoGeneracion as string ?? "-";
     var transportista = ViewBag.Transportista as string ?? "-";
@@ -39,11 +40,19 @@
     var marchamo3 = ViewBag.Marchamo3 as string ?? "";
     var marchamo4 = ViewBag.Marchamo4 as string ?? "";
     var comprobante = ViewBag.Comprobante as string ?? "";
+    var tipoBarrido = ViewBag.TipoBarrido as string ?? "";
+    var comentarioBarrido = ViewBag.ComentarioBarrido as string ?? "";
+    var observaciones = ViewBag.Observaciones as string ?? "";
+
+    // Almacén (para MELAZA)
+    int? warehouseId = ViewBag.WarehouseId as int?;
+    var warehouses = ViewBag.Warehouses as List<dynamic> ?? new List<dynamic>();
 
     // Flags para saber si ya tiene marchamos/comprobante asignados
     bool tieneMarchamos = ViewBag.TieneMarchamos ?? false;
     bool tieneComprobante = ViewBag.TieneComprobante ?? false;
     bool comprobanteImpreso = ViewBag.ComprobanteImpreso ?? false;
+    var nombreUsuario = ViewBag.NombreUsuario as string ?? "Sistema";
 
     // Fechas para impresión
     var fechaEntra = ViewBag.FechaEntra as string ?? "";
@@ -65,7 +74,12 @@
 <input type="hidden" id="hdnTieneMarchamos" value="@(tieneMarchamos ? "true" : "false")" />
 <input type="hidden" id="hdnTieneComprobante" value="@(tieneComprobante ? "true" : "false")" />
 <input type="hidden" id="hdnComprobanteImpreso" value="@(comprobanteImpreso ? "true" : "false")" />
+<input type="hidden" id="hdnNombreUsuario" value="@nombreUsuario" />
 <input type="hidden" id="hdnProducto" value="@producto" />
+<input type="hidden" id="hdnIngenioCode" value="@ingenioCode" />
+<input type="hidden" id="hdnUmbralRepesaje" value="@(ViewBag.UmbralRepesaje ?? -100)" />
+<input type="hidden" id="hdnWarehouseId" value="@(warehouseId?.ToString() ?? "")" />
+<input type="hidden" id="hdnShipmentId" value="@ViewBag.Envio" />
 
 <!-- Datos de pesajes y consolidado (JSON) -->
 <script type="application/json" id="pesajes-data">@Html.Raw(ViewBag.PesajesJson ?? "[]")</script>
@@ -78,6 +92,9 @@
 <!-- Banner Principal -->
 <section class="lt-banner">
     <h1>@actividad.ToUpper()</h1>
+    <button type="button" class="btn dt-btn-close-banner" id="btnCerrarBanner" title="Cerrar">
+        <i class="fas fa-times"></i>
+    </button>
 </section>
 
 <!-- Contenedor Principal -->
@@ -96,9 +113,16 @@
         </div>
     }
 
+    @if (!string.IsNullOrEmpty(ViewBag.WarningComprobante as string))
+    {
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-circle"></i> @ViewBag.WarningComprobante
+        </div>
+    }
+
     <!-- DEBUG: Mostrar valores -->
     <div style="display:none;">
-        Debug - Transaccion: @transaccion | Cliente: @cliente | CodeGen: @codeGen
+        Debug - Envio: @envio | Cliente: @cliente | CodeGen: @codeGen
     </div>
 
     <!-- Sección: Información General -->
@@ -114,8 +138,8 @@
             <div class="dt-section-body">
                 <div class="row">
                     <div class="col-md-4 mb-4">
-                        <label class="dt-label">Transacción</label>
-                        <div class="dt-value">@transaccion</div>
+                        <label class="dt-label">ID (Máster Doc)</label>
+                        <div class="dt-value">@envio</div>
                     </div>
                     <div class="col-md-4 mb-4">
                         <label class="dt-label">Cliente</label>
@@ -169,50 +193,39 @@
         </div>
         <div class="collapse show" id="controlPesaje">
             <div class="dt-section-body">
-                <!-- Tabs de pesaje -->
-                <ul class="nav nav-tabs dt-nav-tabs" role="tablist">
-                    <li class="nav-item">
-                        <a class="nav-link active" id="tab-historial-pesajes" data-toggle="tab" href="#historial-pesajes" role="tab">
-                            Historial de pesajes
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="tab-consolidado-pesos" data-toggle="tab" href="#consolidado-pesos" role="tab">
-                            Consolidado de pesos
-                        </a>
-                    </li>
-                </ul>
-
-                <!-- Contenido de tabs -->
-                <div class="tab-content dt-tab-content">
-                    <!-- Tab: Historial de pesajes -->
-                    <div class="tab-pane fade show active" id="historial-pesajes" role="tabpanel">
-                        <div id="pesajes-container">
-                            <!-- Los pesajes se cargarán dinámicamente desde JavaScript -->
-                        </div>
+                <!-- Historial de pesajes -->
+                <div class="dt-historial-section">
+                    <h5 class="dt-historial-title">Historial de pesajes</h5>
+                    <div id="pesajes-container">
+                        <!-- Los pesajes se cargarán dinámicamente desde JavaScript -->
                     </div>
+                </div>
 
-                    <!-- Tab: Consolidado de pesos -->
-                    <div class="tab-pane fade" id="consolidado-pesos" role="tabpanel">
-                        <div class="table-responsive">
-                            <table class="dt-table">
-                                <thead>
-                                    <tr>
-                                        <th># Pesaje</th>
-                                        <th>Peso neto</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="consolidado-tbody">
-                                    <!-- Los datos se cargarán dinámicamente desde JavaScript -->
-                                </tbody>
-                                <tfoot>
-                                    <tr class="dt-row-bold">
-                                        <td>Total</td>
-                                        <td id="consolidado-total">0.00</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
+                <!-- Consolidado de pesos -->
+                <div class="dt-consolidado-section">
+                    <h5 class="dt-consolidado-title">Consolidado de pesos</h5>
+                    <div class="table-responsive">
+                        <table class="dt-table dt-consolidado-table dt-pesos-table">
+                            <colgroup>
+                                <col class="dt-col-1" />
+                                <col class="dt-col-2" />
+                                <col class="dt-col-3" />
+                                <col class="dt-col-4" />
+                                <col class="dt-col-5" />
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th># Pesaje</th>
+                                    <th></th>
+                                    <th>Peso neto</th>
+                                    <th></th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="consolidado-tbody">
+                                <!-- Se cargará dinámicamente desde JavaScript -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -234,21 +247,21 @@
                 {
                     <!-- Layout para MELAZA: Solo Tarjeta, Marchamo 1 y Comprobante (sin Humedad ni Marchamos 2-4) -->
                     <div class="row">
-                        <div class="col-md-6 col-lg-4 mb-3" style="max-width: 400px;">
+                        <div class="col-md-4 mb-3">
                             <label class="dt-label">Tarjeta</label>
                             <div class="dt-input-group">
                                 <input type="text" class="form-control dt-input" id="txtTarjeta" value="@tarjeta" readonly>
-                                <span class="dt-input-spacer"></span>
+                                <button type="button" class="btn btn-link dt-btn-anular dt-btn-anular-tarjeta">Anular</button>
                             </div>
                         </div>
-                        <div class="col-md-6 col-lg-4 mb-3" style="max-width: 400px;">
+                        <div class="col-md-4 mb-3">
                             <label class="dt-label">Marchamo 1</label>
                             <div class="dt-input-group">
                                 <input type="text" class="form-control dt-input" id="txtMarchamo1" value="@marchamo1">
                                 <button type="button" class="btn btn-link dt-btn-anular">Anular</button>
                             </div>
                         </div>
-                        <div class="col-md-6 col-lg-4 mb-3" style="max-width: 400px;">
+                        <div class="col-md-4 mb-3">
                             <label class="dt-label">Comprobante</label>
                             <div class="dt-input-group">
                                 <input type="text" class="form-control dt-input" id="txtComprobante" value="@comprobante" readonly>
@@ -256,11 +269,65 @@
                             </div>
                         </div>
                     </div>
+                    @if (currentStatus == 11 || currentStatus == 12)
+                    {
+                        <!-- Campo Almacén (solo visible en status 11 para MELAZA) -->
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="dt-label">Almacen</label>
+                                <div class="dt-input-wrapper">
+                                    <div class="custom-searchable-select" @(currentStatus == 12 ? "data-disabled=\"true\"" : "")>
+                                        <input type="text" 
+                                               class="form-control dt-input" 
+                                               id="ddlAlmacen" 
+                                               placeholder="Seleccione almacen" 
+                                               autocomplete="off"
+                                               readonly
+                                               @(currentStatus == 12 ? "disabled" : "")
+                                               value="@(warehouseId.HasValue ? warehouses.FirstOrDefault(w => (int)w.id == warehouseId.Value)?.name : "")">
+                                        <div class="dropdown-arrow">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </div>
+                                        <div class="custom-dropdown-options" id="almacenDropdown" style="display: none;">
+                                            <input type="text" 
+                                                   class="dropdown-search" 
+                                                   id="almacenSearch" 
+                                                   placeholder="Buscar almacén...">
+                                            <div class="dropdown-options-list" id="almacenOptionsList">
+                                                @foreach (var wh in warehouses)
+                                                {
+                                                    var whId = (int)wh.id;
+                                                    var whName = (string)wh.name;
+                                                    <div class="dropdown-option" data-value="@whId" data-text="@whName">@whName</div>
+                                                }
+                                            </div>
+                                        </div>
+                                        <input type="hidden" id="hdnAlmacenId" value="@(warehouseId?.ToString() ?? "")">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
                     <!-- Campos ocultos para mantener compatibilidad con JavaScript -->
                     <input type="hidden" id="txtHumedad" value="0">
                     <input type="hidden" id="txtMarchamo2" value="">
                     <input type="hidden" id="txtMarchamo3" value="">
                     <input type="hidden" id="txtMarchamo4" value="">
+
+                    <!-- Campo Observaciones -->
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="dt-label">Observaciones</label>
+                            <div class="dt-observaciones-container">
+                                <textarea class="form-control dt-textarea"
+                                          id="txtObservaciones"
+                                          rows="1"
+                                          maxlength="125"
+                                          @(currentStatus != 11 ? "readonly" : "")>@observaciones</textarea>
+                                <span class="dt-char-counter"><span id="charCount">@observaciones.Length</span>/125</span>
+                            </div>
+                        </div>
+                    </div>
                 }
                 else
                 {
@@ -270,13 +337,14 @@
                             <label class="dt-label">Tarjeta</label>
                             <div class="dt-input-group">
                                 <input type="text" class="form-control dt-input" id="txtTarjeta" value="@tarjeta" readonly>
-                                <span class="dt-input-spacer"></span>
+                                <button type="button" class="btn btn-link dt-btn-anular dt-btn-anular-tarjeta">Anular</button>
                             </div>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="dt-label">Humedad</label>
                             <div class="dt-input-group">
-                                <input type="number" step="0.001" class="form-control dt-input" id="txtHumedad" value="@humedad" @(comprobanteImpreso ? "readonly" : "")>
+                                <input type="number" step="0.001" class="form-control dt-input dt-input-with-suffix" id="txtHumedad" value="@humedad.ToString("F2")" @(comprobanteImpreso ? "readonly" : "") data-initial-value="@humedad.ToString("F2")">
+                                <span class="dt-input-suffix">%</span>
                                 <span class="dt-input-spacer"></span>
                             </div>
                         </div>
@@ -303,6 +371,16 @@
                                 <button type="button" class="btn btn-link dt-btn-anular">Anular</button>
                             </div>
                         </div>
+                        @if (!string.IsNullOrEmpty(tipoBarrido))
+                        {
+                            <div class="col-md-4 mb-3">
+                                <label class="dt-label">Tipo de Barrido</label>
+                                <div class="dt-input-group">
+                                    <input type="text" class="form-control dt-input" id="txtTipoBarrido" value="@tipoBarrido" readonly>
+                                    <span class="dt-input-spacer"></span>
+                                </div>
+                            </div>
+                        }
                     </div>
                     <div class="row">
                         <div class="col-md-4 mb-3">
@@ -317,6 +395,25 @@
                             <div class="dt-input-group">
                                 <input type="text" class="form-control dt-input" id="txtMarchamo4" value="@marchamo4">
                                 <button type="button" class="btn btn-link dt-btn-anular">Anular</button>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(tipoBarrido))
+                        {
+                            <div class="col-md-4 mb-3">
+                                <label class="dt-label">Comentario Barrido</label>
+                                <div class="dt-input-group">
+                                    <input type="text" class="form-control dt-input" id="txtComentarioBarrido" value="@comentarioBarrido" readonly>
+                                    <span class="dt-input-spacer"></span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="dt-label">Observaciones</label>
+                            <div class="dt-observaciones-container">
+                                <textarea class="form-control dt-textarea" id="txtObservaciones" rows="1" maxlength="125" @(currentStatus != 11 ? "readonly" : "")>@observaciones</textarea>
+                                <span class="dt-char-counter"><span id="charCount">@observaciones.Length</span>/125</span>
                             </div>
                         </div>
                     </div>
@@ -334,7 +431,7 @@
             </div>
             <div class="dt-header-actions">
                 <button type="button" class="btn btn-outline-secondary btn-sm" id="btnAgregarObservacion">
-                    + Agregar observación
+                    + Agregar comentario
                 </button>
                 <i class="fas fa-chevron-up dt-collapse-icon"></i>
             </div>
@@ -348,7 +445,7 @@
                         {
                             <div class="dt-timeline-item">
                                 <div class="dt-timeline-icon">
-                                    <i class="far fa-clock"></i>
+                                    <i class="@(item.Action == "COMMENT_ADDED" ? "far fa-comment" : "far fa-clock")"></i>
                                 </div>
                                 <div class="dt-timeline-content">
                                     <span class="dt-timeline-date">@item.Fecha</span>
@@ -370,13 +467,11 @@
 
 <!-- Barra de Acciones -->
 <div class="dt-action-bar">
-    <!-- Extremo izquierdo - Agregar pesaje -->
-    <button type="button" class="btn dt-btn-pesaje" id="btnAgregarPesaje" disabled>
-        <i class="fas fa-plus-circle"></i> Agregar pesaje
-    </button>
+    <!-- Espaciador izquierdo -->
+    <div class="dt-action-spacer"></div>
 
-    <!-- Acciones principales -->
-    <button type="button" class="btn dt-btn-primary" id="btnGuardar">
+    <!-- Acciones principales (todos deshabilitados por defecto, JS los habilita según el estado) -->
+    <button type="button" class="btn dt-btn-primary" id="btnGuardar" disabled>
         <i class="fas fa-save"></i> Guardar
     </button>
     <button type="button" class="btn dt-btn-success" id="btnImprimir" disabled>
@@ -385,25 +480,28 @@
     <button type="button" class="btn dt-btn-complete" id="btnCompletar" disabled>
         <i class="fas fa-check-circle"></i> Completar
     </button>
+    <button type="button" class="btn dt-btn-repesaje" id="btnAgregarPesaje" disabled>
+        <i class="fas fa-plus-circle"></i> Nuevo pesaje
+    </button>
     <button type="button" class="btn dt-btn-outline" id="btnCerrar">
         <i class="fas fa-times-circle"></i> Cerrar
     </button>
 </div>
 
-<!-- Modal Agregar Observación -->
+<!-- Modal Agregar Comentario -->
 <div class="modal fade" id="modalObservacion" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Agregar Observación</h5>
+                <h5 class="modal-title">Agregar Comentario</h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <span>&times;</span>
                 </button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="txtObservacion">Observación</label>
-                    <textarea class="form-control" id="txtObservacion" rows="4" placeholder="Ingrese la observación..."></textarea>
+                    <label for="txtObservacion">Comentario</label>
+                    <textarea class="form-control" id="txtObservacion" rows="4" placeholder="Ingrese el comentario..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -441,10 +539,6 @@
                     <label for="txtOtroMotivoMarchamo">Especifique el motivo <span class="text-danger">*</span></label>
                     <input type="text" class="form-control" id="txtOtroMotivoMarchamo" placeholder="Ingrese el motivo de anulación..." maxlength="100" />
                 </div>
-                <div class="form-group">
-                    <label for="txtObservacionMarchamo">Observaciones adicionales</label>
-                    <textarea class="form-control" id="txtObservacionMarchamo" rows="3" placeholder="Ingrese observaciones adicionales (opcional)..."></textarea>
-                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
@@ -472,6 +566,7 @@
                     <label for="ddlMotivoComprobante">Seleccione el motivo de anulación <span class="text-danger">*</span></label>
                     <select class="form-control" id="ddlMotivoComprobante">
                         <option value="">Seleccione un motivo</option>
+                        <option value="Comprobante dañado">Comprobante dañado</option>
                         <option value="Comprobante incorrecto">Comprobante incorrecto</option>
                         <option value="Error en el número">Error en el número</option>
                         <option value="Duplicado">Duplicado</option>
@@ -482,10 +577,6 @@
                 <div class="form-group" id="grpOtroMotivoComprobante" style="display: none;">
                     <label for="txtOtroMotivoComprobante">Especifique el motivo <span class="text-danger">*</span></label>
                     <input type="text" class="form-control" id="txtOtroMotivoComprobante" placeholder="Ingrese el motivo de anulación..." maxlength="100" />
-                </div>
-                <div class="form-group">
-                    <label for="txtObservacionComprobante">Observaciones adicionales</label>
-                    <textarea class="form-control" id="txtObservacionComprobante" rows="3" placeholder="Ingrese observaciones adicionales (opcional)..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -499,6 +590,46 @@
     </div>
 </div>
 
+<!-- Modal Modificar Tarjeta Magnética -->
+<div class="modal fade" id="modalModificarTarjeta" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Modificar Tarjeta</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="txtTarjetaActual">Tarjeta actual</label>
+                    <input type="text" class="form-control" id="txtTarjetaActual" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="ddlMotivoTarjeta">Motivo del cambio <span class="text-danger">*</span></label>
+                    <select class="form-control" id="ddlMotivoTarjeta">
+                        <option value="">Seleccione un motivo</option>
+                        <option value="Tarjeta inválida">Tarjeta inválida</option>
+                        <option value="Tarjeta dañada">Tarjeta dañada</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="txtNuevaTarjeta">Nueva tarjeta <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control" id="txtNuevaTarjeta" placeholder="Ingrese el número de la nueva tarjeta..." min="1">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarModificarTarjeta">
+                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    <span class="btn-text">Confirmar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="~/js/detalle-transaccion.js"></script>
 }

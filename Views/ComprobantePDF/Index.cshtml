@@ -101,6 +101,17 @@
             object-fit: contain;
         }
 
+        .cert-code {
+            font-size: 3.5pt;
+            color: #003d8f;
+            font-weight: 600;
+            margin-top: 0.2mm;
+            margin-right: 3px;
+            margin-top: 0px;
+            
+            
+        }
+
         /* Texto PLANTA / NO. */
         .header-info {
             width: 70mm;
@@ -121,6 +132,12 @@
             margin-left: 4mm;
         }
 
+        .numero-line {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+
         .numero{
              text-transform: none;
         }
@@ -131,9 +148,20 @@
         }
 
         .numero-comprobante {
+            font-family: 'Liberation Mono', monospace;
+            font-weight: 100;
+            color: #cc0000;
+            font-size: 22pt;
+            line-height: 1;
+            letter-spacing: 4px;
+            margin-left: 3px;
+        }
+
+        .numero-comprobante-copy {
             font-weight: 700;
-            color: #f39c12;
-            margin-left: 1mm;
+            color: #000000;
+            font-size: 12pt;
+            margin-left: 70px;
         }
 
         .header-spacer {
@@ -210,7 +238,7 @@
             padding-left: 2.5mm;
             font-size: 11pt;
             text-transform: uppercase;
-            font-family: "Courier New", Courier, monospace;
+            font-family: "Calibri Light", Calibri, sans-serif;
             font-weight: 700;
             color: #352b2b;
             line-height: 1;    /* antes 1.5 */
@@ -221,7 +249,7 @@
             text-align: right;
             color: #352b2b;
             font-size: 11pt;
-            font-family: "Courier New", Courier, monospace;
+            font-family: "Calibri Light", Calibri, sans-serif;
             font-weight: 700;
         }
 
@@ -229,19 +257,24 @@
         .box-observaciones {
             width: 190mm;
             margin: 3mm auto 0 auto;
-            padding: 1mm 1mm 6mm 1mm;
+            padding: 1mm 3mm 6mm 3mm;
         }
 
         .obs-title {
             text-transform: uppercase;
-            font-size: 8pt;
+            font-size: 9pt;
             font-weight: 500;
-            color: #004b9b;
+            color: #003d7a;
             margin-bottom: 1mm;
         }
 
         .obs-body {
             min-height: 12mm;
+            font-size: 11pt;
+            font-family: "Calibri Light", Calibri, sans-serif;
+            font-weight: 700;
+            color: #352b2b;
+            text-transform: uppercase;
         }
 
         /* ========= BLOQUE FIRMAS + ALMAPAC ========= */
@@ -483,8 +516,9 @@
                 <td class="header-cert">
                     <table>
                         <tr>
-                            <td>
+                            <td style="text-align:center;">
                                 <img src="~/assets/iso9002.png" asp-append-version="true" alt="ISO 9001" class="cert-iso" />
+                                <div class="cert-code">SC-CER262978</div>
                             </td>
                             <td>
                                 <img src="~/assets/iqnet.png" asp-append-version="true" alt="IQNet" class="cert-iqnet" />
@@ -495,10 +529,13 @@
                 <td class="header-info">
                     <div class="plant-name">Planta Acajutla</div>
                     <div class="numero-row">
-                        <span class="label-numero numero">No.</span>
-                        <span class="numero-comprobante">
+                        <div class="numero-line">
+                            <span class="label-numero numero">No.</span>
+                            <span class="numero-comprobante">@(Model != null ? Model.NumeroComprobante.ToString() : "903517")</span>
+                        </div>
+                        <div class="numero-comprobante-copy">
                             @(Model != null ? Model.NumeroComprobante.ToString() : "903517")
-                        </span>
+                        </div>
                     </div>
                 </td>
             </tr>
@@ -512,13 +549,11 @@
             @{
                 // ======= Cálculos previos =======
                 var fechaEntrada = Model?.FechaEntrada;
-                var horaEntrada = Model?.HoraEntrada ?? string.Empty;
                 string textoEntrada;
                 if (fechaEntrada.HasValue)
                 {
-                    var horaE = !string.IsNullOrWhiteSpace(horaEntrada)
-                        ? horaEntrada
-                        : fechaEntrada.Value.ToString("HH:mm:ss");
+                    // Formato 24 horas desde CreatedAt
+                    var horaE = fechaEntrada.Value.ToString("HH:mm:ss");
                     textoEntrada = $"{fechaEntrada.Value:dd/MM/yyyy} {horaE}";
                 }
                 else
@@ -529,13 +564,11 @@
                 var pesoEntrada = Model?.PesoEntrada ?? 0m;
 
                 var fechaSalida = Model?.FechaSalida;
-                var horaSalida = Model?.HoraSalida ?? string.Empty;
                 string textoSalida;
                 if (fechaSalida.HasValue)
                 {
-                    var horaS = !string.IsNullOrWhiteSpace(horaSalida)
-                        ? horaSalida
-                        : fechaSalida.Value.ToString("HH:mm:ss");
+                    // Formato 24 horas desde CreatedAt
+                    var horaS = fechaSalida.Value.ToString("HH:mm:ss");
                     textoSalida = $"{fechaSalida.Value:dd/MM/yyyy} {horaS}";
                 }
                 else
@@ -547,7 +580,16 @@
                 var tara = Model?.PesoTara ?? 0m;
                 var neto = Model?.PesoNeto ?? 0m;
 
-                string FormatKg(decimal v) => v > 0 ? $"{v:0} KGS" : "0 KGS";
+                // Formato con separador de miles (coma) y decimales solo si existen
+                string FormatKg(decimal v) {
+                    if (v <= 0) return "0 KGS";
+                    var culture = new System.Globalization.CultureInfo("es-SV");
+                    // Si tiene decimales, mostrar con 2 decimales; si no, sin decimales
+                    if (v % 1 != 0) {
+                        return $"{v.ToString("N2", culture)} KGS";
+                    }
+                    return $"{v.ToString("N0", culture)} KGS";
+                }
 
                 var placa = Model?.Placa ?? "";
                 var placaRem = Model?.PlacaRemolque ?? "";
@@ -559,6 +601,7 @@
                 var transaccion = Model != null && Model.TransaccionNavId > 0
                     ? Model.TransaccionNavId.ToString()
                     : "";
+                var pesador = Model?.Pesador ?? "";
 
                 //para que la humedad se muestre en porcentaje
                 var humedad = Model?.PorcentajeHumedad;
@@ -688,8 +731,10 @@
                 <!-- TRANSACCIÓN NO. -->
                 <tr>
                     <td class="col-labels-transaccion">TRANSACCIÓN No. </td>
-                    <td class="col-values">@transaccion</td>
-                    <td class="col-kilos">&nbsp;</td>
+                    <td colspan="2" style="padding-left: 2.5mm; font-size: 11pt; text-transform: uppercase; font-family: 'Calibri Light', Calibri, sans-serif; font-weight: 700; color: #352b2b;">
+                        <span>@transaccion</span>
+                        <span style="float: right; white-space: nowrap;">PESADOR: @pesador</span>
+                    </td>
                 </tr>
 
                 <!-- PORCENTAJE DE HUMEDAD -->
@@ -710,9 +755,9 @@
 
                 <!-- ENVÍO INGENIO (N°) -->
                 <tr>
-                    <td class="col-labels">ENVIO INGENIO (N°)</td>
+                    <td class="col-labels">ENVIO CLIENTE (NR)</td>
                     <td class="col-values">
-                        @(string.IsNullOrWhiteSpace(Model?.NumeroEnvio) ? "" : Model.NumeroEnvio)
+                        @(string.IsNullOrWhiteSpace(Model?.CodeGen) ? "" : Model.CodeGen)
                     </td>
                     <td class="col-kilos">&nbsp;</td>
                 </tr>
@@ -741,7 +786,7 @@
         <!-- OBSERVACIONES -->
         <div class="box-observaciones">
             <div class="obs-title">Observaciones:</div>
-            <div class="obs-body"></div>
+            <div class="obs-body">@(Model?.Observaciones)</div>
         </div>
 
         <!-- FIRMAS -->

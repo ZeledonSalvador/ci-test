@@ -602,7 +602,7 @@ function createUnidadCard(unidad) {
              data-codigo-generacion="${unidad.codeGen}"
              data-shipment-id="${unidad.id}"
              data-ingenio="${escapeHtml((unidad.ingenio?.name || '').replace(/_/g, ' '))}"
-             data-transaccion="${unidad.idNavRecord || 'Sin Datos'}"
+             data-transaccion="${unidad.id || 'Sin Datos'}"
              data-producto="${escapeHtml(unidad.product || '')}"
              data-temperatura="${unidad.latestTemperature?.toFixed(1) || 'N/A'}"
              data-temperature-count="${temperatureCount}"
@@ -768,7 +768,7 @@ function formatDate(date) {
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
-second: '2-digit',
+        second: '2-digit',
         hour12: false
     }).format(date);
 }

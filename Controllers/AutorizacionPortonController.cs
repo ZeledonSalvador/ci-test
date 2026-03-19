@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text;
 using FrontendQuickpass.Models;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Net;
 using System.Linq;
 using FrontendQuickpass.Services;
@@ -18,6 +19,7 @@ namespace FrontendQuickpass.Controllers
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ApiSettings _apiSettings;
         private readonly ITransactionLogService _logService;
+        private readonly IShipmentAuditService _auditService;
         private readonly LoginService _loginService;
 
         // Obtener código de usuario desde JWT en lugar de cookie
@@ -30,11 +32,12 @@ namespace FrontendQuickpass.Controllers
             }
         }
 
-        public AutorizacionPortonController(IHttpClientFactory httpClientFactory, IOptions<ApiSettings> apiOptions, ITransactionLogService logService, LoginService loginService)
+        public AutorizacionPortonController(IHttpClientFactory httpClientFactory, IOptions<ApiSettings> apiOptions, ITransactionLogService logService, IShipmentAuditService auditService, LoginService loginService)
         {
             _httpClientFactory = httpClientFactory;
             _apiSettings = apiOptions.Value;
             _logService = logService;
+            _auditService = auditService;
             _loginService = loginService;
         }
 
@@ -54,7 +57,7 @@ namespace FrontendQuickpass.Controllers
                 };
 
                 // PRIMERA LLAMADA: Obtener unidades con status 4 (operativas)
-                var urlStatus4 = $"{_apiSettings.BaseUrl}shipping/status/4?page=1&size=10000&includeAttachments=true";
+                var urlStatus4 = $"{_apiSettings.BaseUrl}shipping/status/4?page=1&size=2000&includeAttachments=true";
                 var responseStatus4 = await client.GetAsync(urlStatus4);
 
                 List<AutorizacionPortonModel> dataStatus4 = new();
@@ -69,7 +72,7 @@ namespace FrontendQuickpass.Controllers
                 }
 
                 // SEGUNDA LLAMADA: Obtener unidades con status 13 (inconsistencias)
-                var urlStatus13 = $"{_apiSettings.BaseUrl}shipping/status/13?page=1&size=10000&reportType=SEALS&includeAttachments=true";
+                var urlStatus13 = $"{_apiSettings.BaseUrl}shipping/status/13?page=1&size=2000&reportType=SEALS&includeAttachments=true";
                 var responseStatus13 = await client.GetAsync(urlStatus13);
 
                 List<AutorizacionPortonModel> dataStatus13 = new();
@@ -163,26 +166,110 @@ namespace FrontendQuickpass.Controllers
                     if (response.StatusCode == HttpStatusCode.NotFound)
                         return NotFound(new { message = "El código de generación no se encontró (404)." });
 
-                    return StatusCode((int)response.StatusCode, new { message = "Error en la solicitud", detail = json });
+                    // Para otros errores, retornar un fallback válido
+                    Console.WriteLine($"[GetSeals] Error del API remoto: {response.StatusCode}");
+                    return Ok(new
+                    {
+                        count = 0,
+                        codes = new List<string>(),
+                        currentStatus = 0,
+                        hasReweighAuthorization = false,
+                        magneticCard = 0
+                    });
                 }
 
-                var data = JsonConvert.DeserializeObject<Post>(json);
-
-                // Extrae los sealCode no vacíos
-                var sealCodes = (data?.shipmentSeals ?? new List<ShipmentSeal>())
-                    .Select(s => s?.sealCode?.Trim())
-                    .Where(s => !string.IsNullOrWhiteSpace(s))
-                    .ToList();
-
-                return Ok(new
+                try
                 {
-                    count = sealCodes.Count, // ← N marchamos del envío
-                    codes = sealCodes        // opcional: por si quieres precargar
-                });
+                    // Usar JObject para un parsing flexible
+                    var jObject = JObject.Parse(json);
+                    var currentStatus = jObject["currentStatus"]?.Value<int>() ?? 0;
+                    var magneticCard = jObject["magneticCard"]?.Value<int>() ?? 0; // Extraer tarjeta magnética
+                    
+                    // Extraer los sealCode
+                    var sealCodes = new List<string>();
+                    var shipmentSeals = jObject["shipmentSeals"] as JArray;
+                    if (shipmentSeals != null)
+                    {
+                        foreach (var seal in shipmentSeals)
+                        {
+                            var code = seal["sealCode"]?.Value<string>()?.Trim();
+                            if (!string.IsNullOrWhiteSpace(code))
+                                sealCodes.Add(code);
+                        }
+                    }
+                    
+                    // NUEVO: Verificar si tiene status 4 con autorización de repesaje
+                    var hasReweighAuthorization = false;
+                    
+                    if (currentStatus == 4)
+                    {
+                        var statuses = jObject["statuses"] as JArray;
+                        if (statuses != null && statuses.Count > 0)
+                        {
+                            // Buscar status 4 con observación de "repesaje"
+                            foreach (var statusObj in statuses)
+                            {
+                                var statusId = statusObj["id"]?.Value<int>() ?? 0;
+                                
+                                if (statusId == 4)
+                                {
+                                    // El campo es "observation" (singular) que contiene un array
+                                    var observations = statusObj["observation"] as JArray;
+                                    if (observations != null && observations.Count > 0)
+                                    {
+                                        foreach (var obs in observations)
+                                        {
+                                            var obsText = obs["observations"]?.Value<string>();
+                                            if (!string.IsNullOrWhiteSpace(obsText) && obsText.Contains("pesaje", StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                hasReweighAuthorization = true;
+                                                Console.WriteLine($"[GetSeals] ✓ Repesaje encontrado: '{obsText}'");
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    
+                                    if (hasReweighAuthorization) break;
+                                }
+                            }
+                        }
+                    }
+
+                    return Ok(new
+                    {
+                        count = sealCodes.Count,
+                        codes = sealCodes,
+                        currentStatus = currentStatus,
+                        hasReweighAuthorization = hasReweighAuthorization,
+                        magneticCard = magneticCard
+                    });
+                }
+                catch (Newtonsoft.Json.JsonException jsonEx)
+                {
+                    Console.WriteLine($"[GetSeals] Error parseando JSON: {jsonEx.Message}");
+                    // En caso de error al parsear, retornar fallback
+                    return Ok(new
+                    {
+                        count = 0,
+                        codes = new List<string>(),
+                        currentStatus = 0,
+                        hasReweighAuthorization = false,
+                        magneticCard = 0
+                    });
+                }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Error inesperado", error = ex.Message });
+                Console.WriteLine($"[GetSeals] Error: {ex.Message}");
+                // Retornar fallback en lugar de error 500
+                return Ok(new
+                {
+                    count = 0,
+                    codes = new List<string>(),
+                    currentStatus = 0,
+                    hasReweighAuthorization = false,
+                    magneticCard = 0
+                });
             }
         }
 
@@ -317,7 +404,14 @@ namespace FrontendQuickpass.Controllers
 
                 if (response.IsSuccessStatusCode)
                 {
-                    _logService.LogActivityAsync(codeGen ?? "", request, Usuario, 5);
+                    // Registrar en auditoría de cambio de estado (reemplaza transactionlogs para casos exitosos)
+                    var userId = GetUserId();
+                    if (userId == 0)
+                    {
+                        return StatusCode(401, new { errorMessage = "Usuario no autenticado" });
+                    }
+                    _auditService.RegisterStatusChange(codeGen ?? "", 5, userId, "internal");
+
                     return Ok(new { successMessage = "Cambio de estatus exitoso", response = content });
                 }
 
@@ -425,7 +519,9 @@ namespace FrontendQuickpass.Controllers
 
                 if (response.IsSuccessStatusCode)
                 {
-                    _logService.LogActivityAsync(codeGen ?? "", data, Usuario, 13);
+                    // Registrar en auditoría de cambio de estado
+                    // El predefinedStatusId 13 es para reportes de inconsistencias/marchamos
+                    _auditService.RegisterStatusChange(codeGen ?? "", 13, userId, "internal");
 
                     return Ok(new
                     {
@@ -502,6 +598,20 @@ namespace FrontendQuickpass.Controllers
             public int currentStatus { get; set; }
             public List<ShipmentSeal>? shipmentSeals { get; set; }
             public int? magneticCard { get; set; }
+            public List<StatusItem>? statuses { get; set; }
+        }
+
+        public class StatusItem
+        {
+            public int id { get; set; }
+            public string? status { get; set; }
+            [JsonProperty("observation")]
+            public List<ObservationItem>? observations { get; set; }
+        }
+
+        public class ObservationItem
+        {
+            public string? observations { get; set; }
         }
 
         public class ShipmentSeal

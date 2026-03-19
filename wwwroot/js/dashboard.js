@@ -153,6 +153,8 @@ function ensureAllScrollableWidths(labels) {
   ensureScrollableWidth("chart-recibidos", labels);
   ensureScrollableWidth("chart-azucar", labels);
   ensureScrollableWidth("chart-promedio", labels);
+  
+  ["chart-finalizados", "chart-recibidos", "chart-azucar", "chart-promedio"].forEach(refreshChartAfterResize);
 }
 function refreshChartAfterResize(id) {
   const chart = Chart.getChart(id);
@@ -501,8 +503,6 @@ document.addEventListener("DOMContentLoaded", () => {
   $("f-hasta") && ($("f-hasta").value = hasta.toISOString().slice(0, 10));
 
   // Listeners filtros
-  ["f-desde", "f-hasta", "f-ingenio", "f-producto", "f-hour-start", "f-hour-end"]
-    .forEach(id => $(id)?.addEventListener("change", fetchAndRender));
   $("f-apply")?.addEventListener("click", fetchAndRender);
 
   // Crear charts vacíos...
@@ -675,15 +675,6 @@ async function fetchAndRender() {
   byId("kpi-prom-volteo").innerText = fmtMMSS(data.kpi.promDescargaVolteoSeg);
   byId("kpi-prom-pipa").innerText = fmtMMSS(data.kpi.promDescargaPipaSeg);
 
-  // … visibilidad por producto …
-  const selectedProduct = $("f-producto")?.value || "";
-  const kind = normalizeProductKind(selectedProduct);
-  const kPlanas = byId("kpi-prom-planas")?.closest(".kpi");
-  const kVolteo = byId("kpi-prom-volteo")?.closest(".kpi");
-  const kPipa = byId("kpi-prom-pipa")?.closest(".kpi");
-  if (kPlanas) kPlanas.style.display = (kind !== 'melaza') ? "" : "none";
-  if (kVolteo) kVolteo.style.display = (kind !== 'melaza') ? "" : "none";
-  if (kPipa) kPipa.style.display = (kind === 'melaza' || kind === 'todos') ? "" : "none";
 
   // … series y labels …
   const finVol = data.charts.finalizados?.volteo || [];
@@ -699,10 +690,10 @@ async function fetchAndRender() {
   
   if (labelsSig !== lastLabelsSig) {
     // reset suave para evitar arrastre de puntos
-    try { if (chFinalizados) { chFinalizados.data.labels = []; chFinalizados.data.datasets.forEach(d=>d.data=[]); chFinalizados.update(); } } catch { /* ignore chart update errors */ }
-    try { if (chRecibidos)   { chRecibidos.data.labels   = []; chRecibidos.data.datasets.forEach(d=>d.data=[]);   chRecibidos.update(); }   } catch { /* ignore chart update errors */ }
-    try { if (chAzucar)      { chAzucar.data.labels      = []; chAzucar.data.datasets.forEach(d=>d.data=[]);      chAzucar.update(); }      } catch { /* ignore chart update errors */ }
-    try { if (chPromedio)    { chPromedio.data.labels    = []; chPromedio.data.datasets.forEach(d=>d.data=[]);    chPromedio.update(); }    } catch { /* ignore chart update errors */ }
+    try { if (chFinalizados) { chFinalizados.data.labels = []; chFinalizados.data.datasets.forEach(d=>d.data=[]); chFinalizados.update(); } } catch {}
+    try { if (chRecibidos)   { chRecibidos.data.labels   = []; chRecibidos.data.datasets.forEach(d=>d.data=[]);   chRecibidos.update(); }   } catch {}
+    try { if (chAzucar)      { chAzucar.data.labels      = []; chAzucar.data.datasets.forEach(d=>d.data=[]);      chAzucar.update(); }      } catch {}
+    try { if (chPromedio)    { chPromedio.data.labels    = []; chPromedio.data.datasets.forEach(d=>d.data=[]);    chPromedio.update(); }    } catch {}
     lastLabelsSig = labelsSig;
   }
 
@@ -1151,7 +1142,7 @@ function setProductColorsIfNeeded(chart) {
       }
     });
     chart.update();
-  } catch { /* ignore errors */ }
+  } catch {}
 }
 
 if (typeof ensureScrollableWidth !== "function") {
@@ -1163,7 +1154,7 @@ if (typeof ensureScrollableWidth !== "function") {
       const base = 400;
       const w = Math.max(base, (labels?.length || 0) * minPxPerLabel);
       el.style.width = `${w}px`;
-    } catch { /* ignore errors */ }
+    } catch {}
   };
 }
 if (typeof setLine2 !== "function") {
@@ -1231,7 +1222,7 @@ function putText(id, txt) { const el = document.getElementById(id); if (el) el.t
 (function warnMissingKPIsOnce(){ try {
   const missing = Object.values(KPI_G).filter(id => !document.getElementById(id));
   if (missing.length) console.warn("[KPIs faltantes en esta vista]:", missing);
-} catch { /* ignore errors */ } })();
+} catch {} })();
 
 /* ================== RENDER KPIs ================== */
 function renderKPIs(raw, filters) {
@@ -1470,6 +1461,7 @@ async function fetchAndRenderPlacas() {
     const transF = filterChart(placasAll, serieAzAll, serieMeAll);
     if (chTransitoPlaca) {
       ensureScrollableWidth(ID_CHART_TRANSITO, transF.labels);
+      refreshChartAfterResize(ID_CHART_TRANSITO);
       setLine2(chTransitoPlaca, transF.labels, transF.series[0], transF.series[1], "Minutos");
       setProductColorsIfNeeded(chTransitoPlaca);
     }
@@ -1478,6 +1470,7 @@ async function fetchAndRenderPlacas() {
     const descF = filterChart(placasAll, dVolAll, dPlaAll, dPipAll);
     if (chDescargaPlaca) {
       ensureScrollableWidth(ID_CHART_DESCARGA, descF.labels);
+      refreshChartAfterResize(ID_CHART_DESCARGA);
       setLine3(chDescargaPlaca, descF.labels, descF.series[0], descF.series[1], descF.series[2], "Minutos");
     }
 
@@ -1485,6 +1478,7 @@ async function fetchAndRenderPlacas() {
     const esperaF = filterChart(placasAll, eVolAll, ePlaAll, ePipAll);
     if (chEsperaPlaca) {
       ensureScrollableWidth(ID_CHART_ESPERA, esperaF.labels);
+      refreshChartAfterResize(ID_CHART_ESPERA);
       setLine3(chEsperaPlaca, esperaF.labels, esperaF.series[0], esperaF.series[1], esperaF.series[2], "Minutos");
     }
   } catch (err) {
@@ -1493,9 +1487,6 @@ async function fetchAndRenderPlacas() {
 }
 
 /* ================== EVENTOS ================== */
-["f-ingenio", "f-producto", "f-hour-start", "f-hour-end"].forEach(id => {
-  document.getElementById(id)?.addEventListener("change", fetchAndRenderPlacas);
-});
 document.getElementById("f-apply")?.addEventListener("click", fetchAndRenderPlacas);
 
 document.addEventListener("DOMContentLoaded", () => {
