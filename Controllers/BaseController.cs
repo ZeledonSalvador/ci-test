@@ -138,5 +138,113 @@ namespace FrontendQuickpass.Controllers
                 data = data
             });
         }
+
+        /// <summary>
+        /// Obtiene los ingenios permitidos según el rol del usuario autenticado.
+        /// Si es CLIENTE (rol 8), solo retorna su ingenio correspondiente.
+        /// Si es otro rol, retorna todos los ingenios.
+        /// </summary>
+        protected List<IngenioOption> GetIngeniosPermitidos()
+        {
+            var userInfo = GetUserInfo();
+            const int ROL_CLIENTE = 13;
+
+            // Lista completa de ingenios
+            var ingeniosCompletos = new List<IngenioOption>
+            {
+                new IngenioOption { Value = "JB", Text = "Ingenio Central Azucarero Jiboa" },
+                new IngenioOption { Value = "ILC", Text = "Ingenio La Cabaña" },
+                new IngenioOption { Value = "IEA", Text = "Ingenio El Angel" },
+                new IngenioOption { Value = "ILM", Text = "Ingenio La Magdalena" },
+                new IngenioOption { Value = "ICHP", Text = "Ingenio Chaparrastique" },
+                new IngenioOption { Value = "CASSA", Text = "Compañía Azucarera Salvadoreña" }
+            };
+
+            if (userInfo == null)
+            {
+                return ingeniosCompletos;
+            }
+
+            try
+            {
+                int codRol = 0;
+                string? clientCode = null;
+                string? fullName = null;
+                string? username = null;
+
+                // Intentar como IDictionary (ExpandoObject)
+                var expandoDict = userInfo as IDictionary<string, object>;
+                if (expandoDict != null)
+                {
+                    codRol = expandoDict.ContainsKey("CodRol") ? Convert.ToInt32(expandoDict["CodRol"]) : 0;
+                    clientCode = expandoDict.ContainsKey("ClientCode") ? expandoDict["ClientCode"]?.ToString() : null;
+                    fullName = expandoDict.ContainsKey("FullName") ? expandoDict["FullName"]?.ToString() : null;
+                    username = expandoDict.ContainsKey("Username") ? expandoDict["Username"]?.ToString() : null;
+                }
+                else
+                {
+                    // Fallback: reflexión para tipos anónimos
+                    var type = userInfo.GetType();
+                    var propRol = type.GetProperty("CodRol");
+                    var propClientCode = type.GetProperty("ClientCode");
+                    var propFullName = type.GetProperty("FullName");
+                    var propUsername = type.GetProperty("Username");
+
+                    if (propRol != null) codRol = Convert.ToInt32(propRol.GetValue(userInfo));
+                    if (propClientCode != null) clientCode = propClientCode.GetValue(userInfo)?.ToString();
+                    if (propFullName != null) fullName = propFullName.GetValue(userInfo)?.ToString();
+                    if (propUsername != null) username = propUsername.GetValue(userInfo)?.ToString();
+                }
+
+                // Si es cliente, filtrar por su ingenio
+                if (codRol == ROL_CLIENTE)
+                {
+                    // Prioridad 1: buscar por ClientCode (ej. "IEA" → Value)
+                    if (!string.IsNullOrEmpty(clientCode))
+                    {
+                        var ingenioDelCliente = ingeniosCompletos.FirstOrDefault(i => i.Value.Equals(clientCode, StringComparison.OrdinalIgnoreCase));
+                        if (ingenioDelCliente != null)
+                        {
+                            return new List<IngenioOption> { ingenioDelCliente };
+                        }
+                    }
+
+                    // Fallback 1: buscar por FullName (ej. "Ingenio El Angel" → Text)
+                    if (!string.IsNullOrEmpty(fullName))
+                    {
+                        var ingenioDelCliente = ingeniosCompletos.FirstOrDefault(i => i.Text.Equals(fullName, StringComparison.OrdinalIgnoreCase));
+                        if (ingenioDelCliente != null)
+                        {
+                            return new List<IngenioOption> { ingenioDelCliente };
+                        }
+                    }
+
+                    // Fallback 2: buscar por Username (ej. "IEA" → Value)
+                    if (!string.IsNullOrEmpty(username))
+                    {
+                        var ingenioDelCliente = ingeniosCompletos.FirstOrDefault(i => i.Value.Equals(username, StringComparison.OrdinalIgnoreCase));
+                        if (ingenioDelCliente != null)
+                        {
+                            return new List<IngenioOption> { ingenioDelCliente };
+                        }
+                    }
+                }
+
+                return ingeniosCompletos;
+            }
+            catch
+            {
+                return ingeniosCompletos;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Representa una opción del select de ingenios
+    /// </summary>
+    public class IngenioOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
     }
 }

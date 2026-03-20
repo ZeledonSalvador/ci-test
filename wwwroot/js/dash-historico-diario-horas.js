@@ -173,7 +173,8 @@
             chart.options.scales.y.title.text = yTitle || "";
         }
 
-        chart.update("none");
+        chart.resize();
+        chart.update();
     };
 
     DC.line2Series = DC.line2Series || function (canvasId, lab1, lab2, lab3) {
@@ -308,51 +309,12 @@
         if (elAt) elAt.textContent = formatHhmmssToHMin(atencionTxt);
     }
 
-    function updateKPIFlujoDiaFrom(pesosJson, filters) {
-        let azTons = 0, melTons = 0;
-        let azFlow = 0, melFlow = 0;
-
-        if (pesosJson?.kpis) {
-            azTons = Number(pesosJson.kpis.totalsTons?.azucar ?? 0);
-            melTons = Number(pesosJson.kpis.totalsTons?.melaza ?? 0);
-            azFlow = Number(pesosJson.kpis.flow?.azucarTonsPerHour ?? 0);
-            melFlow = Number(pesosJson.kpis.flow?.melazaTonsPerHour ?? 0);
-        } else {
-            const unitList = Array.isArray(pesosJson?.units)
-                ? pesosJson.units
-                : (Array.isArray(pesosJson?.PesosPorStatus?.Horas) ? pesosJson.PesosPorStatus.Horas : []);
-
-            if (unitList.length > 0) {
-                for (const u of unitList) {
-                    const prod = String(u?.product ?? u?.Product ?? "").trim().toUpperCase();
-                    // nuevo: "tons" ya viene en toneladas; antiguo: "TotalKgRaw" es el peso neto individual en kg
-                    const ton = Number.isFinite(Number(u?.tons))
-                        ? Number(u.tons)
-                        : (Number(u?.TotalKgRaw ?? 0) / 1000);
-                    if (!Number.isFinite(ton) || ton <= 0) continue;
-                    if (prod.includes("AZ")) azTons += ton;
-                    else if (prod.includes("MEL")) melTons += ton;
-                }
-            }
-
-            // Fallback: PromediosPorProducto tiene el total real por producto cuando no hay unitList
-            if (azTons === 0 && melTons === 0) {
-                const promedios = Array.isArray(pesosJson?.PesosPorStatus?.PromediosPorProducto)
-                    ? pesosJson.PesosPorStatus.PromediosPorProducto : [];
-                for (const p of promedios) {
-                    const prod = String(p?.Product ?? "").trim().toUpperCase();
-                    const kg = Number(p?.TotalKg ?? 0);
-                    if (prod.includes("AZ")) azTons = kg / 1000;
-                    else if (prod.includes("MEL")) melTons = kg / 1000;
-                }
-            }
-
-            const hFrom = filters?.hourFrom ?? 0;
-            const hTo = filters?.hourTo ?? 23;
-            const hours = Math.max(1, hTo - hFrom + 1);
-            azFlow = azTons / hours;
-            melFlow = melTons / hours;
-        }
+    function updateKPIFlujoDiaFrom(pesosJson) {
+        // Endpoint /dashboard/recibido-por-hora devuelve { kpis: {...}, units: [...] }
+        // Para los KPIs de la vista tomamos directamente los valores calculados por el backend (kpis.*)
+        const k = pesosJson?.kpis || {};
+        const totalsTons = k?.totalsTons || {};
+        const flow = k?.flow || {};
 
         // helpers de formato
         const fmtTon = (v) => {
@@ -369,18 +331,19 @@
         // AZ-001
         const elDayAz = DC.byId("kpi-cantidad-dia-Az");
         const elHourAz = DC.byId("kpi-flujo-dia-Az");
-        if (elDayAz) elDayAz.textContent = fmtTon(azTons);
-        if (elHourAz) elHourAz.textContent = fmtTonPerHour(azFlow);
+        if (elDayAz) elDayAz.textContent = fmtTon(totalsTons?.azucar ?? 0);
+        if (elHourAz) elHourAz.textContent = fmtTonPerHour(flow?.azucarTonsPerHour ?? 0);
 
         // MEL-001
         const elDayMel = DC.byId("kpi-cantidad-dia-Mel");
         const elHourMel = DC.byId("kpi-flujo-dia-Mel");
-        if (elDayMel) elDayMel.textContent = fmtTon(melTons);
-        if (elHourMel) elHourMel.textContent = fmtTonPerHour(melFlow);
+        if (elDayMel) elDayMel.textContent = fmtTon(totalsTons?.melaza ?? 0);
+        if (elHourMel) elHourMel.textContent = fmtTonPerHour(flow?.melazaTonsPerHour ?? 0);
     }
 
 
-    function updateKPIsDescargaFrom(promDescJson) {
+
+        function updateKPIsDescargaFrom(promDescJson, productFilter) {
         const pa = promDescJson?.PromedioDescarga?.PromedioActual || {};
 
         const elPl = DC.byId("kpi-prom-planas");
@@ -391,7 +354,7 @@
         if (elVo) elVo.textContent = formatDescargaKPI(pa.Volteo);
         if (elPi) elPi.textContent = formatDescargaKPI(pa.Pipa);
 
-    }
+        }
 
     // =================== Filtros ===================
     function timeInputToHour(t) {
@@ -404,7 +367,8 @@
         const date = (DC.$("f-fecha")?.value || "").trim();
         const hourFrom = timeInputToHour(DC.$("f-hour-start")?.value || "00:00");
         const hourTo = timeInputToHour(DC.$("f-hour-end")?.value || "23:59");
-        const ingenioId = (DC.$("f-ingenio")?.value || "").trim();
+        const elIng = DC.$("f-ingenio");
+        const ingenioId = ((elIng && elIng.value) || DC.$("f-ingenio-hidden")?.value || "").trim();
         const product = (DC.$("f-producto")?.value || "").trim(); // "" cuando es Todos
         return { date, hourFrom, hourTo, ingenioId, product };
     }
@@ -973,16 +937,18 @@
 
 
     // =================== Render ===================
-    // productFilter: producto capturado ANTES del fetch (evita leer DOM obsoleto si el
-    // usuario cambió el filtro mientras el request estaba en vuelo)
-    function renderCharts(labels, baseSeries, azPack, promPack, resumenJson, productFilter) {
+    function renderCharts(labels, baseSeries, azPack, promPack, resumenJson, productFilter, silent = false) {
+        const setEmpty = (id, empty) => {
+            const card = DC.$(id)?.closest?.(".chart-card");
+            if (card) card.classList.toggle("is-empty", !!empty);
+        };
+        const doUpdate = (ch) => { if (ch) { ch.resize(); ch.update(); } };
         lastLabels = labels;
-        ["chart-finalizados", "chart-azucar", "chart-promedio"].forEach(id => DC.ensureScrollableWidth(id, labels));
-        // chart-recibidos usa eje X numérico (minutos) → su ancho lo gestiona widenRecibidosIfNeeded dentro de renderRecibidos
+        ["chart-finalizados", "chart-recibidos", "chart-azucar", "chart-promedio"].forEach(id => {
+            DC.ensureScrollableWidth(id, labels);
+        });
 
-        const kind = DC.normalizeProductKind(
-            productFilter !== undefined ? productFilter : (DC.$("f-producto")?.value || "")
-        );
+        const kind = DC.normalizeProductKind(productFilter !== undefined ? productFilter : (DC.$("f-producto")?.value || ""));
         const VIS = (kind === "melaza") ? { volteo: false, plana: false, pipa: true }
             : (kind === "azucar") ? { volteo: true, plana: true, pipa: false }
                 : { volteo: true, plana: true, pipa: true };
@@ -1020,7 +986,8 @@
 
 
         // Finalizados
-        if (chFinalizados) {
+        ;(function renderFinalizados() {
+            if (!chFinalizados) return;
             chFinalizados.data.datasets[0].hidden = !VIS.volteo;
             chFinalizados.data.datasets[1].hidden = !VIS.plana;
             chFinalizados.data.datasets[2].hidden = !VIS.pipa;
@@ -1064,33 +1031,42 @@
             // ✅ CASO: NO HAY DATOS
             // ==========================
             if (!realCount) {
+                // 1) datasets completamente vacíos (SIN base point)
                 chFinalizados.data.datasets[0].data = [];
                 chFinalizados.data.datasets[1].data = [];
                 chFinalizados.data.datasets[2].data = [];
-                
-                if (chFinalizados.options.scales?.x) chFinalizados.options.scales.x.display = true;
-                if (chFinalizados.options.scales?.y) chFinalizados.options.scales.y.display = true;
 
-                const canvas = document.getElementById("chart-finalizados");
-                if (canvas) {
-                    const scroll = canvas.closest(".chart-scroll");
-                    const inner = scroll?.querySelector(".chart-inner");
-                    if (scroll && inner) {
-                        inner.style.width = (scroll.clientWidth || 0) + "px";
-                        scroll.scrollLeft = 0;
-                    }
+                // 2) X fijo a todo el día + ticks por hora
+                const xScale = chFinalizados.options.scales?.x;
+                if (xScale) {
+                    xScale.min = 0;
+                    xScale.max = 23 * 60 + 59;
+                    xScale.afterBuildTicks = (scale) => {
+                        const ticks = [];
+                        for (let h = 0; h <= 23; h++) ticks.push({ value: h * 60 });
+                        scale.ticks = ticks;
+                    };
                 }
 
+                // 3) resetear ancho del contenedor (evita scroll raro)
+                (function resetFinalizadosWidth() {
+                    const canvas = document.getElementById("chart-finalizados");
+                    if (!canvas) return;
+                    const scroll = canvas.closest(".chart-scroll");
+                    const inner = scroll?.querySelector(".chart-inner");
+                    if (!scroll || !inner) return;
+                    inner.style.width = Math.max(scroll.clientWidth || 0, labels.length * 140) + "px";
+                })();
+
+                setEmpty("chart-finalizados", true);
                 DC.toggleLegendFor("chart-finalizados", VIS);
-                chFinalizados.update();
-                document.getElementById("chart-finalizados")?.closest(".chart-card")?.classList.add("is-empty");
+                doUpdate(chFinalizados);
             } else {
 
             // ==========================
             // ✅ CASO: SÍ HAY DATOS
             // ==========================
-            if (chFinalizados.options.scales?.x) chFinalizados.options.scales.x.display = true;
-            if (chFinalizados.options.scales?.y) chFinalizados.options.scales.y.display = true;
+            setEmpty("chart-finalizados", false);
 
             // Para autoZoom usar solo series visibles
             const allX = []
@@ -1154,14 +1130,14 @@
                 inner.style.width = Math.max(contW, required) + "px";
             })();
 
-            chFinalizados.resize(); chFinalizados.update();
-            document.getElementById("chart-finalizados")?.closest(".chart-card")?.classList.remove("is-empty");
-            } // end else (has data)
-        }
+            doUpdate(chFinalizados);
+            } // end: has data
+        }());
 
         // Recibidos (✅ igual que los demás: LINE SIEMPRE)
         // Recibidos (LINE SIEMPRE, pero SIN "estado raro" cuando no hay datos)
-        if (chRecibidos) {
+        ;(function renderRecibidos() {
+            if (!chRecibidos) return;
             chRecibidos.data.datasets[0].hidden = !VIS.volteo;
             chRecibidos.data.datasets[1].hidden = !VIS.plana;
             chRecibidos.data.datasets[2].hidden = !VIS.pipa;
@@ -1206,33 +1182,44 @@
             // ✅ CASO: NO H hookup
             // ==========================
             if (!realCount) {
+                // 1) datasets vacíos (SIN base point)
                 chRecibidos.data.datasets[0].data = [];
                 chRecibidos.data.datasets[1].data = [];
                 chRecibidos.data.datasets[2].data = [];
-                
-                if (chRecibidos.options.scales?.x) chRecibidos.options.scales.x.display = true;
-                if (chRecibidos.options.scales?.y) chRecibidos.options.scales.y.display = true;
 
-                const canvas = document.getElementById("chart-recibidos");
-                if (canvas) {
-                    const scroll = canvas.closest(".chart-scroll");
-                    const inner = scroll?.querySelector(".chart-inner");
-                    if (scroll && inner) {
-                        inner.style.width = (scroll.clientWidth || 0) + "px";
-                        scroll.scrollLeft = 0;
-                    }
+                // 2) X = todo el día + ticks por hora
+                const xScale = chRecibidos.options?.scales?.x;
+                if (xScale) {
+                    xScale.min = 0;
+                    xScale.max = 23 * 60 + 59;
+                    xScale.afterBuildTicks = (scale) => {
+                        const ticks = [];
+                        for (let h = 0; h <= 23; h++) ticks.push({ value: h * 60 });
+                        scale.ticks = ticks;
+                    };
                 }
 
+                // 3) reset ancho del contenedor (evita scroll raro)
+                (function widenRecibidosEmpty() {
+                    const canvas = document.getElementById("chart-recibidos");
+                    if (!canvas) return;
+                    const scroll = canvas.closest(".chart-scroll");
+                    const inner = scroll?.querySelector(".chart-inner");
+                    if (!scroll || !inner) return;
+                    const contW = scroll.clientWidth || 0;
+                    // Usa la cantidad de labels para calcular el ancho mínimo
+                    inner.style.width = Math.max(contW, labels.length * 140) + "px";
+                })();
+
+                setEmpty("chart-recibidos", true);
                 DC.toggleLegendFor("chart-recibidos", VIS);
-                chRecibidos.update();
-                document.getElementById("chart-recibidos")?.closest(".chart-card")?.classList.add("is-empty");
+                doUpdate(chRecibidos);
             } else {
 
             // ==========================
             // ✅ CASO: SÍ HAY DATOS
             // ==========================
-            if (chRecibidos.options.scales?.x) chRecibidos.options.scales.x.display = true;
-            if (chRecibidos.options.scales?.y) chRecibidos.options.scales.y.display = true;
+            setEmpty("chart-recibidos", false);
 
             // Base points SOLO si hay datos
             const v0 = addBasePointForSeries(pts.volteo);
@@ -1268,17 +1255,14 @@
                 inner.style.width = Math.max(contW, required) + "px";
             })();
 
-            chRecibidos.resize(); chRecibidos.update();
-            document.getElementById("chart-recibidos")?.closest(".chart-card")?.classList.remove("is-empty");
-            } // end else (has data)
-        }
+            doUpdate(chRecibidos);
+            } // end: has data
+        }());
 
         // Cantidad Recibida (SCATTER)
-        if (chAzucar) {
-            // Usar el productFilter del fetch (no el DOM actual que puede estar desincronizado)
-            const prodSel = productFilter !== undefined
-                ? String(productFilter || "").trim()
-                : String(DC.$("f-producto")?.value || "").trim();
+        ;(function renderAzucar() {
+            if (!chAzucar) return;
+            const prodSel = String(DC.$("f-producto")?.value || "").trim(); // "" => Todos
             const wantsAll = !prodSel;
 
             const pts = azPack || { azucar: [], melaza: [], otros: [] };
@@ -1327,29 +1311,44 @@
             };
 
             if (!visibleCount) {
+                // 1) datasets vacíos (SIN base point)
                 chAzucar.data.datasets[0].data = [];
                 chAzucar.data.datasets[1].data = [];
                 chAzucar.data.datasets[2].data = [];
-                
-                if (chAzucar.options.scales?.x) chAzucar.options.scales.x.display = true;
-                if (chAzucar.options.scales?.y) chAzucar.options.scales.y.display = true;
+                chAzucar.data.datasets[0].hidden = true;
+                chAzucar.data.datasets[1].hidden = true;
+                chAzucar.data.datasets[2].hidden = true;
 
-                const canvas = document.getElementById("chart-azucar");
-                if (canvas) {
-                    const scroll = canvas.closest(".chart-scroll");
-                    const inner = scroll?.querySelector(".chart-inner");
-                    if (scroll && inner) {
-                        inner.style.width = (scroll.clientWidth || 0) + "px";
-                        scroll.scrollLeft = 0;
-                    }
+                // 2) X = todo el día + ticks por hora
+                const xScale = chAzucar.options?.scales?.x;
+                if (xScale) {
+                    xScale.min = 0;
+                    xScale.max = 23 * 60 + 59;
+                    xScale.afterBuildTicks = (scale) => {
+                        const ticks = [];
+                        for (let h = 0; h <= 23; h++) ticks.push({ value: h * 60 });
+                        scale.ticks = ticks;
+                    };
                 }
 
-                chAzucar.update();
-                document.getElementById("chart-azucar")?.closest(".chart-card")?.classList.add("is-empty");
-            } else {
+                const yScale = chAzucar.options?.scales?.y;
+                if (yScale) yScale.max = undefined;
 
-            if (chAzucar.options.scales?.x) chAzucar.options.scales.x.display = true;
-            if (chAzucar.options.scales?.y) chAzucar.options.scales.y.display = true;
+                // 3) reset ancho del contenedor (evita scroll raro)
+                (function resetCantidadRecibidaWidth() {
+                    const canvas = document.getElementById("chart-azucar");
+                    if (!canvas) return;
+                    const scroll = canvas.closest(".chart-scroll");
+                    const inner = scroll?.querySelector(".chart-inner");
+                    if (!scroll || !inner) return;
+
+                    inner.style.width = Math.max(scroll.clientWidth || 0, labels.length * 140) + "px";
+                })();
+
+                setEmpty("chart-azucar", true);
+                doUpdate(chAzucar);
+            } else {
+            setEmpty("chart-azucar", false);
 
             // ✅ xMin basado en lo visible
             const allX = []
@@ -1363,6 +1362,9 @@
             chAzucar.data.datasets[0].data = showMe ? addBasePointForSeries(melVis) : [];
             chAzucar.data.datasets[1].data = showAz ? addBasePointForSeries(azVis) : [];
             chAzucar.data.datasets[2].data = []; // otros off (como lo tienes)
+            chAzucar.data.datasets[0].hidden = !showMe;
+            chAzucar.data.datasets[1].hidden = !showAz;
+            chAzucar.data.datasets[2].hidden = true;
 
             // ===== Auto-zoom X según puntos visibles =====
             (function autoZoomCantidadRecibida() {
@@ -1423,11 +1425,9 @@
                 inner.style.width = Math.max(contW, required) + "px";
             })();
 
-            chAzucar.resize(); chAzucar.update();
-            document.getElementById("chart-azucar")?.closest(".chart-card")?.classList.remove("is-empty");
-            } // end else (has data)
-        }
-
+            doUpdate(chAzucar);
+            } // end: has data
+        }());
 
         // Promedio Descarga (SCATTER igual que chart-azucar)
         if (chPromedio) {
@@ -1437,6 +1437,60 @@
             const vv = VIS.volteo ? (pts.volteo || []) : [];
             const rr = VIS.plana ? (pts.plana || []) : [];
             const pp = VIS.pipa ? (pts.pipa || []) : [];
+
+            const realCount =
+                vv.filter(p => (p?.y || 0) > 0).length +
+                rr.filter(p => (p?.y || 0) > 0).length +
+                pp.filter(p => (p?.y || 0) > 0).length;
+
+            // ====== Tooltip + titulo eje Y (aplica a ambas ramas) ======
+            chPromedio.options.interaction = { mode: "nearest", intersect: true };
+            chPromedio.options.plugins.tooltip = {
+                mode: "nearest",
+                intersect: true,
+                filter: (ctx) => !(ctx?.raw?.meta?.base === true || Number(ctx?.raw?.y) === 0),
+                callbacks: {
+                    title: (items) => items?.[0]?.raw?.meta?.hora || "",
+                    label: (ctx) => {
+                        const raw = ctx.raw || {};
+                        const tiempo = raw?.meta?.tiempo || "00:00:00";
+                        const plate = raw?.meta?.placa ? ` - ${raw.meta.placa}` : "";
+                        return `${ctx.dataset.label}: ${tiempo}${plate}`;
+                    }
+                }
+            };
+            if (chPromedio.options?.scales?.y?.title) {
+                chPromedio.options.scales.y.title.display = true;
+                chPromedio.options.scales.y.title.text = "Tiempo promedio (min)";
+            }
+
+            if (!realCount) {
+                // C: no hay datos reales — ocultar completamente
+                chPromedio.data.datasets[0].data = [];
+                chPromedio.data.datasets[1].data = [];
+                chPromedio.data.datasets[2].data = [];
+                chPromedio.data.datasets[0].hidden = true;
+                chPromedio.data.datasets[1].hidden = true;
+                chPromedio.data.datasets[2].hidden = true;
+
+                const xScaleEmpty = chPromedio.options.scales.x;
+                if (xScaleEmpty) {
+                    xScaleEmpty.min = 0;
+                    xScaleEmpty.max = 23 * 60 + 59;
+                    xScaleEmpty.afterBuildTicks = (scale) => {
+                        const ticks = [];
+                        for (let h = 0; h <= 23; h++) ticks.push({ value: h * 60 });
+                        scale.ticks = ticks;
+                    };
+                }
+                setEmpty("chart-promedio", true);
+                doUpdate(chPromedio);
+            } else {
+                setEmpty("chart-promedio", false);
+                // D: restaurar visibilidad según VIS
+                chPromedio.data.datasets[0].hidden = !VIS.volteo;
+                chPromedio.data.datasets[1].hidden = !VIS.plana;
+                chPromedio.data.datasets[2].hidden = !VIS.pipa;
 
             const allX = [].concat(vv, rr, pp).map(p => Number(p?.x)).filter(Number.isFinite);
             const xMin = allX.length ? Math.min(...allX) : 0;
@@ -1449,48 +1503,21 @@
             (function fitXRangeToPoints() {
                 const allPts = [];
                 for (const ds of chPromedio.data.datasets) {
-                    const arr = ds.data || [];
-                    for (const p of arr) {
-                        const x = (p && typeof p === "object") ? Number(p.x) : NaN;
-                        if (Number.isFinite(x)) allPts.push(x);
+                    for (const pt of (ds.data || [])) {
+                        const v = Number(pt?.x);
+                        if (Number.isFinite(v)) allPts.push(v);
                     }
                 }
-
                 const xScale = chPromedio.options.scales.x;
-                const yScale = chPromedio.options.scales.y;
-
-                // Si no hay puntos: oculta escalas y limpia canvas
-                if (!allPts.length) {
-                    if (xScale) xScale.display = true;
-                    if (yScale) yScale.display = true;
-                    chPromedio.update();
-                    return;
-                } else {
-                    if (xScale) xScale.display = true;
-                    if (yScale) yScale.display = true;
-                }
-
-                let minX = Math.min(...allPts);
-                let maxX = Math.max(...allPts);
-
-                // Margen: 1 hora a cada lado
+                if (!allPts.length) { xScale.min = 0; xScale.max = 23 * 60 + 59; return; }
+                let minX = Math.min(...allPts); let maxX = Math.max(...allPts);
                 const pad = 60;
-                minX = Math.max(0, minX - pad);
-                maxX = Math.min(23 * 60 + 59, maxX + pad);
+                minX = Math.max(0, minX - pad); maxX = Math.min(23 * 60 + 59, maxX + pad);
 
                 // “Redondear” a horas exactas
-                const minHour = Math.floor(minX / 60);
-                const maxHour = Math.ceil(maxX / 60);
-
-                xScale.min = minHour * 60;
-                xScale.max = Math.min(23 * 60 + 59, maxHour * 60);
-
-                // Forzar ticks HH:00 SOLO en el rango visible (evita 03:20, 06:40, etc.)
-                xScale.afterBuildTicks = (scale) => {
-                    const ticks = [];
-                    for (let h = minHour; h <= maxHour; h++) ticks.push({ value: h * 60 });
-                    scale.ticks = ticks;
-                };
+                const minHour = Math.floor(minX / 60); const maxHour = Math.ceil(maxX / 60);
+                xScale.min = minHour * 60; xScale.max = Math.min(23 * 60 + 59, maxHour * 60);
+                xScale.afterBuildTicks = (scale) => { const ticks = []; for (let h = minHour; h <= maxHour; h++) ticks.push({ value: h * 60 }); scale.ticks = ticks; };
             })();
 
             // ====== Ancho dinámico del contenedor (igual que azucar) ======
@@ -1500,46 +1527,18 @@
                 const scroll = canvas.closest(".chart-scroll");
                 const inner = scroll?.querySelector(".chart-inner");
                 if (!scroll || !inner) return;
-
                 const xScale = chPromedio.options.scales.x;
                 const minHour = Math.floor(Number(xScale.min || 0) / 60);
                 const maxHour = Math.floor(Number(xScale.max || (23 * 60)) / 60);
                 const hoursShown = Math.max(1, (maxHour - minHour + 1));
-
-                // 140px por hora visible (igual que azucar)
                 const required = hoursShown * 140;
                 const contW = scroll.clientWidth || 0;
-
                 inner.style.width = Math.max(contW, required) + "px";
             })();
 
-            // ====== Tooltip: 1 punto + hora real (igual que azucar) ======
-            chPromedio.options.interaction = { mode: "nearest", intersect: true };
-            chPromedio.options.plugins.tooltip = {
-                mode: "nearest",
-                intersect: true,
-                callbacks: {
-                    title: (items) => {
-                        const raw = items?.[0]?.raw;
-                        return raw?.meta?.hora || "";
-                    },
-                    label: (ctx) => {
-                        const raw = ctx.raw || {};
-                        const tiempo = raw?.meta?.tiempo || "00:00:00";
-                        const plate = raw?.meta?.placa ? ` - ${raw.meta.placa}` : "";
-                        return `${ctx.dataset.label}: ${tiempo}${plate}`;
-                    }
-                }
-            };
-
             // Título eje Y (Minutos)
-            if (chPromedio.options?.scales?.y?.title) {
-                chPromedio.options.scales.y.title.display = true;
-                chPromedio.options.scales.y.title.text = "Tiempo promedio (min)";
-            }
-
-            document.getElementById("chart-promedio")?.closest(".chart-card")?.classList.toggle("is-empty", allX.length === 0);
-            chPromedio.resize(); chPromedio.update();
+            doUpdate(chPromedio);
+            } // end: has data
         }
     }
 
@@ -1639,10 +1638,9 @@
             if (skip) return;
 
             renderKPIsFromResumenYPromedios(resumen, promediosAtencion);
-            updateKPIFlujoDiaFrom(pesos, filters);
-            updateKPIsDescargaFrom(promDesc);
-            // Pasar el producto capturado ANTES del fetch para evitar leer DOM obsoleto
-            renderCharts(labels, baseSeries, azPack, promPack, resumen, filters.product);
+            updateKPIFlujoDiaFrom(pesos);
+            updateKPIsDescargaFrom(promDesc, filters.product);
+            renderCharts(labels, baseSeries, azPack, promPack, resumen, filters.product, silent);
 
         } catch (e) {
             console.error("[recepcion-hoy] error:", e);
@@ -1740,36 +1738,24 @@
             });
         }
 
+
         const applyFilters = () => fetchAndRender({ silent: false });
 
         DC.$("f-apply")?.addEventListener("click", applyFilters);
 
         window.addEventListener("resize", () => {
             if (lastLabels?.length) {
-                ["chart-finalizados", "chart-azucar", "chart-promedio"]
+                ["chart-finalizados", "chart-recibidos", "chart-azucar", "chart-promedio"]
                     .forEach(id => DC.ensureScrollableWidth(id, lastLabels));
-
-                // chart-recibidos: eje X numérico → calcular ancho desde el rango horario real
-                (function () {
-                    const canvas = document.getElementById("chart-recibidos");
-                    if (!canvas || !chRecibidos) return;
-                    const scroll = canvas.closest(".chart-scroll");
-                    const inner = scroll?.querySelector(".chart-inner");
-                    if (!scroll || !inner) return;
-                    const xScale = chRecibidos.options?.scales?.x;
-                    const minHour = Math.floor(Number(xScale?.min || 0) / 60);
-                    const maxHour = Math.floor(Number(xScale?.max || (23 * 60)) / 60);
-                    const hoursShown = Math.max(1, maxHour - minHour + 1);
-                    inner.style.width = Math.max(scroll.clientWidth, hoursShown * 140) + "px";
-                })();
-
                 ["chart-finalizados", "chart-recibidos", "chart-azucar", "chart-promedio"]
                     .forEach(DC.refreshChartAfterResize);
             }
         });
 
+        // ✅ Primer render (con loader)
         fetchAndRender({ silent: false });
 
+        // ✅ Auto refresh (SIN loader)
         const silentRefresh = () => fetchAndRender({ silent: true });
 
         if (typeof DC.registerAutoRefresh === "function") {

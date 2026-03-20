@@ -1,11 +1,11 @@
 @{
-    ViewData["Title"] = "Hoy";
+    ViewData["Title"] = "Hoy";   
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/site.css" />
+  <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+  <link rel="stylesheet" href="~/css/site.css" />
 }
 
 @await Html.PartialAsync("_DashSwitcher")
@@ -13,159 +13,151 @@
 
 <div class="dash-wrapper">
 
-    <!-- ── Filtros ── -->
-    <div class="filters">
-        <div class="filter">
-            <label>Ingenio</label>
-            <select id="f-ingenio">
-                <option value="">Todos</option>
-                <option value="JB">Ingenio Central Azucarero Jiboa</option>
-                <option value="ILC">Ingenio La Cabaña</option>
-                <option value="IEA">Ingenio El Angel</option>
-                <option value="ILM">Ingenio La Magdalena</option>
-                <option value="ICHP">Ingenio Chaparrastique</option>
-                <option value="CASSA">Compañía Azucarera Salvadoreña</option>
-            </select>
-        </div>
-        <div class="filter">
-            <label>Producto</label>
-            <select id="f-producto">
-                <option value="" selected>Todos</option>
-                <option value="AZ-001">Azúcar</option>
-                <option value="MEL-001">Melaza</option>
-            </select>
-        </div>
-        <div class="filter">
-            <button id="f-apply" class="btn btn-primary">
-                <i class="fas fa-search"></i> Aplicar
-            </button>
-        </div>
+  <!-- Filtros -->
+  <div class="filters">
+    <div class="filter">
+      <label>Ingenio</label>
+      @await Html.PartialAsync("_IngenioSelect")
     </div>
-
-    <!-- ── Indicadores Clave ── -->
-    <div class="kpi-section">
-        <div class="dash-section-label">Indicadores Clave</div>
-        <div class="kpi-groups-row">
-
-            <div class="kpi-group">
-                <div class="kpi-group-grid">
-                    <div class="kpi">
-                        <div class="kpi-label">Camiones En Tránsito</div>
-                        <div class="kpi-value" id="kpi-en-transito">0</div>
-                    </div>
-                    <div class="kpi">
-                        <div class="kpi-label">Camiones en Parqueo</div>
-                        <div class="kpi-value" id="kpi-en-parqueo">0</div>
-                    </div>
-                    <div class="kpi">
-                        <div class="kpi-label">Camiones Autorizados</div>
-                        <div class="kpi-value" id="kpi-autorizados">0</div>
-                    </div>
-                    <div class="kpi">
-                        <div class="kpi-label">Tiempo Promedio de Espera</div>
-                        <div class="kpi-value" id="kpi-tiempo-espera">00 h 00 min</div>
-                    </div>
-                    <div class="kpi">
-                        <div class="kpi-label">Tiempo Promedio de Atención</div>
-                        <div class="kpi-value" id="kpi-tiempo-atencion">00 h 00 min</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="kpi-group">
-                <div class="kpi-group-grid">
-                    <div class="kpi">
-                        <div class="kpi-label">Flujo por Día (Azúcar)</div>
-                        <div class="kpi-value" id="kpi-flujo-dia_Az">0 t</div>
-                    </div>
-                    <div class="kpi">
-                        <div class="kpi-label">Flujo por Día (Melaza)</div>
-                        <div class="kpi-value" id="kpi-flujo-dia_Mel">0 t</div>
-                    </div>
-                    <div class="kpi">
-                        <div class="kpi-label">Promedio de Descarga (Planas)</div>
-                        <div class="kpi-value" id="kpi-prom-planas">0 min 00 s</div>
-                    </div>
-                    <div class="kpi">
-                        <div class="kpi-label">Promedio de Descarga (Volteo)</div>
-                        <div class="kpi-value" id="kpi-prom-volteo">0 min 00 s</div>
-                    </div>
-                    <div class="kpi">
-                        <div class="kpi-label">Promedio de Descarga (Pipa)</div>
-                        <div class="kpi-value" id="kpi-prom-pipa">0 min 00 s</div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
+    <div class="filter">
+      <label>Producto</label>
+      <select id="f-producto">
+        <option value="" selected>Todos</option>
+        <option value="AZ-001">Azúcar</option>
+        <option value="MEL-001">Melaza</option>
+      </select>
     </div>
-
-    <!-- ── Tendencias ── -->
-    <div class="charts-section">
-        <div class="dash-section-label">Tendencias</div>
-        <div class="charts-grid">
-
-            <section class="chart-card">
-                <header>Camiones Finalizados</header>
-                <div class="chart-scroll">
-                    @Html.Partial("_ChartEmptyOverlay")
-                    <div class="chart-inner">
-                        <canvas id="chart-finalizados"></canvas>
-                    </div>
-                </div>
-                <div class="legend">Tipo Camión:
-                    <p class="dot dot-blue"></p> Volteo
-                    <p class="dot dot-orange"></p> Plana
-                    <p class="dot dot-black"></p> Pipa
-                </div>
-            </section>
-
-            <section class="chart-card">
-                <header>Camiones Recibidos</header>
-                <div class="chart-scroll">
-                    @Html.Partial("_ChartEmptyOverlay")
-                    <div class="chart-inner">
-                        <canvas id="chart-recibidos"></canvas>
-                    </div>
-                </div>
-                <div class="legend">Tipo Camión:
-                    <b class="dot dot-blue"></b> Volteo
-                    <b class="dot dot-orange"></b> Plana
-                    <b class="dot dot-black"></b> Pipa
-                </div>
-            </section>
-
-            <section class="chart-card">
-                <header>Cantidad Recibida</header>
-                <div class="chart-scroll">
-                    @Html.Partial("_ChartEmptyOverlay")
-                    <div class="chart-inner">
-                        <canvas id="chart-azucar"></canvas>
-                    </div>
-                </div>
-                <div class="legend">Producto:
-                    <b class="dot dot-orange"></b> Azúcar
-                    <b class="dot dot-blue"></b> Melaza
-                </div>
-            </section>
-
-            <section class="chart-card">
-                <header>Promedio de Descarga</header>
-                <div class="chart-scroll">
-                    @Html.Partial("_ChartEmptyOverlay")
-                    <div class="chart-inner">
-                        <canvas id="chart-promedio"></canvas>
-                    </div>
-                </div>
-                <div class="legend">Tipo Camión:
-                    <b class="dot dot-blue"></b> Volteo
-                    <b class="dot dot-orange"></b> Plana
-                    <b class="dot dot-black"></b> Pipa
-                </div>
-            </section>
-
-        </div>
+    <div class="filter" style="align-self:flex-end;">
+      <button id="f-apply" class="btn btn-primary">
+        <i class="fas fa-search"></i> Aplicar
+      </button>
     </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-section">
+    <div class="dash-section-label">Indicadores Clave</div>
+    <div class="kpi-groups-row">
+
+      <!-- Grupo 1: tránsito / tiempos -->
+      <div class="kpi-group">
+        <div class="kpi-group-grid">
+          <div class="kpi">
+            <div class="kpi-label">Camiones En Tránsito</div>
+            <div class="kpi-value" id="kpi-en-transito">0</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Camiones en Parqueo</div>
+            <div class="kpi-value" id="kpi-en-parqueo">0</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Camiones Autorizados</div>
+            <div class="kpi-value" id="kpi-autorizados">0</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Tiempo Promedio de Espera</div>
+            <div class="kpi-value" id="kpi-tiempo-espera">00 h 00 min</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Tiempo Promedio de Atención</div>
+            <div class="kpi-value" id="kpi-tiempo-atencion">00 h 00 min</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grupo 2: flujo / descarga -->
+      <div class="kpi-group">
+        <div class="kpi-group-grid">
+          <div class="kpi">
+            <div class="kpi-label">Flujo Por Día (Azúcar)</div>
+            <div class="kpi-value" id="kpi-flujo-dia_Az">0 t</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Flujo Por Día (Melaza)</div>
+            <div class="kpi-value" id="kpi-flujo-dia_Mel">0 t</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Promedio de Descarga (Planas)</div>
+            <div class="kpi-value" id="kpi-prom-planas">0 min 00 s</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Promedio de Descarga (Volteo)</div>
+            <div class="kpi-value" id="kpi-prom-volteo">0 min 00 s</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Promedio de Descarga (Pipa)</div>
+            <div class="kpi-value" id="kpi-prom-pipa">0 min 00 s</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-section">
+  <div class="dash-section-label">Tendencias</div>
+  <div class="charts-grid">
+    <section class="chart-card">
+      <header>Camiones Finalizados</header>
+      <div class="chart-scroll">
+        @Html.Partial("_ChartEmptyOverlay")
+        <div class="chart-inner">
+          <canvas id="chart-finalizados"></canvas>
+        </div>
+      </div>
+      <div class="legend">Tipo Camión:
+        <p class="dot dot-blue"></p> Volteo
+        <p class="dot dot-orange"></p> Plana
+        <p class="dot dot-black"></p> Pipa
+      </div>
+    </section>
+
+    <section class="chart-card">
+      <header>Camiones Recibidos</header>
+      <div class="chart-scroll">
+        @Html.Partial("_ChartEmptyOverlay")
+        <div class="chart-inner">
+          <canvas id="chart-recibidos"></canvas>
+        </div>
+      </div>
+      <div class="legend">Tipo Camión:
+        <b class="dot dot-blue"></b> Volteo
+        <b class="dot dot-orange"></b> Plana
+        <b class="dot dot-black"></b> Pipa
+      </div>
+    </section>
+
+    <section class="chart-card">
+      <header>Cantidad Recibida</header>
+      <div class="chart-scroll">
+        @Html.Partial("_ChartEmptyOverlay")
+        <div class="chart-inner">
+          <canvas id="chart-azucar"></canvas>
+        </div>
+      </div>
+      <div class="legend">Producto:
+        <b class="dot dot-orange"></b> Azúcar
+        <b class="dot dot-blue"></b> Melaza
+      </div>
+    </section>
+
+    <section class="chart-card">
+      <header>Promedio de Descarga</header>
+      <div class="chart-scroll">
+        @Html.Partial("_ChartEmptyOverlay")
+        <div class="chart-inner">
+          <canvas id="chart-promedio"></canvas>
+        </div>
+      </div>
+      <div class="legend">Tipo Camión:
+        <b class="dot dot-blue"></b> Volteo
+        <b class="dot dot-orange"></b> Plana
+        <b class="dot dot-black"></b> Pipa
+      </div>
+    </section>
+  </div>
+  </div>
 
 </div>
 
@@ -178,6 +170,6 @@
             if (zoomPlugin) Chart.register(zoomPlugin);
         })();
     </script>
-    <script src="~/js/dash-core.js?v=20260317"></script>
-    <script src="~/js/dash-hoy-horas.js?v=20260321"></script>
+    <script src="~/js/dash-core.js?v=20260316g"></script>
+    <script src="~/js/dash-hoy-horas.js?v=20260317a"></script>
 }

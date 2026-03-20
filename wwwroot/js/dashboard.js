@@ -69,9 +69,9 @@ function fmtHHMM(mins) {
   return `${String(h).padStart(2, "0")} h ${String(m).padStart(2, "0")} min`;
 }
 function fmtMMSS(secs) {
-  if (secs == null || isNaN(secs)) return "0 min 00 seg";
+  if (secs == null || isNaN(secs)) return "0 min 00 s";
   const m = Math.floor(secs / 60), s = Math.round(secs % 60);
-  return `${m} min ${String(s).padStart(2, "0")} seg`;
+  return `${m} min ${String(s).padStart(2, "0")} s`;
 }
 function toMMSS(totalSeconds) {
   const s = Math.max(0, Math.round(Number(totalSeconds) || 0));
@@ -150,11 +150,13 @@ function ensureScrollableWidth(canvasId, labels, cfg = SCROLL_CFG) {
 }
 function ensureAllScrollableWidths(labels) {
   ensureScrollableWidth("chart-finalizados", labels);
+  refreshChartAfterResize("chart-finalizados");
   ensureScrollableWidth("chart-recibidos", labels);
+  refreshChartAfterResize("chart-recibidos");
   ensureScrollableWidth("chart-azucar", labels);
+  refreshChartAfterResize("chart-azucar");
   ensureScrollableWidth("chart-promedio", labels);
-  
-  ["chart-finalizados", "chart-recibidos", "chart-azucar", "chart-promedio"].forEach(refreshChartAfterResize);
+  refreshChartAfterResize("chart-promedio");
 }
 function refreshChartAfterResize(id) {
   const chart = Chart.getChart(id);
@@ -582,7 +584,7 @@ async function fetchDataOnly() {
   const q = new URLSearchParams({
     from: $("f-desde")?.value,
     to: $("f-hasta")?.value,
-    ingenio: $("f-ingenio")?.value || "",
+    ingenio: (document.getElementById("f-ingenio")?.value || document.getElementById("f-ingenio-hidden")?.value || ""),
     product: selectedProduct,
     _ts: Date.now().toString() // evita caché
   });
@@ -641,7 +643,7 @@ async function fetchAndRender() {
   const fHashObj = {
     from: $("f-desde")?.value || "",
     to: $("f-hasta")?.value || "",
-    ingenio: $("f-ingenio")?.value || "",
+    ingenio: (document.getElementById("f-ingenio")?.value || document.getElementById("f-ingenio-hidden")?.value || ""),
     product: $("f-producto")?.value || "",
     hourFrom: $("f-hour-start")?.value || "",
     hourTo: $("f-hour-end")?.value || "",
@@ -670,11 +672,10 @@ async function fetchAndRender() {
   byId("kpi-autorizados").innerText = num(data.kpi.autorizados);
   byId("kpi-tiempo-espera").innerText = fmtHHMM(data.kpi.tiempoEsperaMin);
   byId("kpi-tiempo-atencion").innerText = fmtHHMM(data.kpi.tiempoAtencionMin);
-  byId("kpi-flujo-dia").innerText = `${Number(data.kpi.flujoPorDiaTon || 0).toFixed(2)} Ton`;
+  byId("kpi-flujo-dia").innerText = `${Number(data.kpi.flujoPorDiaTon || 0).toFixed(2)} t`;
   byId("kpi-prom-planas").innerText = fmtMMSS(data.kpi.promDescargaPlanasSeg);
   byId("kpi-prom-volteo").innerText = fmtMMSS(data.kpi.promDescargaVolteoSeg);
   byId("kpi-prom-pipa").innerText = fmtMMSS(data.kpi.promDescargaPipaSeg);
-
 
   // … series y labels …
   const finVol = data.charts.finalizados?.volteo || [];
@@ -1119,7 +1120,7 @@ function fmtMMSS(totalSec) {
   const s = Math.max(0, Math.round(Number(totalSec || 0)));
   const mm = Math.floor(s / 60);
   const ss = s % 60;
-  return `${mm} min ${String(ss).padStart(2, '0')} seg`;
+  return `${mm} min ${String(ss).padStart(2, '0')} s`;
 }
 function fmtHHMM(mins) {
   const m = Math.max(0, Math.round(Number(mins || 0)));
@@ -1209,7 +1210,8 @@ function initGraficosChartsIfNeeded() {
 /* ================== FILTROS UI ================== */
 function getFilters() {
   const prod = document.getElementById("f-producto")?.value || "";
-  const ing = document.getElementById("f-ingenio")?.value || "";
+  const ingEl = document.getElementById("f-ingenio");
+  const ing = (ingEl && ingEl.value) || document.getElementById("f-ingenio-hidden")?.value || "";
   const hs = document.getElementById("f-hour-start")?.value || "00:00";
   const he = document.getElementById("f-hour-end")?.value || "23:59";
   const hf = Math.max(0, Math.min(23, Number(hs.split(":")[0]) || 0));
@@ -1376,12 +1378,12 @@ async function fetchAndRenderPlacas() {
       });
     }
 
-    // Filtro tolerante
+    // Filtros estrictos: si el filtro está activo, excluir filas que no coincidan
     const dataRows = rows.filter(r => {
       const prodRow = r.Product ?? "";
       const ingRow = r.IngenioId ?? "";
-      const okProd = !f.product || !prodRow || normProducto(prodRow) === normProducto(f.product);
-      const okIng = !f.ingenioId || !ingRow || String(ingRow).trim() === String(f.ingenioId).trim();
+      const okProd = !f.product || normProducto(prodRow) === normProducto(f.product);
+      const okIng = !f.ingenioId || String(ingRow).trim() === String(f.ingenioId).trim();
       return okProd && okIng;
     });
 
@@ -1461,7 +1463,6 @@ async function fetchAndRenderPlacas() {
     const transF = filterChart(placasAll, serieAzAll, serieMeAll);
     if (chTransitoPlaca) {
       ensureScrollableWidth(ID_CHART_TRANSITO, transF.labels);
-      refreshChartAfterResize(ID_CHART_TRANSITO);
       setLine2(chTransitoPlaca, transF.labels, transF.series[0], transF.series[1], "Minutos");
       setProductColorsIfNeeded(chTransitoPlaca);
     }
@@ -1470,7 +1471,6 @@ async function fetchAndRenderPlacas() {
     const descF = filterChart(placasAll, dVolAll, dPlaAll, dPipAll);
     if (chDescargaPlaca) {
       ensureScrollableWidth(ID_CHART_DESCARGA, descF.labels);
-      refreshChartAfterResize(ID_CHART_DESCARGA);
       setLine3(chDescargaPlaca, descF.labels, descF.series[0], descF.series[1], descF.series[2], "Minutos");
     }
 
@@ -1478,7 +1478,6 @@ async function fetchAndRenderPlacas() {
     const esperaF = filterChart(placasAll, eVolAll, ePlaAll, ePipAll);
     if (chEsperaPlaca) {
       ensureScrollableWidth(ID_CHART_ESPERA, esperaF.labels);
-      refreshChartAfterResize(ID_CHART_ESPERA);
       setLine3(chEsperaPlaca, esperaF.labels, esperaF.series[0], esperaF.series[1], esperaF.series[2], "Minutos");
     }
   } catch (err) {
@@ -1487,6 +1486,9 @@ async function fetchAndRenderPlacas() {
 }
 
 /* ================== EVENTOS ================== */
+["f-ingenio", "f-producto", "f-hour-start", "f-hour-end"].forEach(id => {
+  document.getElementById(id)?.addEventListener("change", fetchAndRenderPlacas);
+});
 document.getElementById("f-apply")?.addEventListener("click", fetchAndRenderPlacas);
 
 document.addEventListener("DOMContentLoaded", () => {

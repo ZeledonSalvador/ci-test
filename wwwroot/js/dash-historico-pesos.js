@@ -56,7 +56,7 @@
                     x.style.position = "fixed";
                     x.style.inset = "0";
                     x.style.zIndex = "99999";
-                    x.classList.add("show"); x.style.display = "flex";
+                    x.style.display = "flex";
                     x.style.alignItems = "center";
                     x.style.justifyContent = "center";
                     x.style.background = "rgba(0,0,0,.25)";
@@ -69,22 +69,21 @@
                     const x = ensure();
                     style(x);
                     counter++;
-                    x.classList.add("show"); x.style.display = "flex";
+                    x.style.display = "flex";
+                    x.classList.add("show");
                 }
 
                 function hide(force = false) {
                     const x = document.getElementById(ID);
                     counter = force ? 0 : Math.max(0, counter - 1);
-                    if (x && counter === 0) { x.classList.remove("show"); x.style.display = "none"; }
+                    if (x && counter === 0) x.style.display = "none";
                 }
-
-                // removed load listener
 
                 return { show, hide, forceHide: () => hide(true) };
             })();
 
             function showLoaderDelayed() { Loader.show(); }
-            function hideLoader() { setTimeout(() => { Loader.hide(); }, 1600); }
+            function hideLoader() { setTimeout(() => Loader.hide(), 1600); }
 
             // ---------------- Charts ----------------
             let ch1_AzMel = null;        // chart-total-kg
@@ -100,6 +99,8 @@
             let lastFiltersHash = null;
             let lastLabels = [];
 
+            // Debounce
+            let tDeb = null;
             let tResize = null;
             let inResize = false;
             let __scrollResizeLock = false;
@@ -229,6 +230,7 @@
                 }
             }
 
+
             let __pesosAlertOpen = false;
 
             function _addDaysIso(isoDate, days) {
@@ -243,7 +245,6 @@
                 const desde = $("f-desde");
                 const hasta = $("f-hasta");
                 if (!desde || !hasta) return true;
-
                 const s = String(desde.value || "").trim();
                 const e = String(hasta.value || "").trim();
                 if (!s || !e) {
@@ -252,13 +253,10 @@
                     __pesosAlertOpen = false;
                     return true;
                 }
-
                 if (e < s) {
                     desde.classList.add("is-invalid");
                     hasta.classList.add("is-invalid");
-
                     hasta.value = _addDaysIso(s, 1);
-
                     if (!__pesosAlertOpen && window.Swal && typeof window.Swal.fire === "function") {
                         __pesosAlertOpen = true;
                         try {
@@ -274,15 +272,12 @@
                     } else {
                         console.warn("[pesos] Rango de fechas inválido: 'Hasta' < 'Desde' (auto-fix aplicado)");
                     }
-
                     setTimeout(() => {
-                        try { desde.classList.remove("is-invalid"); hasta.classList.remove("is-invalid"); } catch { }
-                        try { fetchAndRender(); } catch { }
+                        try { desde.classList.remove("is-invalid"); hasta.classList.remove("is-invalid"); } catch {}
+                        try { fetchAndRender(); } catch {}
                     }, 0);
-
                     return false;
                 }
-
                 desde.classList.remove("is-invalid");
                 hasta.classList.remove("is-invalid");
                 __pesosAlertOpen = false;
@@ -293,7 +288,7 @@
                 return {
                     start: String($("f-desde")?.value || "").trim(),
                     end: String($("f-hasta")?.value || "").trim(),
-                    ingenioId: String($("f-ingenio")?.value || "").trim(),
+                    ingenioId: String((document.getElementById("f-ingenio")?.value || document.getElementById("f-ingenio-hidden")?.value || "")).trim(),
                     product: String($("f-producto")?.value || "").trim(),
                 };
             }
@@ -386,7 +381,6 @@
                 }
                 return DashCore.line2Series(canvasId, a, b, c);
             }
-
 
             // ✅ Humedad eje Y 0..1 step 0.1 (sin romper Chart v2/v3)
             function applyHumedadAxis01(ch) {
@@ -487,15 +481,16 @@
                     "chart-prom-humedad",
                 ];
 
-                // 60px por etiqueta de fecha (default 28 es insuficiente para rangos cortos)
                 const PESOS_CFG = { pxPerLabel: 60, overshoot: 1.08, maxWide: 5000 };
 
                 try {
                     for (const id of ids) {
                         try { DashCore.ensureScrollableWidth(id, labels, PESOS_CFG); } catch { }
                     }
+                    for (const id of ids) {
+                        try { DashCore.refreshChartAfterResize(id); } catch { }
+                    }
                 } finally {
-                    // libera el lock en el siguiente tick para evitar re-entradas
                     setTimeout(() => { __scrollResizeLock = false; }, 0);
                 }
             }
@@ -524,8 +519,6 @@
                     : Lraw.map(d => prettyLabel(isoKey(d) || d));
 
                 lastLabels = labels;
-                finalizeScrollAndResize(labels);
-                try { ch1_AzMel?.resize(); ch2_Truck?.resize(); ch3_BrixTemp?.resize(); ch4_Humedad?.resize(); } catch {}
 
                 const g1 = dup ? compressByDaySum(Lraw, azRaw, melRaw) : { labels, series: [azRaw, melRaw] };
                 const g2 = dup ? compressByDaySum(Lraw, volRaw, plaRaw, pipRaw) : { labels, series: [volRaw, plaRaw, pipRaw] };
@@ -611,24 +604,22 @@
                     //applyHumedadAxis01(ch4_Humedad);
                 }
 
-                const _pSumArr = (arr) => (arr || []).reduce((a, b) => a + (Number(b) || 0), 0);
-                const _pSum = (...arrs) => arrs.reduce((t, a) => t + _pSumArr(a), 0);
+                // resize/scroll (guarded)
+                finalizeScrollAndResize(lastLabels);
 
-                const kg1Empty  = !labels.length || _pSum(g1.series[0], g1.series[1]) === 0;
-                const kg2Empty  = !labels.length || _pSum(g2.series[0], g2.series[1], g2.series[2]) === 0;
-                const brixEmpty = !labels.length || _pSum(g3.series[0], g3.series[1]) === 0;
-                const humEmpty  = !labels.length || _pSum(g4.series[0]) === 0;
-
-                // Si vacío: limpiar datasets para no renderizar puntos en y=0
-                if (kg1Empty  && ch1_AzMel)    { ch1_AzMel.data.labels    = []; ch1_AzMel.data.datasets.forEach(d => d.data = []);    try { ch1_AzMel.update("none");    } catch { } }
-                if (kg2Empty  && ch2_Truck)     { ch2_Truck.data.labels    = []; ch2_Truck.data.datasets.forEach(d => d.data = []);    try { ch2_Truck.update("none");    } catch { } }
-                if (brixEmpty && ch3_BrixTemp)  { ch3_BrixTemp.data.labels = []; ch3_BrixTemp.data.datasets.forEach(d => d.data = []); try { ch3_BrixTemp.update("none"); } catch { } }
-                if (humEmpty  && ch4_Humedad)   { ch4_Humedad.data.labels  = []; ch4_Humedad.data.datasets.forEach(d => d.data = []);  try { ch4_Humedad.update("none");  } catch { } }
-
-                document.getElementById("chart-total-kg")?.closest(".chart-card")?.classList.toggle("is-empty", kg1Empty);
-                document.getElementById("chart-kg-por-tipo")?.closest(".chart-card")?.classList.toggle("is-empty", kg2Empty);
-                document.getElementById("chart-prom-brix")?.closest(".chart-card")?.classList.toggle("is-empty", brixEmpty);
-                document.getElementById("chart-prom-humedad")?.closest(".chart-card")?.classList.toggle("is-empty", humEmpty);
+                // is-empty overlays
+                const setEmpty = (id, empty) => {
+                    const card = document.getElementById(id)?.closest?.(".chart-card");
+                    if (card) card.classList.toggle("is-empty", !!empty);
+                };
+                const hasData1 = rows.some(r => num(r?.tons?.azucar) > 0 || num(r?.tons?.melaza) > 0);
+                const hasData2 = rows.some(r => num(r?.tonsByTruck?.volteo) > 0 || num(r?.tonsByTruck?.plana) > 0 || num(r?.tonsByTruck?.pipa) > 0);
+                const hasData3 = rows.some(r => num(r?.averages?.brixMelaza) > 0 || num(r?.averages?.tempMelaza) > 0);
+                const hasData4 = rows.some(r => num(r?.averages?.humedadAzucar) > 0);
+                setEmpty("chart-total-kg", !hasData1);
+                setEmpty("chart-kg-por-tipo", !hasData2);
+                setEmpty("chart-prom-brix", !hasData3);
+                setEmpty("chart-prom-humedad", !hasData4);
 
             }
 
@@ -675,7 +666,6 @@
                     }
                 }
             }
-
 
             function wireEvents() {
                 $("f-apply")?.addEventListener("click", fetchAndRender);
@@ -727,4 +717,3 @@
 
     start();
 })();
-

@@ -19,29 +19,20 @@
 
   function showLoaderHistorico() {
     __histLoaderCount++;
-
-    // opcional: evita parpadeo si la respuesta es muy rápida
     if (__histLoaderTimer) clearTimeout(__histLoaderTimer);
-
     __histLoaderTimer = setTimeout(() => {
       const el = document.getElementById("spinner-overlay");
-      if (el) el.style.display = "flex"; // tu CSS del overlay normalmente usa flex
+      if (el) { el.classList.add("show"); el.style.display = "flex"; }
     }, 120);
   }
 
   function hideLoaderHistorico(force = false) {
     if (force) __histLoaderCount = 0;
     else __histLoaderCount = Math.max(0, __histLoaderCount - 1);
-
     if (__histLoaderCount > 0) return;
-
-    if (__histLoaderTimer) {
-      clearTimeout(__histLoaderTimer);
-      __histLoaderTimer = null;
-    }
-
+    if (__histLoaderTimer) { clearTimeout(__histLoaderTimer); __histLoaderTimer = null; }
     const el = document.getElementById("spinner-overlay");
-    if (el) el.style.display = "none";
+    if (el) { el.classList.remove("show"); el.style.display = "none"; }
   }
 
   // ========= AXIS X: FECHAS VERTICALES (SIN ROMPER EL CHART) =========
@@ -62,6 +53,9 @@
       x.ticks.autoSkip = false;     
       x.ticks.maxTicksLimit = n;
 
+      // Limite dinamico segun el ancho disponible
+      const w = Number(chart.width || 0);
+    
       // Vertical 90deg
       x.ticks.minRotation = 90;
       x.ticks.maxRotation = 90;
@@ -294,7 +288,7 @@
     const q = new URLSearchParams({
       from: DC.$("f-desde")?.value,
       to: DC.$("f-hasta")?.value,
-      ingenio: DC.$("f-ingenio")?.value || "",
+      ingenio: ((DC.$("f-ingenio") && DC.$("f-ingenio").value) || DC.$("f-ingenio-hidden")?.value || ""),
       product: selectedProduct,
       _ts: Date.now().toString()
     });
@@ -401,15 +395,6 @@
 
     if (!(await validateHistoricoDateRangeAndFix())) return;
 
-    // Capturar filtros ANTES del fetch para evitar leer estado obsoleto del DOM
-    const fHashObj = {
-      from: DC.$("f-desde")?.value || "",
-      to: DC.$("f-hasta")?.value || "",
-      ingenio: DC.$("f-ingenio")?.value || "",
-      product: DC.$("f-producto")?.value || ""
-    };
-    const filtersHash = DC.stableStringify(fHashObj);
-
     inFlight = true;
     if (!silent) showLoaderHistorico();
 
@@ -431,10 +416,29 @@
     }
 
     if (!pack || !pack.data) {
+      ["chart-finalizados", "chart-recibidos", "chart-azucar", "chart-promedio"].forEach(id => {
+        const card = DC.$(id)?.closest?.(".chart-card");
+        if (card) card.classList.add("is-empty");
+        const ch = window.Chart?.getChart?.(document.getElementById(id));
+        if (ch) {
+          ch.data.labels = [];
+          ch.data.datasets.forEach(ds => { ds.data = []; ds.hidden = true; });
+          ch.update("none");
+        }
+      });
       return;
     }
 
-    if ((DC.$("f-producto")?.value || "") !== fHashObj.product) return;
+    const fHashObj = {
+      from: DC.$("f-desde")?.value || "",
+      to: DC.$("f-hasta")?.value || "",
+      ingenio: ((DC.$("f-ingenio") && DC.$("f-ingenio").value) || DC.$("f-ingenio-hidden")?.value || ""),
+      product: DC.$("f-producto")?.value || ""
+    };
+
+    const filtersHash = DC.stableStringStringify
+      ? DC.stableStringify(fHashObj)
+      : DC.stableStringify(fHashObj);
 
     const sig = buildDataSignatureDto(pack.data);
     const newHash = DC.simpleHash(DC.stableStringify(sig));
@@ -472,22 +476,28 @@
 
     lastLabels = L;
 
+    // ✅ IMPORTANTE: primero ajusta ancho del contenedor scrollable.
     ["chart-finalizados", "chart-recibidos", "chart-azucar", "chart-promedio"].forEach(id => {
-      try { DC.ensureScrollableWidth(id, L); } catch { }
+      try { DC.ensureScrollableWidth(id, L); DC.refreshChartAfterResize(id); } catch { }
     });
-    
-    try { chFinalizados.resize(); } catch { }
-    try { chRecibidos.resize(); } catch { }
-    try { chAzucar.resize(); } catch { }
-    try { chPromedio.resize(); } catch { }
 
     const VIS = (kind === "melaza")
       ? { volteo: false, plana: false, pipa: true }
       : { volteo: true, plana: true, pipa: true };
 
-    const _sumArr = (arr) => (arr || []).reduce((a, b) => a + (Number(b) || 0), 0);
-    const _visSum = (c, v0, v1, v2) =>
-      (v0 ? _sumArr(c.series[0]) : 0) + (v1 ? _sumArr(c.series[1]) : 0) + (v2 ? _sumArr(c.series[2]) : 0);
+    const setEmpty = (id, empty) => {
+      const card = DC.$(id)?.closest(".chart-card");
+      if (card) card.classList.toggle("is-empty", !!empty);
+      if (empty) {
+        const ch = window.Chart?.getChart?.(document.getElementById(id));
+        if (ch) {
+          ch.data.datasets.forEach(ds => { ds.hidden = true; });
+          ch.update("none");
+        }
+      }
+    };
+
+    const _visSum = (...arrs) => arrs.reduce((sum, arr) => sum + (arr || []).reduce((a, b) => a + Number(b || 0), 0), 0);
 
     // ===== Finalizados =====
     const finVol = data.charts.finalizados?.volteo || [];
@@ -498,21 +508,21 @@
     chFinalizados.data.datasets[1].hidden = !VIS.plana;
     chFinalizados.data.datasets[2].hidden = !VIS.pipa;
 
+    // Comprime días duplicados y suma series
     const finC = compressByDay(Lraw, finVol, finPla, finPip);
-    const finEmpty = !L.length || _visSum(finC, VIS.volteo, VIS.plana, VIS.pipa) === 0;
-
+    // Pre-aplica ticks ANTES del update para que la animación los incluya
     chFinalizados.data.labels = finC.labels;
     try { applyVerticalDateTicks(chFinalizados); } catch { }
     DC.setLine3(
       chFinalizados,
       finC.labels,
-      finEmpty ? [] : (VIS.volteo ? finC.series[0] : new Array(finC.labels.length).fill(0)),
-      finEmpty ? [] : (VIS.plana ? finC.series[1] : new Array(finC.labels.length).fill(0)),
-      finEmpty ? [] : (VIS.pipa ? finC.series[2] : new Array(finC.labels.length).fill(0)),
+      VIS.volteo ? finC.series[0] : new Array(finC.labels.length).fill(0),
+      VIS.plana ? finC.series[1] : new Array(finC.labels.length).fill(0),
+      VIS.pipa ? finC.series[2] : new Array(finC.labels.length).fill(0),
       "Camiones Finalizados"
     );
     try { DC.toggleLegendFor("chart-finalizados", VIS); } catch { }
-    document.getElementById("chart-finalizados")?.closest(".chart-card")?.classList.toggle("is-empty", finEmpty);
+    setEmpty("chart-finalizados", _visSum(finC.series[0], finC.series[1], finC.series[2]) === 0);
 
     // ===== Recibidos =====
     const recVol = data.charts.recibidos?.volteo || [];
@@ -524,27 +534,28 @@
     chRecibidos.data.datasets[2].hidden = !VIS.pipa;
 
     const setter3 = DC.USE_BAR_RECIBIDOS ? DC.setBar3 : DC.setLine3;
-    const recC = compressByDay(Lraw, recVol, recPla, recPip);
-    const recEmpty = !L.length || _visSum(recC, VIS.volteo, VIS.plana, VIS.pipa) === 0;
 
+    // Comprime días duplicados y suma series
+    const recC = compressByDay(Lraw, recVol, recPla, recPip);
     chRecibidos.data.labels = recC.labels;
     try { applyVerticalDateTicks(chRecibidos); } catch { }
     setter3(
       chRecibidos,
       recC.labels,
-      recEmpty ? [] : (VIS.volteo ? recC.series[0] : new Array(recC.labels.length).fill(0)),
-      recEmpty ? [] : (VIS.plana ? recC.series[1] : new Array(recC.labels.length).fill(0)),
-      recEmpty ? [] : (VIS.pipa ? recC.series[2] : new Array(recC.labels.length).fill(0)),
+      VIS.volteo ? recC.series[0] : new Array(recC.labels.length).fill(0),
+      VIS.plana ? recC.series[1] : new Array(recC.labels.length).fill(0),
+      VIS.pipa ? recC.series[2] : new Array(recC.labels.length).fill(0),
       "Camiones Recibidos"
     );
     try { DC.toggleLegendFor("chart-recibidos", VIS); } catch { }
-    document.getElementById("chart-recibidos")?.closest(".chart-card")?.classList.toggle("is-empty", recEmpty);
+    setEmpty("chart-recibidos", _visSum(recC.series[0], recC.series[1], recC.series[2]) === 0);
 
     // ===== Toneladas por producto =====
     const tA = data.charts?.toneladasPorProducto?.azucar || [];
     const tM = data.charts?.toneladasPorProducto?.melaza || [];
     const tO = data.charts?.toneladasPorProducto?.otros || [];
 
+    // KPI Flujo por día por producto (promedio diario, incluye días 0)
     const days = Array.isArray(L) && L.length ? L.length : 0;
     const sum = (arr) => (arr || []).reduce((a, b) => a + (Number(b) || 0), 0);
     const avg = (arr) => (days > 0 ? sum(arr) / days : 0);
@@ -552,6 +563,7 @@
     setText("kpi-flujo-dia_Az", `${avg(tA).toFixed(2)} t`);
     setText("kpi-flujo-dia_Mel", `${avg(tM).toFixed(2)} t`);
 
+    // Tu chart está creado como: dataset0=Melaza, dataset1=Azúcar, dataset2=Otros
     const showAz = (kind === "todos" || kind === "azucar");
     const showMe = (kind === "todos" || kind === "melaza");
     const showOt = (kind === "todos" || kind === "otros");
@@ -560,20 +572,19 @@
     chAzucar.data.datasets[1].hidden = !showAz;
     chAzucar.data.datasets[2].hidden = !showOt;
 
+    // Comprime días duplicados y suma series
     const tonC = compressByDay(Lraw, tM, tA, tO);
-    const azEmpty = !L.length || _visSum(tonC, showMe, showAz, showOt) === 0;
-
     chAzucar.data.labels = tonC.labels;
     try { applyVerticalDateTicks(chAzucar); } catch { }
     DC.setLine3(
       chAzucar,
       tonC.labels,
-      azEmpty ? [] : (showMe ? tonC.series[0] : new Array(tonC.labels.length).fill(0)),
-      azEmpty ? [] : (showAz ? tonC.series[1] : new Array(tonC.labels.length).fill(0)),
-      azEmpty ? [] : (showOt ? tonC.series[2] : new Array(tonC.labels.length).fill(0)),
+      showMe ? tonC.series[0] : new Array(tonC.labels.length).fill(0), // Melaza
+      showAz ? tonC.series[1] : new Array(tonC.labels.length).fill(0), // Azúcar
+      showOt ? tonC.series[2] : new Array(tonC.labels.length).fill(0), // Otros
       "Toneladas"
     );
-    document.getElementById("chart-azucar")?.closest(".chart-card")?.classList.toggle("is-empty", azEmpty);
+    setEmpty("chart-azucar", _visSum(tonC.series[0], tonC.series[1], tonC.series[2]) === 0);
 
     // ===== Promedios =====
     const pVol = data.charts?.promedioDescarga?.volteo || [];
@@ -584,8 +595,18 @@
     chPromedio.data.datasets[1].hidden = !VIS.plana;
     chPromedio.data.datasets[2].hidden = !VIS.pipa;
 
+    // Comprime días duplicados y suma series
     const promC = compressByDay(Lraw, pVol, pPla, pPip);
-    const promEmpty = !L.length || _visSum(promC, VIS.volteo, VIS.plana, VIS.pipa) === 0;
+    chPromedio.data.labels = promC.labels;
+    try { applyVerticalDateTicks(chPromedio); } catch { }
+    DC.setLine3(
+      chPromedio,
+      promC.labels,
+      VIS.volteo ? promC.series[0] : new Array(promC.labels.length).fill(0),
+      VIS.plana ? promC.series[1] : new Array(promC.labels.length).fill(0),
+      VIS.pipa ? promC.series[2] : new Array(promC.labels.length).fill(0),
+      "Promedio Descarga (min)"
+    );
 
     if (chPromedio?.options?.plugins?.tooltip) {
       const txt = data.charts?.promedioDescargaTxt || {};
@@ -600,18 +621,9 @@
           return `${ctx.dataset.label}: ${pretty}`;
         }
       };
+      chPromedio.update();
     }
-    chPromedio.data.labels = promC.labels;
-    try { applyVerticalDateTicks(chPromedio); } catch { }
-    DC.setLine3(
-      chPromedio,
-      promC.labels,
-      promEmpty ? [] : (VIS.volteo ? promC.series[0] : new Array(promC.labels.length).fill(0)),
-      promEmpty ? [] : (VIS.plana ? promC.series[1] : new Array(promC.labels.length).fill(0)),
-      promEmpty ? [] : (VIS.pipa ? promC.series[2] : new Array(promC.labels.length).fill(0)),
-      "Promedio Descarga (min)"
-    );
-    document.getElementById("chart-promedio")?.closest(".chart-card")?.classList.toggle("is-empty", promEmpty);
+    setEmpty("chart-promedio", _visSum(promC.series[0], promC.series[1], promC.series[2]) === 0);
   }
 
   // ========= Init =========

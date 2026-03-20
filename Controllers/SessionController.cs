@@ -50,13 +50,20 @@ namespace FrontendQuickpass.Controllers
             // Obtener rol code desde el nombre del rol (del token)
             var roleName = tokenInfo.NombreRol;
             var roleCode = RoleMapper.GetRoleCodeByName(roleName);
+            
+            // Obtener full_name desde JWT
+            var fullName = !string.IsNullOrEmpty(tokenInfo.FullName)
+                ? tokenInfo.FullName
+                : tokenInfo.Username;
 
             // Devolver solo información necesaria para el frontend (NO sensible)
             return Ok(new
             {
                 username = tokenInfo.Username,
+                fullName = fullName,
                 roleCode = roleCode,
                 roleName = roleName,
+                codRol = tokenInfo.CodRol,
                 permissions = permisos,
                 isValid = true,
                 expiresAt = tokenInfo.FechaExpiracion

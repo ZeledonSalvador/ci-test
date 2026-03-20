@@ -7,28 +7,18 @@ namespace FrontendQuickpass.Helpers
     {
         // SEGURIDAD: Nombre de cookie ofuscado para dificultar ataques
         // Nota: __Host- requiere Secure=true (HTTPS). Usar nombre simple hasta habilitar HTTPS
-        public const string AUTH_COOKIE_NAME = ".QPS.QPS";
+        public const string AUTH_COOKIE_NAME = ".QPS.DASH";
 
         /// <summary>
         /// Lista completa de cookies de sesión que deben limpiarse al cerrar sesión
         /// </summary>
         public static readonly string[] SessionCookies = new[]
         {
-            // Cookie principal de autenticación
-            AUTH_COOKIE_NAME,          // Token JWT principal (ÚNICO necesario para autenticación)
-            "sesion_activa",           // Legacy - mantener para migración
+            // Cookie principal de autenticación JWT
+            AUTH_COOKIE_NAME,
 
-            // Cookies de datos de usuario (Ya se leen desde JWT en Fase 2)
-            "cod_usuario",             // Se lee desde JWT via SessionHelper
-            "username",                // Se lee desde JWT via SessionHelper
-            "cod_bascula",             // Se lee desde JWT via SessionHelper
-            "full_name",               // Se lee desde JWT via SessionHelper
-
-            // Cookies de contexto (legacy - mantener para compatibilidad temporal)
-            "cod_turno",               // Nunca se crea como cookie, solo en JWT
-
-            // Cookies de token
-            "token_info"
+            // Cookie de sesión ASP.NET (cifrada con Data Protection)
+            ".AspNetCore.Session"
         };
 
         /// <summary>

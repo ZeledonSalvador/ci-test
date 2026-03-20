@@ -5,74 +5,53 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/login.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 }
 
 <body>
     <form asp-controller="Login" asp-action="Index" method="post" id="loginForm">
-        <div class="wrapper fadeInDown">
-            <div id="formContent" style="border: solid 0px">
+        <div class="wrapper">
+            <div id="formContent" class="fadeIn">
 
-                <!-- Usuario -->
-                <div class="input-group">
-                    <div class="input-group-icon">
-                        <img src="~/assets/user-svgrepo-com.svg"
-                             alt="Usuario" width="30" height="30" style="filter: invert(100%);" />
-                    </div>
-                    <input type="text" class="form-control" placeholder="Usuario" name="Usuario" id="Usuario" />
+                <!-- Branding -->
+                <div class="login-brand">
+                    <img src="~/assets/almapac.png" alt="Almapac Logo" class="login-logo" />
+                    <h1>BIENVENIDO</h1>
                 </div>
 
-                <!-- Contraseña -->
-                <div class="input-group">
-                    <div class="input-group-icon">
-                        <img src="~/assets/key-svgrepo-com.svg"
-                             alt="Contraseña" width="30" height="30" />
+                <!-- Campos -->
+                <div class="login-fields">
+                    <!-- Usuario -->
+                    <div class="field-group">
+                        <label for="Usuario">Usuario</label>
+                        <div class="field-input">
+                            <i class="fas fa-user field-icon"></i>
+                            <input type="text" placeholder="Ingrese su usuario" name="Usuario" id="Usuario" 
+                                   autocomplete="off" />
+                        </div>
                     </div>
-                    <input type="password" class="form-control" placeholder="Contraseña" name="Clave" id="Clave"
-                           autocomplete="off" />
-                </div>
 
-                <!-- Báscula -->
-                <div class="input-group">
-                    <div class="input-group-icon">
-                        <img src="~/assets/industrial-scales-svgrepo-com.svg"
-                             alt="Báscula" width="30" height="30" style="filter: invert(100%)" />
+                    <!-- Contraseña -->
+                    <div class="field-group">
+                        <label for="Clave">Contraseña</label>
+                        <div class="field-input" id="password-field">
+                            <i class="fas fa-lock field-icon"></i>
+                            <input type="password" placeholder="Ingrese su contraseña" name="Clave" id="Clave"
+                                   autocomplete="off" />
+                            <button type="button" class="toggle-password" id="togglePassword">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
                     </div>
-                    <select name="Bascula" id="Bascula" class="form-control" style="height: 60px; color: #646C72; font-weight: normal;">
-                        <option value="0">-Seleccione la Báscula-</option>
-                        <option value="1">Báscula 1</option>
-                        <option value="2">Báscula 2</option>
-                        <option value="3">Báscula 3</option>
-                        <option value="4">Báscula 4</option>
-                        <option value="5">Báscula 5</option>
-                        <option value="6">Báscula 6</option>
-                    </select>
-                </div>
-
-                <!-- Turno -->
-                <div class="input-group">
-                    <div class="input-group-icon">
-                        <img src="~/assets/time-svgrepo-com.svg"
-                             alt="Turno" width="30" height="30" style="filter: invert(100%);" />
-                    </div>
-                    <select name="Turno" id="Turno" class="form-control" style="height: 60px; color: #646C72; font-weight: normal;">
-                        <option value="0">-Seleccione un Turno-</option>
-                        <option value="1">6:00 a 14:00</option>
-                        <option value="2">14:00 a 22:00</option>
-                        <option value="3">22:00 a 6:00</option>
-                    </select>
                 </div>
 
                 <!-- Botón Login -->
-                <button type="submit" class="fadeIn mt-4"
-                        style="animation: fadeIn 1s ease-out forwards;
-                               background-color: white; color: #333; font-size: 16px;
-                               font-weight: bold; padding: 12px 40px; border-radius: 8px;
-                               border: none; cursor: pointer; transition: background-color 0.3s ease;
-                               width: 40%; margin: 0 auto;"
-                        onmouseover="this.style.backgroundColor='#f1f1f1';"
-                        onmouseout="this.style.backgroundColor='white';">
-                    LOGIN
+                <button type="submit" class="login-btn">
+                    INGRESAR
                 </button>
+
+                <!-- Footer -->
+                <p class="login-footer">&copy; @DateTime.Now.Year Almacenadora del Pacífico S.A. de C.V.</p>
             </div>
         </div>
     </form>
@@ -151,7 +130,7 @@
             });
             
             // ===== ACTIVAR LOGIN CON ENTER EN TODOS LOS CAMPOS =====
-            $('#Usuario, #Clave, #Bascula, #Turno').on('keypress', function(e) {
+            $('#Usuario, #Clave').on('keypress', function(e) {
                 if (e.which === 13) {
                     e.preventDefault();
                     procesarLogin(e);
@@ -162,20 +141,25 @@
             $("#Usuario").focus();
             
             // ===== CONFIGURAR TOGGLE DE CONTRASEÑA =====
-            setupPasswordToggle();
+            $('#togglePassword').on('click', function() {
+                const passwordField = $('#Clave');
+                const type = passwordField.attr('type') === 'password' ? 'text' : 'password';
+                passwordField.attr('type', type);
+                const icon = type === 'password' ? 'fa-eye' : 'fa-eye-slash';
+                $(this).html('<i class="fas ' + icon + '"></i>');
+                passwordField.focus();
+            });
         });
-        
+
         // ===== FUNCIÓN CENTRALIZADA PARA PROCESAR EL LOGIN =====
         function procesarLogin(e) {
             var usuario  = $("#Usuario").val().trim();
             var clave    = $("#Clave").val().trim();
-            var bascula  = $("#Bascula").val();
-            var turno    = $("#Turno").val();
-            
+
             console.log('🔐 Validando campos de login...');
-            
+
             // VALIDACIÓN DE CAMPOS OBLIGATORIOS
-            if (!usuario || !clave || bascula === "0" || turno === "0") {
+            if (!usuario || !clave) {
                 if (e) e.preventDefault();
                 Swal.fire({
                     icon: 'warning',
@@ -184,49 +168,17 @@
                     confirmButtonColor: '#ffc107',
                     confirmButtonText: 'Entendido'
                 });
-                
+
                 // Focus en el primer campo vacío
                 if (!usuario) $("#Usuario").focus();
                 else if (!clave) $("#Clave").focus();
-                else if (bascula === "0") $("#Bascula").focus();
-                else if (turno === "0") $("#Turno").focus();
-                
+
                 return false;
             }
-            
+
             console.log('✅ Campos validados correctamente, enviando formulario...');
             // PERMITIR ENVÍO DEL FORMULARIO
             return true;
-        }
-        
-        // ===== CONFIGURAR TOGGLE DE CONTRASEÑA =====
-        function setupPasswordToggle() {
-            const togglePassword = $(`
-                <button type="button" class="toggle-password" 
-                        style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); 
-                               background: transparent; border: none; color: #fff; cursor: pointer; 
-                               z-index: 10; outline: none;">
-                    <i class="fas fa-eye"></i>
-                </button>
-            `);
-            
-            const passwordField = $("#Clave");
-            if (passwordField.length) {
-                passwordField.parent().css('position', 'relative');
-                passwordField.parent().append(togglePassword);
-                
-                togglePassword.on('click', function() {
-                    const type = passwordField.attr('type') === 'password' ? 'text' : 'password';
-                    passwordField.attr('type', type);
-                    
-                    // Cambiar el ícono
-                    const icon = type === 'password' ? 'fa-eye' : 'fa-eye-slash';
-                    $(this).html(`<i class="fas ${icon}"></i>`);
-                    
-                    // Mantener el focus en el campo de contraseña
-                    passwordField.focus();
-                });
-            }
         }
 
         // Limpiar sessionStorage al cargar la página de login (cierre de sesión)

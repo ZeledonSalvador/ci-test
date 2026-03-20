@@ -1,12 +1,11 @@
 @{
-    ViewData["Title"] = "Histórico - Diario (Horas)";
+    ViewData["Title"] = "Histórico - Diario (por horas)";
     Layout = "~/Views/Shared/_Layout.cshtml";
-    <meta name="dash-api-base" content="http://localhost:3000">
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/site.css" />
+  <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+  <link rel="stylesheet" href="~/css/site.css" />
 }
 
 @await Html.PartialAsync("_DashSwitcher")
@@ -14,189 +13,203 @@
 
 <div class="dash-wrapper">
 
-    <!-- ── Filtros ── -->
-    <div class="filters">
-        <div class="filter">
-            <label>Fecha</label>
-            <input type="date" id="f-fecha" />
-        </div>
-        <div class="filter">
-            <label>Hora</label>
-            <div class="date-range time-range">
-                <select id="f-hour-start"></select>
-                <span>–</span>
-                <select id="f-hour-end"></select>
-            </div>
-        </div>
-        <div class="filter">
-            <label>Ingenio</label>
-            <select id="f-ingenio">
-                <option value="">Todos</option>
-                <option value="JB">Ingenio Central Azucarero Jiboa</option>
-                <option value="ILC">Ingenio La Cabaña</option>
-                <option value="IEA">Ingenio El Angel</option>
-                <option value="ILM">Ingenio La Magdalena</option>
-                <option value="ICHP">Ingenio Chaparrastique</option>
-                <option value="CASSA">Compañía Azucarera Salvadoreña</option>
-            </select>
-        </div>
-        <div class="filter">
-            <label>Producto</label>
-            <select id="f-producto">
-                <option value="" selected>Todos</option>
-                <option value="AZ-001">Azúcar</option>
-                <option value="MEL-001">Melaza</option>
-            </select>
-        </div>
-        <div class="filter">
-            <button id="f-apply" class="btn btn-primary">
-                <i class="fas fa-search"></i> Aplicar
-            </button>
-        </div>
+  <!-- Filtros -->
+  <div class="filters">
+    <div class="filter">
+      <label>Fecha</label>
+      <input type="date" id="f-fecha" />
     </div>
 
-    <!-- ── Indicadores Clave ── -->
-    <div class="kpi-section">
-        <div class="dash-section-label">Indicadores Clave</div>
-        <div class="kpi-groups-row">
-
-            <!-- Izquierda: Operaciones + Flujos Azúcar (6 cards = 3 filas) -->
-            <div class="kpi-group">
-                <div class="kpi-group-grid">
-                    <div class="kpi">
-                        <div class="kpi-label">Camiones Recibidos</div>
-                        <div class="kpi-value" id="kpi-camiones-recibidos">0</div>
-                    </div>
-                    <div class="kpi">
-                        <div class="kpi-label">Camiones Finalizados</div>
-                        <div class="kpi-value" id="kpi-camiones-finalizados">0</div>
-                    </div>
-                    <div class="kpi">
-                        <div class="kpi-label">Tiempo Promedio de Espera</div>
-                        <div class="kpi-value" id="kpi-tiempo-promedio-espera">00 h 00 min</div>
-                    </div>
-                    <div class="kpi">
-                        <div class="kpi-label">Tiempo Promedio de Atención</div>
-                        <div class="kpi-value" id="kpi-tiempo-promedio-atencion">00 h 00 min</div>
-                    </div>
-                    <div class="kpi">
-                        <div class="kpi-label">Flujo por Día (Azúcar)</div>
-                        <div class="kpi-value" id="kpi-cantidad-dia-Az">0 t</div>
-                    </div>
-                    <div class="kpi">
-                        <div class="kpi-label">Flujo por Hora (Azúcar)</div>
-                        <div class="kpi-value" id="kpi-flujo-dia-Az">0 t</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Derecha: Flujos Melaza + Descargas (5 cards = 2 filas + 1 wide) -->
-            <div class="kpi-group">
-                <div class="kpi-group-grid">
-                    <div class="kpi">
-                        <div class="kpi-label">Flujo por Día (Melaza)</div>
-                        <div class="kpi-value" id="kpi-cantidad-dia-Mel">0 t</div>
-                    </div>
-                    <div class="kpi">
-                        <div class="kpi-label">Flujo por Hora (Melaza)</div>
-                        <div class="kpi-value" id="kpi-flujo-dia-Mel">0 t</div>
-                    </div>
-                    <div class="kpi">
-                        <div class="kpi-label">Promedio de Descarga (Planas)</div>
-                        <div class="kpi-value" id="kpi-prom-planas">0 min 00 s</div>
-                    </div>
-                    <div class="kpi">
-                        <div class="kpi-label">Promedio de Descarga (Volteo)</div>
-                        <div class="kpi-value" id="kpi-prom-volteo">0 min 00 s</div>
-                    </div>
-                    <div class="kpi">
-                        <div class="kpi-label">Promedio de Descarga (Pipa)</div>
-                        <div class="kpi-value" id="kpi-prom-pipa">0 min 00 s</div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
+    <div class="filter">
+      <label>Hora</label>
+      <div class="date-range time-range">
+        <select id="f-hour-start"></select>
+        <span>–</span>
+        <select id="f-hour-end"></select>
+      </div>
     </div>
 
-    <!-- ── Tendencias ── -->
-    <div class="charts-section">
-        <div class="dash-section-label">Tendencias</div>
-        <div class="charts-grid">
-
-            <section class="chart-card">
-                <header>Camiones Finalizados</header>
-                <div class="chart-scroll">
-                    @Html.Partial("_ChartEmptyOverlay")
-                    <div class="chart-inner">
-                        <canvas id="chart-finalizados"></canvas>
-                    </div>
-                </div>
-                <div class="legend">Tipo Camión:
-                    <p class="dot dot-blue"></p> Volteo
-                    <p class="dot dot-orange"></p> Plana
-                    <p class="dot dot-black"></p> Pipa
-                </div>
-            </section>
-
-            <section class="chart-card">
-                <header>Camiones Recibidos</header>
-                <div class="chart-scroll">
-                    @Html.Partial("_ChartEmptyOverlay")
-                    <div class="chart-inner">
-                        <canvas id="chart-recibidos"></canvas>
-                    </div>
-                </div>
-                <div class="legend">Tipo Camión:
-                    <b class="dot dot-blue"></b> Volteo
-                    <b class="dot dot-orange"></b> Plana
-                    <b class="dot dot-black"></b> Pipa
-                </div>
-            </section>
-
-            <section class="chart-card">
-                <header>Cantidad Recibida</header>
-                <div class="chart-scroll">
-                    @Html.Partial("_ChartEmptyOverlay")
-                    <div class="chart-inner">
-                        <canvas id="chart-azucar"></canvas>
-                    </div>
-                </div>
-                <div class="legend">Producto:
-                    <b class="dot dot-orange"></b> Azúcar
-                    <b class="dot dot-blue"></b> Melaza
-                </div>
-            </section>
-
-            <section class="chart-card">
-                <header>Promedio de Descarga</header>
-                <div class="chart-scroll">
-                    @Html.Partial("_ChartEmptyOverlay")
-                    <div class="chart-inner">
-                        <canvas id="chart-promedio"></canvas>
-                    </div>
-                </div>
-                <div class="legend">Tipo Camión:
-                    <b class="dot dot-blue"></b> Volteo
-                    <b class="dot dot-orange"></b> Plana
-                    <b class="dot dot-black"></b> Pipa
-                </div>
-            </section>
-
-        </div>
+    <div class="filter">
+      <label>Ingenio</label>
+      @await Html.PartialAsync("_IngenioSelect")
     </div>
+
+    <div class="filter">
+      <label>Producto</label>
+      <select id="f-producto">
+        <option value="" selected>Todos</option>
+        <option value="AZ-001">Azúcar</option>
+        <option value="MEL-001">Melaza</option>
+      </select>
+    </div>
+
+    <div class="filter" style="align-self:flex-end;">
+      <button id="f-apply" class="btn btn-primary">
+        <i class="fas fa-search"></i> Aplicar
+      </button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-section">
+    <div class="dash-section-label">Indicadores Clave</div>
+    <div class="kpi-groups-row">
+
+      <!-- Izquierda: Operaciones + Flujos Azúcar (6 cards) -->
+      <div class="kpi-group">
+        <div class="kpi-group-grid">
+          <div class="kpi">
+            <div class="kpi-label">Camiones Recibidos</div>
+            <div class="kpi-value" id="kpi-camiones-recibidos">0</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Camiones Finalizados</div>
+            <div class="kpi-value" id="kpi-camiones-finalizados">0</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Tiempo Promedio de Espera</div>
+            <div class="kpi-value" id="kpi-tiempo-promedio-espera">00 h 00 min</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Tiempo Promedio de Atención</div>
+            <div class="kpi-value" id="kpi-tiempo-promedio-atencion">00 h 00 min</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Flujo por Día (Azúcar)</div>
+            <div class="kpi-value" id="kpi-cantidad-dia-Az">0 t</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Flujo por Hora (Azúcar)</div>
+            <div class="kpi-value" id="kpi-flujo-dia-Az">0 t/h</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Derecha: Flujos Melaza + Descargas (5 cards) -->
+      <div class="kpi-group">
+        <div class="kpi-group-grid">
+          <div class="kpi">
+            <div class="kpi-label">Flujo por Día (Melaza)</div>
+            <div class="kpi-value" id="kpi-cantidad-dia-Mel">0 t</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Flujo por Hora (Melaza)</div>
+            <div class="kpi-value" id="kpi-flujo-dia-Mel">0 t/h</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Promedio de Descarga (Planas)</div>
+            <div class="kpi-value" id="kpi-prom-planas">0 min 00 s</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Promedio de Descarga (Volteo)</div>
+            <div class="kpi-value" id="kpi-prom-volteo">0 min 00 s</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Promedio de Descarga (Pipa)</div>
+            <div class="kpi-value" id="kpi-prom-pipa">0 min 00 s</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-section">
+  <div class="dash-section-label">Tendencias</div>
+  <div class="charts-grid">
+    <section class="chart-card">
+      <header>Camiones Finalizados</header>
+      <div class="chart-scroll">
+        @Html.Partial("_ChartEmptyOverlay")
+        <div class="chart-inner">
+          <canvas id="chart-finalizados"></canvas>
+        </div>
+      </div>
+      <div class="legend">Tipo Camión:
+        <p class="dot dot-blue"></p> Volteo
+        <p class="dot dot-orange"></p> Plana
+        <p class="dot dot-black"></p> Pipa
+      </div>
+    </section>
+
+    <section class="chart-card">
+      <header>Camiones Recibidos</header>
+      <div class="chart-scroll">
+        @Html.Partial("_ChartEmptyOverlay")
+        <div class="chart-inner">
+          <canvas id="chart-recibidos"></canvas>
+        </div>
+      </div>
+      <div class="legend">Tipo Camión:
+        <b class="dot dot-blue"></b> Volteo
+        <b class="dot dot-orange"></b> Plana
+        <b class="dot dot-black"></b> Pipa
+      </div>
+    </section>
+
+    <section class="chart-card">
+      <header>Cantidad Recibida</header>
+      <div class="chart-scroll">
+        @Html.Partial("_ChartEmptyOverlay")
+        <div class="chart-inner">
+          <canvas id="chart-azucar"></canvas>
+        </div>
+      </div>
+      <div class="legend">Producto:
+        <b class="dot dot-orange"></b> Azúcar
+        <b class="dot dot-blue"></b> Melaza
+      </div>
+    </section>
+
+    <section class="chart-card">
+      <header>Promedio de Descarga</header>
+      <div class="chart-scroll">
+        @Html.Partial("_ChartEmptyOverlay")
+        <div class="chart-inner">
+          <canvas id="chart-promedio"></canvas>
+        </div>
+      </div>
+      <div class="legend">Tipo Camión:
+        <b class="dot dot-blue"></b> Volteo
+        <b class="dot dot-orange"></b> Plana
+        <b class="dot dot-black"></b> Pipa
+      </div>
+    </section>
+  </div>
+  </div>
 
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2"></script>
-    <script>
-        (function () {
-            const zoomPlugin = window['chartjs-plugin-zoom'] || window.ChartZoom;
-            if (zoomPlugin) Chart.register(zoomPlugin);
-        })();
-    </script>
-    <script src="~/js/dash-core.js?v=20260317"></script>
-    <script src="~/js/dash-historico-diario-horas.js?v=20260317"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2"></script>
+  <script>
+    (function () {
+      const zoomPlugin = window['chartjs-plugin-zoom'] || window.ChartZoom;
+      if (zoomPlugin) Chart.register(zoomPlugin);
+      const s1 = document.getElementById("f-hour-start");
+      const s2 = document.getElementById("f-hour-end");
+      if (!s1 || !s2) return;
+      const mkOpt = (h) => {
+        const hh = String(h).padStart(2, "0");
+        const o = document.createElement("option");
+        o.value = `${hh}:00`;
+        o.textContent = hh;
+        return o;
+      };
+      for (let h = 0; h <= 23; h++) { s1.appendChild(mkOpt(h)); s2.appendChild(mkOpt(h)); }
+      s1.value = "00:00";
+      s2.value = "23:00";
+      const clamp = () => {
+        const a = Number((s1.value || "00:00").split(":")[0]);
+        const b = Number((s2.value || "23:00").split(":")[0]);
+        if (a > b) s2.value = s1.value;
+      };
+      s1.addEventListener("change", clamp);
+      s2.addEventListener("change", clamp);
+    })();
+  </script>
+  <script src="~/js/dash-core.js?v=20260316g"></script>
+  <script src="~/js/dash-historico-diario-horas.js?v=20260317a"></script>
 }

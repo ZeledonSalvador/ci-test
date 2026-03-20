@@ -251,6 +251,15 @@ body {
   z-index: 200;
 }
 
+/* Visible en todo el rango mobile/tablet de Bootstrap (< 992px) */
+@media (max-width: 991px) {
+  #menu-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
 #menu-toggle:hover {
   background-color: var(--primary-orange);
   color: var(--white);
@@ -365,6 +374,19 @@ body {
 .mobile-menu-item:active {
   background-color: rgba(255, 92, 0, 0.2);
   transform: scale(0.98);
+}
+
+/* Dark mode toggle dentro del menú móvil */
+.mobile-menu-theme {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-light);
+}
+
+[data-theme="dark"] .mobile-menu-theme {
+  border-top-color: #334155;
 }
 
 /* Botón de cerrar sesión móvil */
@@ -531,15 +553,6 @@ body {
    RESPONSIVE BREAKPOINTS
    ========================================================================== */
 
-/* Base: menú hamburguesa siempre visible por debajo de 992px */
-@media (max-width: 991px) {
-  #menu-toggle {
-    display: inline-flex !important;
-    align-items: center;
-    justify-content: center;
-  }
-}
-
 /* Pantallas muy grandes - 4K y similares */
 @media (min-width: 1400px) {
   .logo img {
@@ -671,16 +684,16 @@ body {
     padding: 8px 18px;
     height: 52px;
   }
-
+  
   #menu-toggle {
     width: 46px;
     height: 40px;
   }
-
+  
   .logo img {
     max-height: 24px;
   }
-  
+
   #mobile-menu {
     top: 52px;
     height: calc(100vh - 52px);
@@ -816,9 +829,13 @@ body {
 }
 
 /* Orientación específica para tablets */
-@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+@media (min-width: 992px) and (max-width: 1024px) and (orientation: landscape) {
   .header nav {
     display: flex !important;
+  }
+
+  #menu-toggle {
+    display: none !important;
   }
 }
 
@@ -1053,3 +1070,173 @@ footer {
             100% { transform: translateY(0px); }
         }
 
+.theme-switch-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+/* Iconos sol y luna */
+.theme-sun {
+  font-size: 14px;
+  color: #FD7304;
+  opacity: 1;
+  transition: opacity 0.25s ease;
+}
+
+.theme-moon {
+  font-size: 14px;
+  color: #94a3b8;
+  opacity: 0.45;
+  transition: opacity 0.25s ease, color 0.25s ease;
+}
+
+/* En dark mode: sol se atenúa, luna se activa */
+[data-theme="dark"] .theme-sun  { opacity: 0.4; }
+[data-theme="dark"] .theme-moon { color: #e2e8f0; opacity: 1; }
+
+/* Pill (label actúa como contenedor) */
+.theme-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  margin: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Oculta el checkbox nativo */
+.theme-switch input.theme-checkbox {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+/* Fondo de la pill */
+.theme-slider {
+  position: absolute;
+  inset: 0;
+  background: #cbd5e1;
+  border-radius: 24px;
+  transition: background 0.25s ease;
+}
+
+/* Knob (círculo blanco) */
+.theme-slider::before {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 3px;
+  top: 3px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
+  transition: transform 0.25s ease;
+}
+
+/* Estado dark (checked): fondo oscuro + knob deslizado */
+.theme-switch input.theme-checkbox:checked + .theme-slider {
+  background: #475569;
+}
+
+.theme-switch input.theme-checkbox:checked + .theme-slider::before {
+  transform: translateX(20px);
+}
+
+[data-theme="dark"] {
+  --text-dark:    #e2e8f0;
+  --text-muted:   #94a3b8;
+  --border-light: #334155;
+  --bg-light:     #1e293b;
+  --bg-section:   #0f172a;
+  --shadow-light: rgba(0, 0, 0, 0.4);
+  --shadow-medium: rgba(0, 0, 0, 0.5);
+  --white:        #1e293b;
+  --black:        #f1f5f9;
+  --secondary-blue-light: rgba(0, 123, 255, 0.2);
+  --primary-orange-light: rgba(253, 115, 4, 0.15);
+}
+
+[data-theme="dark"] body {
+  background-color: #0f172a;
+  color: var(--text-dark);
+}
+
+[data-theme="dark"] footer {
+  background-color: #080f1c;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .header {
+  background-color: #1e293b;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+
+[data-theme="dark"] #mobile-menu {
+  background-color: #1e293b;
+}
+
+[data-theme="dark"] .mobile-menu-header {
+  background-color: #0f172a;
+  border-bottom-color: #334155;
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .mobile-menu-login {
+  background-color: #1e293b;
+  border-top-color: #334155;
+}
+
+[data-theme="dark"] .dropdown-menu {
+  background-color: #1e293b;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+[data-theme="dark"] .dropdown-item {
+  color: var(--text-dark);
+}
+
+[data-theme="dark"] .dropdown-item:hover {
+  background-color: rgba(0, 123, 255, 0.15);
+}
+
+/* ==========================================================================
+   WINDOW CONTROLS OVERLAY (WCO) — solo aplica cuando la PWA está instalada
+   con display_override: window-controls-overlay en Windows/macOS/Linux.
+   En el navegador normal este bloque no tiene ningún efecto.
+   ========================================================================== */
+
+@media (display-mode: window-controls-overlay) {
+  .header {
+    top: env(titlebar-area-y, 0px);
+    height: env(titlebar-area-height, 65px);
+    padding-right: calc(100vw - env(titlebar-area-width, 100vw) + 8px);
+    -webkit-app-region: drag;
+    app-region: drag;
+  }
+
+  /* Los elementos interactivos NO deben ser arrastrables */
+  .header a,
+  .header button,
+  .header input,
+  .header label {
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
+  }
+
+  body {
+    padding-top: calc(env(titlebar-area-y, 0px) + env(titlebar-area-height, 65px));
+  }
+}
+
+/* WCO en dark mode — fondo del header coincide con la barra de título */
+@media (display-mode: window-controls-overlay) {
+  [data-theme="dark"] .header {
+    background-color: #1e293b;
+  }
+}

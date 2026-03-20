@@ -140,8 +140,8 @@ namespace FrontendQuickpass.Middleware
                 CodRol = tokenInfo.CodRol,
                 Username = tokenInfo.Username,
                 NombreRol = tokenInfo.NombreRol,
-                CodBascula = tokenInfo.CodBascula,
-                CodTurno = tokenInfo.CodTurno,
+                FullName = tokenInfo.FullName,
+                ClientCode = tokenInfo.ClientCode,
                 TiempoRestanteHoras = tokenInfo.TiempoRestanteHoras,
                 FechaExpiracion = tokenInfo.FechaExpiracion,
                 Permisos = tokenInfo.Permisos

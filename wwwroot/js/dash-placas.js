@@ -31,6 +31,11 @@
   let chDescargaPlaca = null;
   let chEsperaPlaca = null;
 
+  // Guardamos los últimos labels para recalcular en resize
+  let _lastTransitoLabels = [];
+  let _lastDescargaLabels = [];
+  let _lastEsperaLabels = [];
+
   // ========= LOADER (spinner overlay) =========
   let __placasLoaderCount = 0;
   let __placasLoaderTimer = null;
@@ -129,14 +134,16 @@
     clear(chDescargaPlaca);
     clear(chEsperaPlaca);
 
-    [ID_CHART_TRANSITO, ID_CHART_DESCARGA, ID_CHART_ESPERA].forEach(id => {
-      document.getElementById(id)?.closest(".chart-card")?.classList.add("is-empty");
-    });
-
     // opcional: reset scroll widths si usas ensureScrollableWidth
     try { Core.ensureScrollableWidth(ID_CHART_TRANSITO, []); } catch { }
     try { Core.ensureScrollableWidth(ID_CHART_DESCARGA, []); } catch { }
     try { Core.ensureScrollableWidth(ID_CHART_ESPERA, []); } catch { }
+
+    // is-empty overlays
+    [ID_CHART_TRANSITO, ID_CHART_DESCARGA, ID_CHART_ESPERA].forEach(id => {
+      const card = Core.$(id)?.closest?.(".chart-card");
+      if (card) card.classList.add("is-empty");
+    });
   }
 
 
@@ -174,7 +181,8 @@
   // -----------------------
   function getFilters() {
     const prod = Core.$("f-producto")?.value || "";
-    const ing = Core.$("f-ingenio")?.value || "";
+    const ingEl = Core.$("f-ingenio");
+    const ing = (ingEl && ingEl.value) || Core.$("f-ingenio-hidden")?.value || "";
     const hs = Core.$("f-hour-start")?.value || "00:00";
     const he = Core.$("f-hour-end")?.value || "23:59";
     const hf = Math.max(0, Math.min(23, Number(hs.split(":")[0]) || 0));
@@ -334,16 +342,16 @@
         });
       }
 
-      // Filtros tolerantes (si la fila no trae el campo, no la descartamos)
+      // Filtros estrictos: si el filtro está activo, excluir filas que no coincidan
       const dataRows = rows.filter(r => {
-        const okProd = !f.product || !r.Product || normProducto(r.Product) === normProducto(f.product);
-        const okIng = !f.ingenioId || !r.IngenioId || String(r.IngenioId).trim() === String(f.ingenioId).trim();
+        const okProd = !f.product || normProducto(r.Product) === normProducto(f.product);
+        const okIng = !f.ingenioId || String(r.IngenioId || "").trim() === String(f.ingenioId).trim();
         return okProd && okIng;
       });
 
       // Limpiar si no hay nada
       if (!dataRows.length) {
-        clearPlacasCharts();
+        clearPlacasCharts();              // 👈 limpia todo (nada de puntos/lineas)
         console.warn("[placas] No hay filas para pintar (filtros).");
         return;
       }
@@ -405,31 +413,39 @@
       // TRANSITO: 2 series (Azúcar/Melaza)
       const transF = filterChart(placasAll, serieAzAll, serieMeAll);
       if (chTransitoPlaca) {
+        _lastTransitoLabels = transF.labels;
         Core.ensureScrollableWidth(ID_CHART_TRANSITO, transF.labels);
-        chTransitoPlaca.resize();
-        // dataset0=Melaza, dataset1=Azúcar
+        // dataset0=Azúcar, dataset1=Melaza
         Core.setLine3(chTransitoPlaca, transF.labels, transF.series[0], transF.series[1], [], "Minutos");
-        document.getElementById(ID_CHART_TRANSITO)?.closest(".chart-card")?.classList.toggle("is-empty", !transF.labels.length);
       }
 
       // DESCARGA: 3 series (Volteo/Plana/Pipa)
       const descF = filterChart(placasAll, dVolAll, dPlaAll, dPipAll);
       if (chDescargaPlaca) {
+        _lastDescargaLabels = descF.labels;
         Core.ensureScrollableWidth(ID_CHART_DESCARGA, descF.labels);
-        chDescargaPlaca.resize();
         Core.setLine3(chDescargaPlaca, descF.labels, descF.series[0], descF.series[1], descF.series[2], "Minutos");
-        document.getElementById(ID_CHART_DESCARGA)?.closest(".chart-card")?.classList.toggle("is-empty", !descF.labels.length);
       }
 
       // ESPERA: 3 series (Volteo/Plana/Pipa)
       const esperaF = filterChart(placasAll, eVolAll, ePlaAll, ePipAll);
       if (chEsperaPlaca) {
+        _lastEsperaLabels = esperaF.labels;
         Core.ensureScrollableWidth(ID_CHART_ESPERA, esperaF.labels);
-        chEsperaPlaca.resize();
         Core.setLine3(chEsperaPlaca, esperaF.labels, esperaF.series[0], esperaF.series[1], esperaF.series[2], "Minutos");
-        document.getElementById(ID_CHART_ESPERA)?.closest(".chart-card")?.classList.toggle("is-empty", !esperaF.labels.length);
       }
 
+      // resize() + is-empty toggles
+      const setEmpty = (id, empty) => {
+        const card = Core.$(id)?.closest?.(".chart-card");
+        if (card) card.classList.toggle("is-empty", !!empty);
+      };
+      if (chTransitoPlaca) { try { chTransitoPlaca.resize(); } catch { } }
+      if (chDescargaPlaca) { try { chDescargaPlaca.resize(); } catch { } }
+      if (chEsperaPlaca)   { try { chEsperaPlaca.resize(); } catch { } }
+      setEmpty(ID_CHART_TRANSITO, transF.labels.length === 0);
+      setEmpty(ID_CHART_DESCARGA, descF.labels.length === 0);
+      setEmpty(ID_CHART_ESPERA,   esperaF.labels.length === 0);
     } finally {
       inFlight = false;
       if (!silent) hideLoaderPlacas(true);
@@ -470,4 +486,18 @@
 
   // Exponer función por si quieres dispararla manualmente
   window.DashPlacas = { fetchAndRenderPlacas };
+
+  // Actualizar anchos de charts cuando cambia el tamaño de la ventana
+  let _resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(() => {
+      Core.ensureScrollableWidth(ID_CHART_TRANSITO, _lastTransitoLabels);
+      Core.ensureScrollableWidth(ID_CHART_DESCARGA, _lastDescargaLabels);
+      Core.ensureScrollableWidth(ID_CHART_ESPERA, _lastEsperaLabels);
+      Core.refreshChartAfterResize(ID_CHART_TRANSITO);
+      Core.refreshChartAfterResize(ID_CHART_DESCARGA);
+      Core.refreshChartAfterResize(ID_CHART_ESPERA);
+    }, 200);
+  });
 })();

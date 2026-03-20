@@ -1,5 +1,5 @@
 @{
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = "Histórico";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
@@ -13,28 +13,22 @@
 
 <div class="dash-wrapper">
 
-    <!-- ── Filtros ── -->
+    <!-- Filtros -->
     <div class="filters">
         <div class="filter">
-            <label>Fecha</label>
+            <label for="f-date-start">Fecha</label>
             <div class="date-range">
                 <input type="date" id="f-desde" />
-                <span>—</span>
+                <span>–</span>
                 <input type="date" id="f-hasta" />
             </div>
         </div>
+
         <div class="filter">
             <label>Ingenio</label>
-            <select id="f-ingenio">
-                <option value="">Todos</option>
-                <option value="JB">Ingenio Central Azucarero Jiboa</option>
-                <option value="ILC">Ingenio La Cabaña</option>
-                <option value="IEA">Ingenio El Angel</option>
-                <option value="ILM">Ingenio La Magdalena</option>
-                <option value="ICHP">Ingenio Chaparrastique</option>
-                <option value="CASSA">Compañía Azucarera Salvadoreña</option>
-            </select>
+            @await Html.PartialAsync("_IngenioSelect")
         </div>
+
         <div class="filter">
             <label>Producto</label>
             <select id="f-producto">
@@ -43,18 +37,20 @@
                 <option value="MEL-001">Melaza</option>
             </select>
         </div>
-        <div class="filter">
+
+        <div class="filter" style="align-self:flex-end;">
             <button id="f-apply" class="btn btn-primary">
                 <i class="fas fa-search"></i> Aplicar
             </button>
         </div>
     </div>
 
-    <!-- ── Indicadores Clave ── -->
+    <!-- KPIs -->
     <div class="kpi-section">
         <div class="dash-section-label">Indicadores Clave</div>
         <div class="kpi-groups-row">
 
+            <!-- Grupo 1: tránsito / tiempos -->
             <div class="kpi-group">
                 <div class="kpi-group-grid">
                     <div class="kpi">
@@ -80,14 +76,15 @@
                 </div>
             </div>
 
+            <!-- Grupo 2: flujo / descarga -->
             <div class="kpi-group">
                 <div class="kpi-group-grid">
                     <div class="kpi">
-                        <div class="kpi-label">Flujo por Día (Azúcar)</div>
+                        <div class="kpi-label">Flujo Por Día (Azúcar)</div>
                         <div class="kpi-value" id="kpi-flujo-dia_Az">0 t</div>
                     </div>
                     <div class="kpi">
-                        <div class="kpi-label">Flujo por Día (Melaza)</div>
+                        <div class="kpi-label">Flujo Por Día (Melaza)</div>
                         <div class="kpi-value" id="kpi-flujo-dia_Mel">0 t</div>
                     </div>
                     <div class="kpi">
@@ -108,73 +105,70 @@
         </div>
     </div>
 
-    <!-- ── Tendencias ── -->
+    <!-- Charts 2×2 -->
     <div class="charts-section">
-        <div class="dash-section-label">Tendencias</div>
-        <div class="charts-grid">
+    <div class="dash-section-label">Tendencias</div>
+    <div class="charts-grid">
+        <section class="chart-card">
+            <header>Camiones Finalizados</header>
+            <div class="chart-scroll">
+                @Html.Partial("_ChartEmptyOverlay")
+                <div class="chart-inner">
+                    <canvas id="chart-finalizados"></canvas>
+                </div>
+            </div>
+            <div class="legend">Tipo Camión:
+                <p class="dot dot-blue"></p> Volteo
+                <p class="dot dot-orange"></p> Plana
+                <p class="dot dot-black"></p> Pipa
+            </div>
+        </section>
 
-            <section class="chart-card">
-                <header>Camiones Finalizados</header>
-                <div class="chart-scroll">
-                    @Html.Partial("_ChartEmptyOverlay")
-                    <div class="chart-inner">
-                        <canvas id="chart-finalizados"></canvas>
-                    </div>
+        <section class="chart-card">
+            <header>Camiones Recibidos</header>
+            <div class="chart-scroll">
+                @Html.Partial("_ChartEmptyOverlay")
+                <div class="chart-inner">
+                    <canvas id="chart-recibidos"></canvas>
                 </div>
-                <div class="legend">Tipo Camión:
-                    <p class="dot dot-blue"></p> Volteo
-                    <p class="dot dot-orange"></p> Plana
-                    <p class="dot dot-black"></p> Pipa
-                </div>
-            </section>
+            </div>
+            <div class="legend">Tipo Camión:
+                <b class="dot dot-blue"></b> Volteo
+                <b class="dot dot-orange"></b> Plana
+                <b class="dot dot-black"></b> Pipa
+            </div>
+        </section>
 
-            <section class="chart-card">
-                <header>Camiones Recibidos</header>
-                <div class="chart-scroll">
-                    @Html.Partial("_ChartEmptyOverlay")
-                    <div class="chart-inner">
-                        <canvas id="chart-recibidos"></canvas>
-                    </div>
+        <section class="chart-card">
+            <header>Cantidad Recibida</header>
+            <div class="chart-scroll">
+                @Html.Partial("_ChartEmptyOverlay")
+                <div class="chart-inner">
+                    <canvas id="chart-azucar"></canvas>
                 </div>
-                <div class="legend">Tipo Camión:
-                    <b class="dot dot-blue"></b> Volteo
-                    <b class="dot dot-orange"></b> Plana
-                    <b class="dot dot-black"></b> Pipa
-                </div>
-            </section>
+            </div>
+            <div class="legend">Producto:
+                <b class="dot dot-orange"></b> Azúcar
+                <b class="dot dot-blue"></b> Melaza
+            </div>
+        </section>
 
-            <section class="chart-card">
-                <header>Cantidad Recibida</header>
-                <div class="chart-scroll">
-                    @Html.Partial("_ChartEmptyOverlay")
-                    <div class="chart-inner">
-                        <canvas id="chart-azucar"></canvas>
-                    </div>
+        <section class="chart-card">
+            <header>Promedio de Descarga</header>
+            <div class="chart-scroll">
+                @Html.Partial("_ChartEmptyOverlay")
+                <div class="chart-inner">
+                    <canvas id="chart-promedio"></canvas>
                 </div>
-                <div class="legend">Producto:
-                    <b class="dot dot-orange"></b> Azúcar
-                    <b class="dot dot-blue"></b> Melaza
-                </div>
-            </section>
-
-            <section class="chart-card">
-                <header>Promedio de Descarga</header>
-                <div class="chart-scroll">
-                    @Html.Partial("_ChartEmptyOverlay")
-                    <div class="chart-inner">
-                        <canvas id="chart-promedio"></canvas>
-                    </div>
-                </div>
-                <div class="legend">Tipo Camión:
-                    <b class="dot dot-blue"></b> Volteo
-                    <b class="dot dot-orange"></b> Plana
-                    <b class="dot dot-black"></b> Pipa
-                </div>
-            </section>
-
-        </div>
+            </div>
+            <div class="legend">Tipo Camión:
+                <b class="dot dot-blue"></b> Volteo
+                <b class="dot dot-orange"></b> Plana
+                <b class="dot dot-black"></b> Pipa
+            </div>
+        </section>
     </div>
-
+    </div>
 </div>
 
 @section Scripts {
@@ -186,6 +180,6 @@
             if (zoomPlugin) Chart.register(zoomPlugin);
         })();
     </script>
-    <script src="~/js/dash-core.js?v=20260317"></script>
-    <script src="~/js/dash-historico.js?v=20260317"></script>
+    <script src="~/js/dash-core.js?v=20260316g"></script>
+    <script src="~/js/dash-historico.js?v=20260316b"></script>
 }

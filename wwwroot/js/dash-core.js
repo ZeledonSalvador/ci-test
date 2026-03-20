@@ -18,6 +18,63 @@
     grid: "rgba(0,0,0,0.12)"
   };
 
+  // ====== Paleta dark mode ======
+  const DARK_COLORS = {
+    blue: "#3b82f6",   // Volteo — azul vivo
+    orange: "#fb923c", // Plana — naranja vivo
+    gray: "#94a3b8",   // Pipa — gris pizarra
+    axis: "#94a3b8",
+    grid: "rgba(255,255,255,0.08)"
+  };
+
+  // Devuelve la paleta activa según data-theme del HTML
+  function activeColors() {
+    return document.documentElement.getAttribute('data-theme') === 'dark'
+      ? DARK_COLORS : COLORS;
+  }
+
+  // Actualiza colores de todas las instancias activas de Chart.js
+  function updateChartsTheme() {
+    if (!window.Chart || !Chart.instances) return;
+    const c = activeColors();
+    // Mapa de color antiguo → nuevo (cubre ambas paletas como origen)
+    const remap = {
+      [COLORS.blue]:       c.blue,
+      [COLORS.orange]:     c.orange,
+      [COLORS.gray]:       c.gray,
+      [DARK_COLORS.blue]:  c.blue,
+      [DARK_COLORS.orange]:c.orange,
+      [DARK_COLORS.gray]:  c.gray,
+    };
+
+    Object.values(Chart.instances).forEach(chart => {
+      chart.data.datasets.forEach((ds, i) => {
+        const newBorder = remap[ds.borderColor] ?? ds.borderColor;
+        const newBg     = remap[ds.backgroundColor] ?? ds.backgroundColor;
+        ds.borderColor          = newBorder;
+        ds.backgroundColor      = newBg;
+        ds.pointBackgroundColor = newBg;
+        ds.pointBorderColor     = newBorder;
+        // Forzar colores en los elementos ya renderizados (evita caché de 'none')
+        const meta = chart.getDatasetMeta(i);
+        meta?.data?.forEach(el => {
+          if (el.options) {
+            el.options.backgroundColor = newBg;
+            el.options.borderColor     = newBorder;
+          }
+        });
+      });
+      const xs = chart.options.scales?.x;
+      const ys = chart.options.scales?.y;
+      if (xs?.ticks)  xs.ticks.color  = c.axis;
+      if (ys?.ticks)  ys.ticks.color  = c.axis;
+      if (xs?.grid)   xs.grid.color   = c.grid;
+      if (ys?.grid)   ys.grid.color   = c.grid;
+      if (ys?.border) ys.border.color = c.axis;
+      chart.update('none');
+    });
+  }
+
   // ====== Helpers de formato/num/hash (usados por histórico) ======
   function num(n) { return Number(n || 0).toLocaleString("es-SV"); }
   function fmtHHMM(mins) {
@@ -58,7 +115,7 @@
     if (!s) return true;
     if (/^[0]+([.,]0+)?$/.test(s)) return true;
     if (/^0{1,2}\s*:\s*0{2}(\s*:\s*0{2})?$/.test(s)) return true;
-    if (/^0+\s*min(?:\s*0+\s*s)?$/i.test(s)) return true;
+    if (/^0+\s*min(?:\s*0+\s*s(?:eg)?)?$/i.test(s)) return true;
     return false;
   }
 
@@ -321,6 +378,8 @@
       if (cfg.maxWide) width = Math.min(width, cfg.maxWide);
     }
     inner.style.width = width + "px";
+    const chart = window.Chart?.getChart?.(canvas);
+    if (chart) chart.resize();
   }
 
   function bindHourOnlyTimeInput(id, fallbackHH) {
@@ -361,14 +420,13 @@
   // ====== Opciones base de Chart.js ======
   const CHART_UI = { fontSize: 11, pointRadius: 2, lineWidth: 2, xRotation: 90, gridWidth: 1, padBottom: 28 };
   function baseOptions() {
+    const c = activeColors();
     return {
       responsive: true,
       maintainAspectRatio: false,
       resizeDelay: 800,
       animation: { duration: 600, easing: "easeInOutQuart" },
-      transitions: {
-        active: { animation: { duration: 800 } }
-      },
+      transitions: { active: { animation: { duration: 200 } } },
       interaction: { mode: "index", intersect: false },
       layout: { padding: { top: 0, right: 8, bottom: CHART_UI.padBottom, left: 8 } },
       elements: {
@@ -378,26 +436,26 @@
       scales: {
         x: {
           ticks: {
-            color: COLORS.axis,
+            color: c.axis,
             autoSkip: false,
             minRotation: CHART_UI.xRotation,
             maxRotation: CHART_UI.xRotation,
             padding: 6,
             font: { size: CHART_UI.fontSize }
           },
-          grid: { display: true, color: COLORS.grid, lineWidth: CHART_UI.gridWidth, drawBorder: false },
+          grid: { display: true, color: c.grid, lineWidth: CHART_UI.gridWidth, drawBorder: false },
           border: { display: false }
         },
         y: {
           beginAtZero: true,
           ticks: {
-            color: COLORS.axis,
+            color: c.axis,
             padding: 6,
             font: { size: CHART_UI.fontSize },
             callback: (val) => Number(val).toLocaleString("es-SV")
           },
-          grid: { display: true, color: COLORS.grid, lineWidth: CHART_UI.gridWidth, drawBorder: false },
-          border: { display: true, color: COLORS.axis, width: 1 }
+          grid: { display: true, color: c.grid, lineWidth: CHART_UI.gridWidth, drawBorder: false },
+          border: { display: true, color: c.axis, width: 1 }
         }
       },
       plugins: {
@@ -412,9 +470,9 @@
           titleFont: { size: CHART_UI.fontSize + 1 },
           bodyFont: { size: CHART_UI.fontSize }
         },
-        zoom: (window.ChartZoom ? {
-          pan: { enabled: true, mode: 'x' },
-          zoom: { enabled: true, mode: 'x' }
+        zoom: (window['chartjs-plugin-zoom'] ? {
+          pan: { enabled: false },
+          zoom: { wheel: { enabled: false }, drag: { enabled: false }, pinch: { enabled: false } }
         } : undefined)
       }
     };
@@ -425,16 +483,16 @@
     const ctx = $(canvasId);
     if (!ctx) return null;
     const opts = baseOptions();
+    const c = activeColors();
+    const mkDs = (label, col) => ({
+      label, data: [], tension: .25, fill: false,
+      borderColor: col, backgroundColor: col,
+      pointBackgroundColor: col, pointBorderColor: col,
+      pointRadius: CHART_UI.pointRadius, borderWidth: CHART_UI.lineWidth
+    });
     return new Chart(ctx, {
       type: "line",
-      data: {
-        labels: [],
-        datasets: [
-          { label: labA, borderColor: COLORS.blue, backgroundColor: COLORS.blue, data: [], tension: .25, pointRadius: CHART_UI.pointRadius, borderWidth: CHART_UI.lineWidth, fill: false },
-          { label: labB, borderColor: COLORS.orange, backgroundColor: COLORS.orange, data: [], tension: .25, pointRadius: CHART_UI.pointRadius, borderWidth: CHART_UI.lineWidth, fill: false },
-          { label: labC, borderColor: COLORS.gray, backgroundColor: COLORS.gray, data: [], tension: .25, pointRadius: CHART_UI.pointRadius, borderWidth: CHART_UI.lineWidth, fill: false }
-        ]
-      },
+      data: { labels: [], datasets: [mkDs(labA, c.blue), mkDs(labB, c.orange), mkDs(labC, c.gray)] },
       options: opts
     });
   }
@@ -482,13 +540,14 @@
       return `${hh}:${mm}`;
     };
 
+    const c = activeColors();
     return new Chart(ctx, {
       type: "scatter",
       data: {
         datasets: [
-          { label: labA, borderColor: COLORS.blue, backgroundColor: COLORS.blue, data: [] },
-          { label: labB, borderColor: COLORS.orange, backgroundColor: COLORS.orange, data: [] },
-          { label: labC, borderColor: COLORS.gray, backgroundColor: COLORS.gray, data: [] }
+          { label: labA, borderColor: c.blue, backgroundColor: c.blue, pointBackgroundColor: c.blue, pointBorderColor: c.blue, data: [] },
+          { label: labB, borderColor: c.orange, backgroundColor: c.orange, pointBackgroundColor: c.orange, pointBorderColor: c.orange, data: [] },
+          { label: labC, borderColor: c.gray, backgroundColor: c.gray, pointBackgroundColor: c.gray, pointBorderColor: c.gray, data: [] }
         ]
       },
       options: opts
@@ -541,15 +600,15 @@
       return `${hh}:${mm}`;
     };
 
+    const c = activeColors();
+    const mkDs = (label, col) => ({
+      label, data: [], tension: .25, fill: false,
+      borderColor: col, backgroundColor: col,
+      pointBackgroundColor: col, pointBorderColor: col
+    });
     return new Chart(ctx, {
       type: "line",
-      data: {
-        datasets: [
-          { label: labA, borderColor: COLORS.blue, backgroundColor: COLORS.blue, data: [], tension: .25, fill: false },
-          { label: labB, borderColor: COLORS.orange, backgroundColor: COLORS.orange, data: [], tension: .25, fill: false },
-          { label: labC, borderColor: COLORS.gray, backgroundColor: COLORS.gray, data: [], tension: .25, fill: false }
-        ]
-      },
+      data: { datasets: [mkDs(labA, c.blue), mkDs(labB, c.orange), mkDs(labC, c.gray)] },
       options: opts
     });
   }
@@ -579,13 +638,14 @@
       return `${hh}:${mm}`;
     };
 
+    const c = activeColors();
     return new Chart(ctx, {
       type: "scatter",
       data: {
         datasets: [
-          { label: labA, borderColor: COLORS.blue, backgroundColor: COLORS.blue, data: [] },
-          { label: labB, borderColor: COLORS.orange, backgroundColor: COLORS.orange, data: [] },
-          { label: labC, borderColor: COLORS.gray, backgroundColor: COLORS.gray, data: [] }
+          { label: labA, borderColor: c.blue, backgroundColor: c.blue, pointBackgroundColor: c.blue, pointBorderColor: c.blue, data: [] },
+          { label: labB, borderColor: c.orange, backgroundColor: c.orange, pointBackgroundColor: c.orange, pointBorderColor: c.orange, data: [] },
+          { label: labC, borderColor: c.gray, backgroundColor: c.gray, pointBackgroundColor: c.gray, pointBorderColor: c.gray, data: [] }
         ]
       },
       options: opts
@@ -597,6 +657,7 @@
     const ctx = $(canvasId);
     if (!ctx) return null;
     const opts = baseOptions();
+    const c = activeColors();
     opts.scales.x.stacked = false;
     opts.scales.y.stacked = false;
     return new Chart(ctx, {
@@ -604,9 +665,9 @@
       data: {
         labels: [],
         datasets: [
-          { label: labA, backgroundColor: COLORS.blue, data: [], borderRadius: 6, barPercentage: 0.7, categoryPercentage: 0.7 },
-          { label: labB, backgroundColor: COLORS.orange, data: [], borderRadius: 6, barPercentage: 0.7, categoryPercentage: 0.7 },
-          { label: labC, backgroundColor: COLORS.gray, data: [], borderRadius: 6, barPercentage: 0.7, categoryPercentage: 0.7 }
+          { label: labA, backgroundColor: c.blue, data: [], borderRadius: 6, barPercentage: 0.7, categoryPercentage: 0.7 },
+          { label: labB, backgroundColor: c.orange, data: [], borderRadius: 6, barPercentage: 0.7, categoryPercentage: 0.7 },
+          { label: labC, backgroundColor: c.gray, data: [], borderRadius: 6, barPercentage: 0.7, categoryPercentage: 0.7 }
         ]
       },
       options: opts
@@ -675,6 +736,7 @@
       });
     });
   }
+
   function toggleLegendFor(canvasId /*, vis — ignorado: leyendas siempre visibles */) {
     const card = byId(canvasId)?.closest('.chart-card');
     if (!card) return;
@@ -892,6 +954,9 @@ if (_validDateStr(ds) && _validDateStr(de) && ds === de) {
     scatter2Series,
     lineTimeSeries,
     COLORS,
+    DARK_COLORS,
+    activeColors,
+    updateChartsTheme,
     CHART_UI,
 
     USE_BAR_RECIBIDOS: false
@@ -903,3 +968,4 @@ if (_validDateStr(ds) && _validDateStr(de) && ds === de) {
     console.warn("chartjs-plugin-zoom no cargado; el zoom estará deshabilitado");
   }
 })(window);
+

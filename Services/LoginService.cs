@@ -46,7 +46,7 @@ namespace FrontendQuickpass.Services
 
         // CREAR TOKEN JWT CON PERMISOS INCLUIDOS (PARA AUTORIZACIÓN SEGURA)
         // Sobrecarga que recibe permisos específicos (para usuarios del API)
-        public SessionTokenInfo CrearTokenSesion(int codUsuario, int codRol, string usuario, string bascula, string turno, List<string> permisos, string nombreRol, string fullName = "", string userCode = "")
+        public SessionTokenInfo CrearTokenSesion(int codUsuario, int codRol, string usuario, List<string> permisos, string nombreRol, string fullName = "", string clientCode = "")
         {
             try
             {
@@ -61,11 +61,9 @@ namespace FrontendQuickpass.Services
                     new Claim("cod_usuario", codUsuario.ToString()),
                     new Claim("cod_rol", codRol.ToString()),
                     new Claim("username", usuario),
-                    new Claim("cod_bascula", bascula),
-                    new Claim("cod_turno", turno),
                     new Claim("nombre_rol", nombreRol),
                     new Claim("full_name", fullName), // Nombre completo del usuario
-                    new Claim("user_code", userCode), // Código del usuario
+                    new Claim("client_code", clientCode), // Código de ingenio del cliente
 
                     // Permisos firmados dentro del token (PARA AUTORIZACIÓN)
                     new Claim("permisos", JsonSerializer.Serialize(permisos)),
@@ -97,11 +95,8 @@ namespace FrontendQuickpass.Services
                     CodUsuario = codUsuario,
                     CodRol = codRol,
                     Username = usuario,
-                    CodBascula = bascula,
-                    CodTurno = turno,
                     NombreRol = nombreRol,
-                    FullName = fullName,
-                    UserCode = userCode,
+                    ClientCode = clientCode,
                     Permisos = permisos,
                     FechaCreacion = fechaCreacion,
                     FechaExpiracion = fechaExpiracion,
@@ -161,11 +156,9 @@ namespace FrontendQuickpass.Services
                 var codUsuario = int.Parse(jwtToken.Claims.First(x => x.Type == "cod_usuario").Value);
                 var codRol = int.Parse(jwtToken.Claims.First(x => x.Type == "cod_rol").Value);
                 var username = jwtToken.Claims.First(x => x.Type == "username").Value;
-                var bascula = jwtToken.Claims.First(x => x.Type == "cod_bascula").Value;
-                var turno = jwtToken.Claims.First(x => x.Type == "cod_turno").Value;
                 var nombreRol = jwtToken.Claims.First(x => x.Type == "nombre_rol").Value;
                 var fullName = jwtToken.Claims.FirstOrDefault(x => x.Type == "full_name")?.Value ?? "";
-                var userCode = jwtToken.Claims.FirstOrDefault(x => x.Type == "user_code")?.Value ?? "";
+                var clientCode = jwtToken.Claims.FirstOrDefault(x => x.Type == "client_code")?.Value ?? "";
 
                 // OBTENER PERMISOS DEL TOKEN
                 var permisosJson = jwtToken.Claims.First(x => x.Type == "permisos").Value;
@@ -183,11 +176,9 @@ namespace FrontendQuickpass.Services
                     CodUsuario = codUsuario,
                     CodRol = codRol,
                     Username = username,
-                    CodBascula = bascula,
-                    CodTurno = turno,
                     NombreRol = nombreRol,
                     FullName = fullName,
-                    UserCode = userCode,
+                    ClientCode = clientCode,
                     Permisos = permisos,
                     FechaCreacion = fechaCreacion,
                     FechaExpiracion = fechaExpiracion,
@@ -234,7 +225,7 @@ namespace FrontendQuickpass.Services
         /// <summary>
         /// Autenticar usuario interno usando el API de Quickpass
         /// </summary>
-        public async Task<InternalUserSessionInfo> AuthenticateInternalUserAsync(string username, string password, string bascula, string turno = "1")
+        public async Task<InternalUserSessionInfo> AuthenticateInternalUserAsync(string username, string password)
         {
             try
             {
@@ -242,14 +233,11 @@ namespace FrontendQuickpass.Services
                 var loginUrl = $"{_apiBaseUrl}internal-auth/login";
 
                 // Console.WriteLine($"🔐 Intentando login de usuario interno: {username} en {loginUrl}");
-                // Console.WriteLine($"📋 Báscula: {bascula}, Turno: {turno}");
 
                 var requestBody = new InternalUserLoginRequest
                 {
                     Username = username,
-                    Password = password,
-                    Bascula = bascula,
-                    Turno = turno
+                    Password = password
                 };
 
                 var jsonContent = JsonSerializer.Serialize(requestBody);
@@ -293,12 +281,12 @@ namespace FrontendQuickpass.Services
                             UserId = user.Id,
                             Username = user.Username,
                             FullName = user.FullName,
-                            UserCode = user.UserCode ?? "",
                             Email = user.Email,
                             Category = user.Category?.Name ?? "Sin Categoría",
                             RoleId = roleId,
                             RoleName = user.Role?.Name ?? "Sin Rol",
                             RoleCode = roleCode, // Mapeado desde role.id
+                            ClientCode = user.ClientCode ?? "",
                             Weighbridges = user.Weighbridges,
                             Permissions = data.Permissions,
                             PermissionsRoutes = permisosRutas,
@@ -374,11 +362,9 @@ namespace FrontendQuickpass.Services
         public int CodUsuario { get; set; }
         public int CodRol { get; set; }
         public string Username { get; set; } = "";
-        public string CodBascula { get; set; } = "";
-        public string CodTurno { get; set; } = "";
         public string NombreRol { get; set; } = "";
         public string FullName { get; set; } = "";
-        public string UserCode { get; set; } = "";
+        public string ClientCode { get; set; } = "";
         public List<string> Permisos { get; set; } = new();
         public DateTime FechaCreacion { get; set; }
         public DateTime FechaExpiracion { get; set; }
@@ -399,12 +385,12 @@ namespace FrontendQuickpass.Services
         public int UserId { get; set; }
         public string Username { get; set; } = "";
         public string FullName { get; set; } = "";
-        public string UserCode { get; set; } = "";
         public string Email { get; set; } = "";
         public string Category { get; set; } = "";
         public int RoleId { get; set; }
         public string RoleName { get; set; } = "";
         public string RoleCode { get; set; } = "";
+        public string ClientCode { get; set; } = "";
         public List<int> Weighbridges { get; set; } = new();
         public List<Permission> Permissions { get; set; } = new();
         public List<string> PermissionsRoutes { get; set; } = new();

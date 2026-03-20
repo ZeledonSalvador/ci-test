@@ -26,20 +26,19 @@ namespace FrontendQuickpass.Controllers
                 
                 if (tokenInfo.EsValido)
                 {
-                    Console.WriteLine($"Usuario ya logueado con token válido (Rol: {tokenInfo.CodRol}, Usuario: {tokenInfo.Username})");
-                    Console.WriteLine($"Permisos del token: {string.Join(", ", tokenInfo.Permisos)}");
-
-                    // REDIRIGIR A LA PRIMERA PÁGINA PERMITIDA SEGÚN PERMISOS DEL USUARIO
-                    if (tokenInfo.Permisos != null && tokenInfo.Permisos.Any())
+                    // Verificar que tenga permiso a Dashboard
+                    if (HasDashboardPermission(tokenInfo.Permisos))
                     {
-                        var primerPermiso = tokenInfo.Permisos.First();
-                        Console.WriteLine($"Redirigiendo a primera página permitida: {primerPermiso}");
-                        return RedirectToAction("Index", primerPermiso);
+                        Console.WriteLine($"Usuario ya logueado con token válido (Rol: {tokenInfo.CodRol}, Usuario: {tokenInfo.Username})");
+                        Console.WriteLine($"Redirigiendo a Dashboard Diario");
+                        return Redirect("/Dashboard");
                     }
                     else
                     {
-                        Console.WriteLine("⚠️ No hay permisos en el token, redirigiendo a Dashboard por defecto");
-                        return RedirectToAction("Index", "Dashboard");
+                        // Token válido pero sin permiso a Dashboard - limpiar sesión
+                        Console.WriteLine($"Usuario {tokenInfo.Username} sin permiso a Dashboard - limpiando sesión");
+                        CookieHelper.ClearAllSessionCookies(Response);
+                        TempData["MensajeError"] = "Usuario o contraseña incorrectos.";
                     }
                 }
                 else
@@ -60,9 +59,9 @@ namespace FrontendQuickpass.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Index(string Usuario, string Clave, string Bascula, string Turno)
+        public async Task<IActionResult> Index(string Usuario, string Clave)
         {
-            Console.WriteLine($"Intento de login - Usuario: {Usuario}, Báscula: {Bascula}, Turno: {Turno}");
+            Console.WriteLine($"Intento de login - Usuario: {Usuario}");
 
             // Validar campos obligatorios
             if (string.IsNullOrEmpty(Usuario) || string.IsNullOrEmpty(Clave))
@@ -72,37 +71,22 @@ namespace FrontendQuickpass.Controllers
                 return RedirectToAction("Index");
             }
 
-            if (string.IsNullOrEmpty(Bascula) || Bascula == "0")
-            {
-                Console.WriteLine("Báscula no seleccionada");
-                TempData["MensajeError"] = "Debe seleccionar una báscula.";
-                return RedirectToAction("Index");
-            }
-
             // =====================================================
             // AUTENTICACIÓN VIA API (ÚNICO MÉTODO)
             // =====================================================
-            // Console.WriteLine("🔍 Autenticando usuario via API...");
-
-            // El API valida credenciales, báscula y turno internamente
-            var internalUserSession = await _loginService.AuthenticateInternalUserAsync(Usuario, Clave, Bascula, Turno ?? "1");
+            var internalUserSession = await _loginService.AuthenticateInternalUserAsync(Usuario, Clave);
 
             if (internalUserSession.IsValid)
             {
-                // Console.WriteLine($"✅ Usuario autenticado: {internalUserSession.FullName}");
-                // Console.WriteLine($"✅ Acceso a báscula {Bascula} validado por el API");
-
                 // CREAR TOKEN JWT LOCAL con los datos del API
                 var tokenLocal = _loginService.CrearTokenSesion(
                     internalUserSession.UserId,
                     internalUserSession.RoleId,
                     internalUserSession.Username,
-                    Bascula,
-                    Turno ?? "1",
-                    internalUserSession.PermissionsRoutes, // Permisos del API
-                    internalUserSession.RoleName, // Nombre del rol del API
-                    internalUserSession.FullName, // Nombre completo del usuario
-                    internalUserSession.UserCode // Código del usuario
+                    internalUserSession.PermissionsRoutes,
+                    internalUserSession.RoleName,
+                    internalUserSession.FullName,
+                    internalUserSession.ClientCode
                 );
 
                 if (!tokenLocal.EsValido)
@@ -111,13 +95,12 @@ namespace FrontendQuickpass.Controllers
                     return RedirectToAction("Index");
                 }
 
-                return await ProcessInternalUserLogin(internalUserSession, Bascula, tokenLocal);
+                return await ProcessInternalUserLogin(internalUserSession, tokenLocal);
             }
 
             // =====================================================
             // ERROR DE AUTENTICACIÓN
             // =====================================================
-            // Console.WriteLine($"❌ Error de autenticación: {internalUserSession.ErrorMessage}");
             TempData["MensajeError"] = internalUserSession.ErrorMessage;
             return RedirectToAction("Index");
         }
@@ -125,8 +108,16 @@ namespace FrontendQuickpass.Controllers
         /// <summary>
         /// Procesar login de usuario y crear cookies
         /// </summary>
-        private Task<IActionResult> ProcessInternalUserLogin(InternalUserSessionInfo session, string _, SessionTokenInfo tokenLocal)
+        private Task<IActionResult> ProcessInternalUserLogin(InternalUserSessionInfo session, SessionTokenInfo tokenLocal)
         {
+            // Validar que el usuario tenga permiso a Dashboard
+            if (!HasDashboardPermission(tokenLocal.Permisos))
+            {
+                Console.WriteLine($"ACCESO DENEGADO: {session.Username} no tiene permiso a Dashboard");
+                TempData["MensajeError"] = "Usuario o contraseña incorrectos.";
+                return Task.FromResult<IActionResult>(RedirectToAction("Index"));
+            }
+
             // Limpiar cookies anteriores usando CookieHelper centralizado
             CookieHelper.ClearAllSessionCookies(Response);
 
@@ -144,16 +135,18 @@ namespace FrontendQuickpass.Controllers
             // Response.Cookies.Append("full_name", session.FullName, cookieOptionsReadable);
             // Response.Cookies.Append("username", session.Username, cookieOptionsReadable);
 
-            // Resto del código existente...
-            var firstPermission = session.Permissions.FirstOrDefault(p => p.IsVisible);
-            if (firstPermission != null)
-            {
-                return Task.FromResult<IActionResult>(RedirectToAction("Index", firstPermission.Route));
-            }
-            else
-            {
-                return Task.FromResult<IActionResult>(RedirectToAction("Index", "Dashboard"));
-            }
+            // Redirigir al Dashboard Diario
+            Console.WriteLine($"ACCESO AUTORIZADO: {session.Username} → Dashboard Diario");
+            return Task.FromResult<IActionResult>(Redirect("/Dashboard"));
+        }
+
+        /// <summary>
+        /// Verifica si el usuario tiene permiso a Dashboard
+        /// </summary>
+        private bool HasDashboardPermission(List<string> permisos)
+        {
+            return permisos != null && 
+                   permisos.Any(p => p.Equals("Dashboard", StringComparison.OrdinalIgnoreCase));
         }
 
         [Route("/Logout")]
@@ -187,9 +180,10 @@ namespace FrontendQuickpass.Controllers
 
             Console.WriteLine($"Cerrando sesión del usuario: {fullName}");
 
-            // Eliminar todas las cookies relacionadas con la autenticación usando CookieHelper
+            // Limpiar datos de sesión del servidor y todas las cookies de autenticación
+            HttpContext.Session.Clear();
             CookieHelper.ClearAllSessionCookies(Response);
-            Console.WriteLine($"✅ Logout completado - Cookies de sesión eliminadas");
+            Console.WriteLine($"Logout completado - Sesión y cookies eliminadas");
             TempData["MensajeInfo"] = $"¡Hasta pronto, {fullName}!";
 
             return RedirectToAction("Index");

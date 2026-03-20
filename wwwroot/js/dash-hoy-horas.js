@@ -169,7 +169,7 @@
       chart.options.scales.y.title.text = yTitle || "";
     }
 
-    chart.update();
+    chart.update("none");
   };
 
   DC.line2Series = DC.line2Series || function (canvasId, lab1, lab2, lab3) {
@@ -348,7 +348,7 @@
     if (elMel) elMel.textContent = fmtTon(kgMEL);
   }
 
-  function updateKPIsDescargaFrom(promDescJson) {
+    function updateKPIsDescargaFrom(promDescJson, productFilter) {
     const pa = promDescJson?.PromedioDescarga?.PromedioActual || {};
 
     const elPl = DC.byId("kpi-prom-planas");
@@ -359,7 +359,7 @@
     if (elVo) elVo.textContent = formatDescargaKPI(pa.Volteo);
     if (elPi) elPi.textContent = formatDescargaKPI(pa.Pipa);
 
-  }
+    }
 
   // =================== Filtros ===================
   function timeInputToHour(t) {
@@ -371,7 +371,8 @@
   function readFilters() {
     const hourFrom = timeInputToHour(DC.$("f-hour-start")?.value || "00:00");
     const hourTo = timeInputToHour(DC.$("f-hour-end")?.value || "23:59");
-    const ingenioId = (DC.$("f-ingenio")?.value || "").trim();
+    const elIng = DC.$("f-ingenio");
+    const ingenioId = ((elIng && elIng.value) || DC.$("f-ingenio-hidden")?.value || "").trim();
     const product = (DC.$("f-producto")?.value || "").trim(); // "" cuando es Todos
     return { hourFrom, hourTo, ingenioId, product };
   }
@@ -448,17 +449,18 @@
 
     const horasAz = Array.isArray(az?.PesosPorStatus?.Horas) ? az.PesosPorStatus.Horas : [];
     const horasMe = Array.isArray(me?.PesosPorStatus?.Horas) ? me.PesosPorStatus.Horas : [];
-    
     const prodsAz = Array.isArray(az?.PesosPorStatus?.PromediosPorProducto) ? az.PesosPorStatus.PromediosPorProducto : [];
     const prodsMel = Array.isArray(me?.PesosPorStatus?.PromediosPorProducto) ? me.PesosPorStatus.PromediosPorProducto : [];
 
-    const fix = (arr, prod) => arr.map(x => ({ ...x, Product: x?.Product ?? x?.product ?? prod }));
+    // Forzar el tag de producto para evitar doble conteo si el backend retorna
+    // registros del producto incorrecto en cada respuesta
+    const tag = (arr, prod) => arr.map(x => ({ ...x, Product: prod }));
 
     return {
       PesosPorStatus: {
         ...(az?.PesosPorStatus || me?.PesosPorStatus || {}),
-        PromediosPorProducto: [...prodsAz, ...prodsMel],
-        Horas: [...fix(horasAz, "AZ-001"), ...fix(horasMe, "MEL-001")]
+        PromediosPorProducto: [...tag(prodsAz, "AZ-001"), ...tag(prodsMel, "MEL-001")],
+        Horas: [...tag(horasAz, "AZ-001"), ...tag(horasMe, "MEL-001")]
       }
     };
   }
@@ -563,23 +565,6 @@
 
     arr.unshift({ x: baseX, y: 0, meta: { base: true } });
     return arr;
-  }
-
-  function filterResumenByHour(resumen, hFrom, hTo) {
-    if (!resumen) return resumen;
-    const filterHoras = (block) => {
-      if (!block?.Horas) return block;
-      return {
-        ...block,
-        Horas: block.Horas.filter(r => {
-          const mins = hhmmToMinutes(String(r?.HoraStatus || ""));
-          if (mins == null) return false;
-          const h = Math.floor(mins / 60);
-          return h >= hFrom && h <= hTo;
-        })
-      };
-    };
-    return { ...resumen, Finalizado: filterHoras(resumen.Finalizado), Prechequeado: filterHoras(resumen.Prechequeado) };
   }
 
   function buildEventosAcumuladosPoints(block) {
@@ -743,6 +728,11 @@
     // y = horas decimales (0.1, 0.2...) => (seg / 3600)
     const secToMinutesFloat = (sec) => (Number(sec) || 0) / 60;
 
+    const secToHoursFloat = (sec) => {
+      const n = Number(sec);
+      if (!Number.isFinite(n)) return 0;
+      return n / 3600;
+    };
 
     // x = minutos del día (HH*60) para que el eje muestre 00:00, 01:00...
     const hourToX = (h) => (Number(h) || 0) * 60;
@@ -772,6 +762,7 @@
 
         const x = hourToX(HH);
 
+        // Solo agregar el punto si tiene valor real (> 0)
         if (sPlanas > 0) pts.plana.push({
           x,
           y: secToMinutesFloat(sPlanas),
@@ -920,10 +911,16 @@
 
 
   // =================== Render ===================
-  function renderCharts(labels, baseSeries, azPack, promPack, resumenJson, productFilter) {
+  function renderCharts(labels, baseSeries, azPack, promPack, resumenJson, productFilter, silent = false) {
     lastLabels = labels;
-    ["chart-finalizados", "chart-azucar", "chart-promedio"].forEach(id => DC.ensureScrollableWidth(id, labels));
-    // chart-recibidos usa eje X numérico (minutos) → su ancho lo gestiona widenRecibidosIfNeeded dentro de renderRecibidos
+    const setEmpty = (id, empty) => {
+      const card = DC.$(id)?.closest?.(".chart-card");
+      if (card) card.classList.toggle("is-empty", !!empty);
+    };
+    const doUpdate = (ch) => { if (ch) { ch.resize(); ch.update(); } };
+    ["chart-finalizados", "chart-recibidos", "chart-azucar", "chart-promedio"].forEach(id => {
+      DC.ensureScrollableWidth(id, labels);
+    });
 
     const kind = DC.normalizeProductKind(productFilter !== undefined ? productFilter : (DC.$("f-producto")?.value || ""));
     const VIS = (kind === "melaza") ? { volteo: false, plana: false, pipa: true }
@@ -934,7 +931,6 @@
 
     // Finalizados
     if (chFinalizados) {
-      chFinalizados.resetZoom?.('none'); // limpia estado de pan/zoom del plugin antes de reconfigurar escalas
       chFinalizados.data.datasets[0].hidden = !VIS.volteo;
       chFinalizados.data.datasets[1].hidden = !VIS.plana;
       chFinalizados.data.datasets[2].hidden = !VIS.pipa;
@@ -978,32 +974,42 @@
       // ✅ CASO: NO HAY DATOS
       // ==========================
       if (!realCount) {
+        // 1) datasets completamente vacíos (SIN base point)
         chFinalizados.data.datasets[0].data = [];
         chFinalizados.data.datasets[1].data = [];
         chFinalizados.data.datasets[2].data = [];
 
-        if (chFinalizados.options.scales?.x) chFinalizados.options.scales.x.display = true;
-        if (chFinalizados.options.scales?.y) chFinalizados.options.scales.y.display = true;
-
-        const canvas = document.getElementById("chart-finalizados");
-        if (canvas) {
-          const scroll = canvas.closest(".chart-scroll");
-          const inner = scroll?.querySelector(".chart-inner");
-          if (scroll && inner) {
-            inner.style.width = (scroll.clientWidth || 0) + "px";
-            scroll.scrollLeft = 0;
-          }
+        // 2) X fijo a todo el día + ticks por hora
+        const xScale = chFinalizados.options.scales?.x;
+        if (xScale) {
+          xScale.min = 0;
+          xScale.max = 23 * 60 + 59;
+          xScale.afterBuildTicks = (scale) => {
+            const ticks = [];
+            for (let h = 0; h <= 23; h++) ticks.push({ value: h * 60 });
+            scale.ticks = ticks;
+          };
         }
 
+        // 3) resetear ancho del contenedor (evita scroll raro)
+        (function resetFinalizadosWidth() {
+          const canvas = document.getElementById("chart-finalizados");
+          if (!canvas) return;
+          const scroll = canvas.closest(".chart-scroll");
+          const inner = scroll?.querySelector(".chart-inner");
+          if (!scroll || !inner) return;
+          inner.style.width = Math.max(scroll.clientWidth || 0, labels.length * 140) + "px";
+        })();
+
+        setEmpty("chart-finalizados", true);
         DC.toggleLegendFor("chart-finalizados", VIS);
-        chFinalizados.update();
+        doUpdate(chFinalizados);
       } else {
 
       // ==========================
       // ✅ CASO: SÍ HAY DATOS
       // ==========================
-      if (chFinalizados.options.scales?.x) chFinalizados.options.scales.x.display = true;
-      if (chFinalizados.options.scales?.y) chFinalizados.options.scales.y.display = true;
+      setEmpty("chart-finalizados", false);
 
       // Para autoZoom usar solo series visibles
       const allX = []
@@ -1031,12 +1037,6 @@
       (function autoZoomFinalizados() {
         const xScale = chFinalizados.options.scales?.x;
         if (!xScale) return;
-
-        if (!allX.length) {
-          xScale.min = 0;
-          xScale.max = 23 * 60 + 59;
-          return;
-        }
 
         let minX = Math.max(0, Math.min(...allX) - 60);
         let maxX = Math.min(23 * 60 + 59, Math.max(...allX) + 60);
@@ -1073,15 +1073,12 @@
         inner.style.width = Math.max(contW, required) + "px";
       })();
 
-      chFinalizados.resize(); chFinalizados.update();
-      } // end: has data
-
-      document.getElementById("chart-finalizados")?.closest(".chart-card")?.classList.toggle("is-empty", !realCount);
+      doUpdate(chFinalizados);
+      }
     }
 
     // Recibidos (LINE SIEMPRE, pero SIN "estado raro" cuando no hay datos)
     if (chRecibidos) {
-      chRecibidos.resetZoom?.('none'); // limpia estado de pan/zoom del plugin antes de reconfigurar escalas
       chRecibidos.data.datasets[0].hidden = !VIS.volteo;
       chRecibidos.data.datasets[1].hidden = !VIS.plana;
       chRecibidos.data.datasets[2].hidden = !VIS.pipa;
@@ -1123,35 +1120,42 @@
       };
 
       // ==========================
-      // ✅ CASO: NO HAY DATOS
+      // ✅ CASO: NO H hookup
       // ==========================
       if (!realCount) {
+        // 1) datasets vacíos (SIN base point)
         chRecibidos.data.datasets[0].data = [];
         chRecibidos.data.datasets[1].data = [];
         chRecibidos.data.datasets[2].data = [];
 
-        if (chRecibidos.options.scales?.x) chRecibidos.options.scales.x.display = true;
-        if (chRecibidos.options.scales?.y) chRecibidos.options.scales.y.display = true;
-
-        const canvas = document.getElementById("chart-recibidos");
-        if (canvas) {
-          const scroll = canvas.closest(".chart-scroll");
-          const inner = scroll?.querySelector(".chart-inner");
-          if (scroll && inner) {
-            inner.style.width = (scroll.clientWidth || 0) + "px";
-            scroll.scrollLeft = 0;
-          }
+        // 2) X = todo el día + ticks por hora
+        const xScale = chRecibidos.options?.scales?.x;
+        if (xScale) {
+          xScale.min = 0;
+          xScale.max = 23 * 60 + 59;
+          xScale.afterBuildTicks = (scale) => {
+            const ticks = [];
+            for (let h = 0; h <= 23; h++) ticks.push({ value: h * 60 });
+            scale.ticks = ticks;
+          };
         }
 
-        DC.toggleLegendFor("chart-recibidos", VIS);
-        chRecibidos.update();
-      } else {
+        // 3) reset ancho del contenedor (evita scroll raro)
+        (function widenRecibidosEmpty() {
+          const canvas = document.getElementById("chart-recibidos");
+          if (!canvas) return;
+          const scroll = canvas.closest(".chart-scroll");
+          const inner = scroll?.querySelector(".chart-inner");
+          if (!scroll || !inner) return;
+          const contW = scroll.clientWidth || 0;
+          inner.style.width = Math.max(contW, labels.length * 140) + "px";
+        })();
 
-      // ==========================
-      // ✅ CASO: SÍ HAY DATOS
-      // ==========================
-      if (chRecibidos.options.scales?.x) chRecibidos.options.scales.x.display = true;
-      if (chRecibidos.options.scales?.y) chRecibidos.options.scales.y.display = true;
+        setEmpty("chart-recibidos", true);
+        DC.toggleLegendFor("chart-recibidos", VIS);
+        doUpdate(chRecibidos);
+        } else {
+      setEmpty("chart-recibidos", false);
 
       // Base points SOLO si hay datos
       const v0 = addBasePointForSeries(pts.volteo);
@@ -1199,15 +1203,13 @@
         inner.style.width = Math.max(contW, required) + "px";
       })();
 
-      chRecibidos.resize(); chRecibidos.update();
-      } // end: has data
-
-      document.getElementById("chart-recibidos")?.closest(".chart-card")?.classList.toggle("is-empty", !realCount);
+      doUpdate(chRecibidos);
+      }
     }
 
     // Cantidad Recibida (SCATTER)
     if (chAzucar) {
-      const prodSel = String(productFilter !== undefined ? productFilter : (DC.$("f-producto")?.value || "")).trim(); // "" => Todos
+      const prodSel = String(DC.$("f-producto")?.value || "").trim(); // "" => Todos
       const wantsAll = !prodSel;
 
       const pts = azPack || { azucar: [], melaza: [], otros: [] };
@@ -1216,11 +1218,6 @@
       const kind = DC.normalizeProductKind(prodSel);
       const showAz = wantsAll || kind === "azucar";
       const showMe = wantsAll || kind === "melaza";
-
-      // Visibilidad explícita de datasets (igual que chFinalizados/chRecibidos)
-      chAzucar.data.datasets[0].hidden = !showMe; // Melaza
-      chAzucar.data.datasets[1].hidden = !showAz; // Azúcar
-      chAzucar.data.datasets[2].hidden = true;    // Otros (nunca se muestra)
 
       // Solo puntos visibles
       const melVis = showMe ? (pts.melaza || []) : [];
@@ -1265,6 +1262,9 @@
         chAzucar.data.datasets[0].data = [];
         chAzucar.data.datasets[1].data = [];
         chAzucar.data.datasets[2].data = [];
+        chAzucar.data.datasets[0].hidden = true;
+        chAzucar.data.datasets[1].hidden = true;
+        chAzucar.data.datasets[2].hidden = true;
 
         // 2) X = todo el día + ticks por hora
         const xScale = chAzucar.options?.scales?.x;
@@ -1280,7 +1280,7 @@
 
         const yScale = chAzucar.options?.scales?.y;
         if (yScale) yScale.max = undefined;
-        
+
         // 3) reset ancho del contenedor (evita scroll raro)
         (function resetCantidadRecibidaWidth() {
           const canvas = document.getElementById("chart-azucar");
@@ -1289,15 +1289,14 @@
           const inner = scroll?.querySelector(".chart-inner");
           if (!scroll || !inner) return;
 
-          inner.style.width = (scroll.clientWidth || 0) + "px";
-          scroll.scrollLeft = 0;
+          inner.style.width = Math.max(scroll.clientWidth || 0, labels.length * 140) + "px";
         })();
 
-        chAzucar.resize(); chAzucar.update();
-      } else {
-
-      // ✅ xMin basado en lo visible
-      const allX = []
+        setEmpty("chart-azucar", true);
+        doUpdate(chAzucar);
+        } else {
+        setEmpty("chart-azucar", false);
+        const allX = []
         .concat(melVis, azVis)
         .map(p => Number(p?.x))
         .filter(Number.isFinite);
@@ -1308,6 +1307,11 @@
       chAzucar.data.datasets[0].data = showMe ? addBasePointForSeries(melVis) : [];
       chAzucar.data.datasets[1].data = showAz ? addBasePointForSeries(azVis) : [];
       chAzucar.data.datasets[2].data = []; // otros off (como lo tienes)
+
+      // Restaurar visibilidad cuando hay datos
+      chAzucar.data.datasets[0].hidden = !showMe;
+      chAzucar.data.datasets[1].hidden = !showAz;
+      chAzucar.data.datasets[2].hidden = true;
 
       // ===== Auto-zoom X según puntos visibles =====
       (function autoZoomCantidadRecibida() {
@@ -1368,10 +1372,8 @@
         inner.style.width = Math.max(contW, required) + "px";
       })();
 
-      chAzucar.resize(); chAzucar.update();
-      } // end: has data
-
-      document.getElementById("chart-azucar")?.closest(".chart-card")?.classList.toggle("is-empty", !visibleCount);
+      doUpdate(chAzucar);
+      }
     }
 
 
@@ -1381,28 +1383,88 @@
 
       // datasets: 0 Volteo, 1 Plana, 2 Pipa
       const vv = VIS.volteo ? (pts.volteo || []) : [];
-      const rr = VIS.plana ? (pts.plana || []) : [];
-      const pp = VIS.pipa ? (pts.pipa || []) : [];
+      const rr = VIS.plana  ? (pts.plana  || []) : [];
+      const pp = VIS.pipa   ? (pts.pipa   || []) : [];
 
-      const allX = [].concat(vv, rr, pp).map(p => Number(p?.x)).filter(Number.isFinite);
-      const xMin = allX.length ? Math.min(...allX) : 0;
+      const realCount = vv.length + rr.length + pp.length;
 
-      chPromedio.data.datasets[0].data = vv;
-      chPromedio.data.datasets[1].data = rr;
-      chPromedio.data.datasets[2].data = pp;
-
-      // ====== Zoom automático por rango de puntos (igual que azucar) ======
-      (function fitXRangeToPoints() {
-        const allPts = [];
-        for (const ds of chPromedio.data.datasets) {
-          const arr = ds.data || [];
-          for (const p of arr) {
-            const x = (p && typeof p === "object") ? Number(p.x) : NaN;
-            if (Number.isFinite(x)) allPts.push(x);
+      // ====== Tooltip + titulo eje Y (aplica a ambas ramas) ======
+      chPromedio.options.interaction = { mode: "nearest", intersect: true };
+      chPromedio.options.plugins.tooltip = {
+        mode: "nearest",
+        intersect: true,
+        filter: (ctx) => !(ctx?.raw?.meta?.base === true || Number(ctx?.raw?.y) === 0),
+        callbacks: {
+          title: (items) => items?.[0]?.raw?.meta?.hora || "",
+          label: (ctx) => {
+            const raw = ctx.raw || {};
+            const tiempo = raw?.meta?.tiempo || "00:00:00";
+            const plate = raw?.meta?.placa ? ` - ${raw.meta.placa}` : "";
+            return `${ctx.dataset.label}: ${tiempo}${plate}`;
           }
         }
+      };
+      if (chPromedio.options?.scales?.y?.title) {
+        chPromedio.options.scales.y.title.display = true;
+        chPromedio.options.scales.y.title.text = "Tiempo promedio (min)";
+      }
 
-        const xScale = chPromedio.options.scales.x;
+      if (!realCount) {
+        // CASO: NO HAY DATOS
+        chPromedio.data.datasets[0].data = [];
+        chPromedio.data.datasets[1].data = [];
+        chPromedio.data.datasets[2].data = [];
+        chPromedio.data.datasets[0].hidden = true;
+        chPromedio.data.datasets[1].hidden = true;
+        chPromedio.data.datasets[2].hidden = true;
+
+        const xScale = chPromedio.options?.scales?.x;
+        if (xScale) {
+          xScale.min = 0;
+          xScale.max = 23 * 60 + 59;
+          xScale.afterBuildTicks = (scale) => {
+            const ticks = [];
+            for (let h = 0; h <= 23; h++) ticks.push({ value: h * 60 });
+            scale.ticks = ticks;
+          };
+        }
+
+        (function widenPromedioEmpty() {
+          const canvas = document.getElementById("chart-promedio");
+          if (!canvas) return;
+          const scroll = canvas.closest(".chart-scroll");
+          const inner = scroll?.querySelector(".chart-inner");
+          if (!scroll || !inner) return;
+          inner.style.width = Math.max(scroll.clientWidth || 0, labels.length * 140) + "px";
+        })();
+
+        setEmpty("chart-promedio", true);
+        doUpdate(chPromedio);
+      } else {
+        // CASO: SÍ HAY DATOS
+        setEmpty("chart-promedio", false);
+        const allX = [].concat(vv, rr, pp).map(p => Number(p?.x)).filter(Number.isFinite);
+        const xMin = allX.length ? Math.min(...allX) : 0;
+
+        chPromedio.data.datasets[0].data = addBasePointForSeries(vv);
+        chPromedio.data.datasets[1].data = addBasePointForSeries(rr);
+        chPromedio.data.datasets[2].data = addBasePointForSeries(pp);
+
+        // Restaurar visibilidad cuando hay datos
+        chPromedio.data.datasets[0].hidden = !VIS.volteo;
+        chPromedio.data.datasets[1].hidden = !VIS.plana;
+        chPromedio.data.datasets[2].hidden = !VIS.pipa;
+
+      // ====== Zoom automatico por rango de puntos ======
+        (function fitXRangeToPoints() {
+          const allPts = [];
+          for (const ds of chPromedio.data.datasets) {
+            for (const pt of (ds.data || [])) {
+              const v = Number(pt?.x);
+              if (Number.isFinite(v)) allPts.push(v);
+            }
+          }
+          const xScale = chPromedio.options.scales.x;
 
         // Si no hay puntos: vuelve al día completo
         if (!allPts.length) {
@@ -1435,52 +1497,24 @@
       })();
 
       // ====== Ancho dinámico del contenedor (igual que azucar) ======
-      (function widenPromedioIfNeeded() {
-        const canvas = document.getElementById("chart-promedio");
-        if (!canvas) return;
-        const scroll = canvas.closest(".chart-scroll");
-        const inner = scroll?.querySelector(".chart-inner");
-        if (!scroll || !inner) return;
-
-        const xScale = chPromedio.options.scales.x;
-        const minHour = Math.floor(Number(xScale.min || 0) / 60);
-        const maxHour = Math.floor(Number(xScale.max || (23 * 60)) / 60);
-        const hoursShown = Math.max(1, (maxHour - minHour + 1));
-
-        // 140px por hora visible (igual que azucar)
-        const required = hoursShown * 140;
-        const contW = scroll.clientWidth || 0;
-
-        inner.style.width = Math.max(contW, required) + "px";
-      })();
-
-      // ====== Tooltip: 1 punto + hora real (igual que azucar) ======
-      chPromedio.options.interaction = { mode: "nearest", intersect: true };
-      chPromedio.options.plugins.tooltip = {
-        mode: "nearest",
-        intersect: true,
-        callbacks: {
-          title: (items) => {
-            const raw = items?.[0]?.raw;
-            return raw?.meta?.hora || "";
-          },
-          label: (ctx) => {
-            const raw = ctx.raw || {};
-            const tiempo = raw?.meta?.tiempo || "00:00:00";
-            const plate = raw?.meta?.placa ? ` - ${raw.meta.placa}` : "";
-            return `${ctx.dataset.label}: ${tiempo}${plate}`;
-          }
-        }
-      };
+        (function widenPromedioIfNeeded() {
+          const canvas = document.getElementById("chart-promedio");
+          if (!canvas) return;
+          const scroll = canvas.closest(".chart-scroll");
+          const inner = scroll?.querySelector(".chart-inner");
+          if (!scroll || !inner) return;
+          const xScale = chPromedio.options.scales.x;
+          const minHour = Math.floor(Number(xScale.min || 0) / 60);
+          const maxHour = Math.floor(Number(xScale.max || (23 * 60)) / 60);
+          const hoursShown = Math.max(1, (maxHour - minHour + 1));
+          const required = hoursShown * 140;
+          const contW = scroll.clientWidth || 0;
+          inner.style.width = Math.max(contW, required) + "px";
+        })();
 
       // Título eje Y (Minutos)
-      if (chPromedio.options?.scales?.y?.title) {
-        chPromedio.options.scales.y.title.display = true;
-        chPromedio.options.scales.y.title.text = "Tiempo promedio (min)";
-      }
-
-      document.getElementById("chart-promedio")?.closest(".chart-card")?.classList.toggle("is-empty", allX.length === 0);
-      chPromedio.resize(); chPromedio.update();
+        doUpdate(chPromedio);
+      } // end: has data
     }
   }
 
@@ -1582,23 +1616,13 @@
 
       renderKPIsFromResumenYPromedios(resumen, promediosAtencion);
       updateKPIFlujoDiaFrom(pesos);
-      updateKPIsDescargaFrom(promDesc, filters.product);
-      const resumenFiltered = filterResumenByHour(resumen, filters.hourFrom, filters.hourTo);
-      // Marcar graficos como empty se hara individualmente si no tienen datos
-      // ["chart-finalizados", "chart-recibidos", "chart-azucar", "chart-promedio"].forEach(id => {
-      //   document.getElementById(id)?.closest(".chart-card")?.classList.add("is-empty");
-      // });
-      renderCharts(labels, baseSeries, azPack, promPack, resumenFiltered, filters.product);
+      updateKPIsDescargaFrom(promDesc);
+      renderCharts(labels, baseSeries, azPack, promPack, resumen, undefined, silent);
 
     } catch (e) {
       console.error("[recepcion-hoy] error:", e);
-      // ["chart-finalizados", "chart-recibidos", "chart-azucar", "chart-promedio"].forEach(id => {
-      //   document.getElementById(id)?.closest(".chart-card")?.classList.add("is-empty");
-      // });
     } finally {
-      if (shouldShowLoader) {
-        setTimeout(() => loader.hide(), 800);
-      }
+      if (shouldShowLoader) loader.hide();
       firstLoadDone = true;
       inFlight = false;
       if (pendingRun) {
@@ -1652,23 +1676,8 @@
 
     window.addEventListener("resize", () => {
       if (lastLabels?.length) {
-        ["chart-finalizados", "chart-azucar", "chart-promedio"]
+        ["chart-finalizados", "chart-recibidos", "chart-azucar", "chart-promedio"]
           .forEach(id => DC.ensureScrollableWidth(id, lastLabels));
-
-        // chart-recibidos: eje X numérico → calcular ancho desde el rango horario real
-        (function () {
-          const canvas = document.getElementById("chart-recibidos");
-          if (!canvas || !chRecibidos) return;
-          const scroll = canvas.closest(".chart-scroll");
-          const inner = scroll?.querySelector(".chart-inner");
-          if (!scroll || !inner) return;
-          const xScale = chRecibidos.options?.scales?.x;
-          const minHour = Math.floor(Number(xScale?.min || 0) / 60);
-          const maxHour = Math.floor(Number(xScale?.max || (23 * 60)) / 60);
-          const hoursShown = Math.max(1, maxHour - minHour + 1);
-          inner.style.width = Math.max(scroll.clientWidth, hoursShown * 140) + "px";
-        })();
-
         ["chart-finalizados", "chart-recibidos", "chart-azucar", "chart-promedio"]
           .forEach(DC.refreshChartAfterResize);
       }
@@ -1703,4 +1712,3 @@
   });
 
 })(window.DashCore || window);
-

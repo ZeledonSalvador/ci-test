@@ -16,12 +16,6 @@ namespace FrontendQuickpass.Models
 
         [JsonPropertyName("password")]
         public string Password { get; set; } = string.Empty;
-
-        [JsonPropertyName("bascula")]
-        public string Bascula { get; set; } = string.Empty;
-
-        [JsonPropertyName("turno")]
-        public string Turno { get; set; } = "1";
     }
 
     /// <summary>
@@ -92,14 +86,14 @@ namespace FrontendQuickpass.Models
         [JsonPropertyName("fullName")]
         public string FullName { get; set; } = string.Empty;
 
-        [JsonPropertyName("userCode")]
-        public string UserCode { get; set; } = string.Empty;
-
         [JsonPropertyName("category")]
         public Category? Category { get; set; }
 
         [JsonPropertyName("role")]
         public Role? Role { get; set; }
+
+        [JsonPropertyName("clientCode")]
+        public string ClientCode { get; set; } = string.Empty;
 
         [JsonPropertyName("weighbridges")]
         public List<int> Weighbridges { get; set; } = new();

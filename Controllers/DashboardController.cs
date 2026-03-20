@@ -13,7 +13,7 @@ using FrontendQuickpass.Models.Configurations;
 
 namespace FrontendQuickpass.Controllers
 {
-    public class DashboardController : Controller
+    public class DashboardController : BaseController
     {
         private readonly IHttpClientFactory _httpFactory;
         private readonly ApiSettings _api;
@@ -32,19 +32,39 @@ namespace FrontendQuickpass.Controllers
 
         // Vista
         [HttpGet("/Dashboard")]
-        public IActionResult Recepcion() => View();
+        public IActionResult Recepcion()
+        {
+            ViewBag.IngeniosPermitidos = GetIngeniosPermitidos();
+            return View();
+        }
 
         [HttpGet("/Dashboard/Recepcion")]
-        public IActionResult Index() => View();
+        public IActionResult Index()
+        {
+            ViewBag.IngeniosPermitidos = GetIngeniosPermitidos();
+            return View();
+        }
 
         [HttpGet("/Dashboard/TiemposHoyDetalle")]
-        public IActionResult Descarga() => View();
+        public IActionResult Descarga()
+        {
+            ViewBag.IngeniosPermitidos = GetIngeniosPermitidos();
+            return View();
+        }
 
         [HttpGet("/Dashboard/PesosHistorico")]
-        public IActionResult PesosHistorico() => View();
+        public IActionResult PesosHistorico()
+        {
+            ViewBag.IngeniosPermitidos = GetIngeniosPermitidos();
+            return View();
+        }
 
         [HttpGet("/Dashboard/HistoricoDiarioHoras")]
-        public IActionResult HistoricoDiarioHoras() => View();
+        public IActionResult HistoricoDiarioHoras()
+        {
+            ViewBag.IngeniosPermitidos = GetIngeniosPermitidos();
+            return View();
+        }
 
         // --- API ROUTES centralizadas ---
         private static class ApiRoutes
@@ -772,11 +792,11 @@ namespace FrontendQuickpass.Controllers
             {
                 foreach (var d in dias)
                 {
-                    var rawKey = d.Fecha ?? "";
-                    var key = DateTime.TryParseExact(rawKey, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var isoDate)
-                        ? Label(isoDate)
-                        : rawKey;
                     var kg = Convert.ToDecimal(d.TotalKgRaw > 0 ? d.TotalKgRaw : d.TotalKg);
+                    var rawDate = d.Fecha ?? "";
+                    var key = DateTime.TryParseExact(rawDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var isoDate)
+                        ? Label(isoDate)
+                        : rawDate;
                     if (map.TryGetValue(key, out var cur)) map[key] = cur + kg;
                     else map[key] = kg;
                 }
@@ -875,13 +895,10 @@ namespace FrontendQuickpass.Controllers
             {
                 foreach (var d in dias)
                 {
-                    var rawKey = d.Fecha ?? "";
-                    // Normaliza fechas ISO "yyyy-MM-dd" al mismo formato "dd-MM-yy" que usan los labels
-                    var key = DateTime.TryParseExact(rawKey, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var isoDate)
+                    var rawDate = d.Fecha ?? "";
+                    var key = DateTime.TryParseExact(rawDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var isoDate)
                         ? Label(isoDate)
-                        : rawKey;
-                    // Usar TotalKgRaw (peso neto real por transacción) cuando esté disponible.
-                    // TotalKg es un acumulado running-total y no debe sumarse directamente.
+                        : rawDate;
                     var kg = Convert.ToDecimal(d.TotalKgRaw > 0 ? d.TotalKgRaw : d.TotalKg);
                     var kind = NormalizeProduct(d.Product);
                     if (kind == "azucar") A[key] = (A.TryGetValue(key, out var v) ? v : 0m) + kg;
@@ -1035,8 +1052,8 @@ namespace FrontendQuickpass.Controllers
         {
             public string Fecha { get; set; } // "dd-MM-yy"
             public int TotalRegistros { get; set; }
-            public double TotalKg { get; set; }      // acumulado (running total) — no usar para sumas
-            public double TotalKgRaw { get; set; }   // peso neto real por transacción
+            public double TotalKg { get; set; }
+            public double TotalKgRaw { get; set; }
             public string Product { get; set; }  // por producto
         }
 

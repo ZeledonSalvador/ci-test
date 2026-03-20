@@ -5,13 +5,19 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeGlobalComponents();
 });
 
-function initializeGlobalComponents() {    
+function initializeGlobalComponents() {
     // Configurar manejo global de errores AJAX
     setupAjaxErrorHandling();
-    
+
     // Configurar interceptor global para fetch
     setupFetchInterceptor();
-    
+
+    // Monitorizar conectividad de red (PWA)
+    setupConnectivityMonitor();
+
+    // Prompt de instalación PWA
+    setupInstallPrompt();
+
     console.log('✅ Componentes globales inicializados');
 }
 
@@ -123,7 +129,69 @@ function handleAuthenticationError() {
     }
 }
 
-// Utilidades adicionales
+// ── Instalación PWA ───────────────────────────────────────────────────────────
+
+let _installPromptEvent = null;
+
+function setupInstallPrompt() {
+    const banner  = document.getElementById('install-banner');
+    const btnInstall  = document.getElementById('install-btn');
+    const btnDismiss  = document.getElementById('install-dismiss');
+
+    if (!banner || !btnInstall || !btnDismiss) return;
+
+    // Capturar el evento antes de que el navegador lo consuma
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        _installPromptEvent = e;
+        banner.style.display = 'block';
+    });
+
+    // Usuario hace clic en "Instalar"
+    btnInstall.addEventListener('click', () => {
+        if (!_installPromptEvent) return;
+        banner.style.display = 'none';
+        _installPromptEvent.prompt();
+        _installPromptEvent.userChoice.then((choice) => {
+            console.log('PWA install choice:', choice.outcome);
+            _installPromptEvent = null;
+        });
+    });
+
+    // Usuario cierra el banner sin instalar
+    btnDismiss.addEventListener('click', () => {
+        banner.style.display = 'none';
+    });
+
+    // Ocultar el banner si la app ya fue instalada
+    window.addEventListener('appinstalled', () => {
+        banner.style.display = 'none';
+        _installPromptEvent = null;
+        console.log('PWA instalada correctamente');
+    });
+}
+
+// ── Conectividad de red (PWA) ─────────────────────────────────────────────────
+
+function showOfflineBanner() {
+    const banner = document.getElementById('offline-banner');
+    if (banner) banner.style.display = 'block';
+}
+
+function hideOfflineBanner() {
+    const banner = document.getElementById('offline-banner');
+    if (banner) banner.style.display = 'none';
+}
+
+function setupConnectivityMonitor() {
+    // Estado inicial: si la página cargó sin red, mostrar el banner de inmediato
+    if (!navigator.onLine) showOfflineBanner();
+
+    window.addEventListener('offline', showOfflineBanner);
+    window.addEventListener('online',  hideOfflineBanner);
+}
+
+// ── Utilidades adicionales ────────────────────────────────────────────────────
 function showSpinner() {
     const spinner = document.getElementById('spinner-overlay');
     if (spinner) {
@@ -178,6 +246,8 @@ window.AlmapacUtils = {
     getCookie,
     showSpinner,
     hideSpinner,
-    showNotification,  
-    showModal      
+    showNotification,
+    showModal,
+    showOfflineBanner,
+    hideOfflineBanner,
 };
