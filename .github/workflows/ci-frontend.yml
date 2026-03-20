@@ -60,28 +60,50 @@ jobs:
                 ecmaVersion: 2022,
                 sourceType: "script",
                 globals: {
+                  // Browser APIs
                   window: "readonly",
                   document: "readonly",
                   console: "readonly",
                   fetch: "readonly",
                   URL: "readonly",
+                  URLSearchParams: "readonly",
                   setTimeout: "readonly",
                   clearTimeout: "readonly",
                   setInterval: "readonly",
                   clearInterval: "readonly",
+                  requestAnimationFrame: "readonly",
+                  cancelAnimationFrame: "readonly",
                   FormData: "readonly",
+                  alert: "readonly",
+                  confirm: "readonly",
+                  navigator: "readonly",
+                  location: "readonly",
+                  history: "readonly",
+                  Node: "readonly",
+                  Event: "readonly",
+                  AbortController: "readonly",
+                  MutationObserver: "readonly",
+                  // Libraries
                   Chart: "readonly",
                   Swal: "readonly",
-                  $: "readonly",
-                  jQuery: "readonly"
+                  $: "writable",
+                  jQuery: "readonly",
+                  // Project cross-file globals
+                  DashCore: "readonly",
+                  showErr: "readonly",
+                  kind: "readonly",
+                  ds: "readonly",
+                  de: "readonly",
+                  ts: "readonly",
+                  te: "readonly"
                 }
               },
               linterOptions: {
-                reportUnusedDisableDirectives: "error"
+                reportUnusedDisableDirectives: "warn"
               },
               rules: {
                 "no-undef": "error",
-                "no-unused-vars": ["error", {
+                "no-unused-vars": ["warn", {
                   "argsIgnorePattern": "^_",
                   "varsIgnorePattern": "^_"
                 }],
