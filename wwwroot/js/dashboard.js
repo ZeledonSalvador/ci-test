@@ -1116,13 +1116,6 @@ function readTruck(r) { return r.truckType ?? r.truck_type ?? r.Tipo ?? r.tipo ?
 /* ================== HTTP & FORMATO ================== */
 function http(url) { return fetch(url, { headers: { Accept: "application/json", "Cache-Control": "no-cache" }, cache: "no-store" }).then(r => r.ok ? r.json() : null); }
 
-function fmtHHMM(mins) {
-  const m = Math.max(0, Math.round(Number(mins || 0)));
-  const hh = Math.floor(m / 60);
-  const mm = m % 60;
-  return `${hh} h ${String(mm).padStart(2, '0')} min`;
-}
-
 /* ================== FALLBACKS UI ================== */
 function setProductColorsIfNeeded(chart) {
   try {
