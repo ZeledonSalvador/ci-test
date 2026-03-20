@@ -1,4 +1,4 @@
-name: CI - FrontendQuickpass (.NET 8)
+name: CI - Dashboard (.NET 8)
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ci-frontend-${{ github.ref }}
+  group: ci-dashboard-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -29,6 +29,11 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
       - name: Cache NuGet packages
         uses: actions/cache@v4
         with:
@@ -40,11 +45,75 @@ jobs:
       - name: Restore
         run: dotnet restore FrontendQuickpass.sln
 
+      - name: Install ESLint
+        shell: pwsh
+        run: npm install --no-save eslint
+
+      - name: Create temporary ESLint config
+        shell: pwsh
+        run: |
+          @'
+          export default [
+            {
+              files: ["wwwroot/js/**/*.js"],
+              languageOptions: {
+                ecmaVersion: 2022,
+                sourceType: "script",
+                globals: {
+                  window: "readonly",
+                  document: "readonly",
+                  console: "readonly",
+                  fetch: "readonly",
+                  URL: "readonly",
+                  setTimeout: "readonly",
+                  clearTimeout: "readonly",
+                  setInterval: "readonly",
+                  clearInterval: "readonly",
+                  FormData: "readonly",
+                  Chart: "readonly",
+                  Swal: "readonly",
+                  $: "readonly",
+                  jQuery: "readonly"
+                }
+              },
+              linterOptions: {
+                reportUnusedDisableDirectives: "error"
+              },
+              rules: {
+                "no-undef": "error",
+                "no-unused-vars": ["error", {
+                  "argsIgnorePattern": "^_",
+                  "varsIgnorePattern": "^_"
+                }],
+                "no-unreachable": "error",
+                "no-redeclare": "error",
+                "no-dupe-keys": "error",
+                "no-constant-condition": "error"
+              }
+            }
+          ];
+          '@ | Set-Content eslint.config.mjs
+
+      - name: Validate JavaScript
+        shell: pwsh
+        run: npx eslint "wwwroot/js/**/*.js"
+
       - name: Build
-        run: dotnet build FrontendQuickpass.sln -c ${{ env.BUILD_CONFIGURATION }} --no-restore
+        shell: pwsh
+        run: >
+          dotnet build FrontendQuickpass.sln
+          -c ${{ env.BUILD_CONFIGURATION }}
+          --no-restore
+          /p:EnforceCodeStyleInBuild=true
+          /p:AnalysisLevel=latest
 
       - name: Publish
-        run: dotnet publish FrontendQuickpass.csproj -c ${{ env.BUILD_CONFIGURATION }} -o publish --no-build
+        shell: pwsh
+        run: >
+          dotnet publish FrontendQuickpass.csproj
+          -c ${{ env.BUILD_CONFIGURATION }}
+          -o publish
+          --no-build
 
       - name: Zip publish output
         shell: pwsh
@@ -56,3 +125,51 @@ jobs:
           name: frontend_publish
           path: frontend_publish.zip
           retention-days: 7
+
+  deploy_qa:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dashboard'
+    runs-on: [self-hosted, qa]
+
+    steps:
+      - name: Clean old files
+        shell: powershell
+        run: |
+          Remove-Item frontend_publish.zip -ErrorAction Ignore
+          Remove-Item deploy -Recurse -Force -ErrorAction Ignore
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend_publish
+
+      - name: Extract artifact
+        shell: powershell
+        run: |
+          Expand-Archive frontend_publish.zip -DestinationPath deploy -Force
+
+      - name: Put app offline
+        shell: powershell
+        run: |
+          "Deploy in progress" | Out-File "C:\Sites\quickpass-frontend-cicd\app_offline.htm" -Encoding utf8
+
+      - name: Deploy files
+        shell: powershell
+        run: |
+          robocopy deploy C:\Sites\quickpass-frontend-cicd /MIR /XD App_Data
+          if ($LASTEXITCODE -lt 8) { exit 0 } else { exit $LASTEXITCODE }
+
+      - name: Remove app offline
+        if: always()
+        shell: powershell
+        run: |
+          Remove-Item "C:\Sites\quickpass-frontend-cicd\app_offline.htm" -Force -ErrorAction SilentlyContinue
+
+      - name: Health check
+        shell: powershell
+        run: |
+          $response = Invoke-WebRequest http://localhost:8081 -UseBasicParsing
+          if ($response.StatusCode -ne 200) {
+            Write-Host "Health check failed"
+            exit 1
+          }

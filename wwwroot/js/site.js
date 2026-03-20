@@ -44,7 +44,7 @@ function setupAjaxErrorHandling() {
         jQuery(document).ajaxError(function(event, xhr, settings, thrownError) {
             console.error('❌ Error AJAX capturado:', {
                 url: settings.url,
-                status: .status,
+                status: xhr.status,
                 error: thrownError,
                 response: xhr.responseText
             });
