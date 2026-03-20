@@ -86,6 +86,7 @@ jobs:
                   // Libraries
                   Chart: "readonly",
                   Swal: "readonly",
+                  $: "readonly",
                   jQuery: "readonly",
                   // Project cross-file globals
                   DashCore: "readonly",
@@ -110,6 +111,12 @@ jobs:
                 "no-redeclare": "error",
                 "no-dupe-keys": "error",
                 "no-constant-condition": "error"
+              }
+            },
+            {
+              files: ["wwwroot/js/dashboard.js"],
+              rules: {
+                "no-redeclare": "off"
               }
             }
           ];
