@@ -3,7 +3,7 @@
    Requiere: Chart.js 3+ (y opcionalmente chartjs-plugin-zoom)
 */
 (function (window) {
-  if (window.DashCore) return // evita doble carga
+  if (window.DashCore retu// evita doble carga
 
   // ====== DOM helpers ======
   const $ = (id) => document.getElementById(id);
