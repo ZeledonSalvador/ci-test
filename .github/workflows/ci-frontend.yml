@@ -86,7 +86,6 @@ jobs:
                   // Libraries
                   Chart: "readonly",
                   Swal: "readonly",
-                  $: "writable",
                   jQuery: "readonly",
                   // Project cross-file globals
                   DashCore: "readonly",

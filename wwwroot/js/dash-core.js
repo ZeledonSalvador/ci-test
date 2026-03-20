@@ -613,46 +613,6 @@
     });
   }
 
-  function scatter2Series(canvasId, labA, labB, labC) {
-    const ctx = $(canvasId);
-    if (!ctx) return null;
-
-    const opts = baseOptions();
-
-    // Tooltip 1 punto
-    opts.interaction = { mode: "nearest", intersect: true };
-    opts.plugins = opts.plugins || {};
-    opts.plugins.tooltip = opts.plugins.tooltip || {};
-    opts.plugins.tooltip.mode = "nearest";
-    opts.plugins.tooltip.intersect = true;
-
-    // Eje X en minutos (0..1439)
-    opts.scales.x.type = "linear";
-    opts.scales.x.min = 0;
-    opts.scales.x.max = 23 * 60 + 59;
-    opts.scales.x.ticks.callback = (val) => {
-      const m = Number(val);
-      if (!Number.isFinite(m)) return "";
-      const hh = String(Math.floor(m / 60)).padStart(2, "0");
-      const mm = String(m % 60).padStart(2, "0");
-      return `${hh}:${mm}`;
-    };
-
-    const c = activeColors();
-    return new Chart(ctx, {
-      type: "scatter",
-      data: {
-        datasets: [
-          { label: labA, borderColor: c.blue, backgroundColor: c.blue, pointBackgroundColor: c.blue, pointBorderColor: c.blue, data: [] },
-          { label: labB, borderColor: c.orange, backgroundColor: c.orange, pointBackgroundColor: c.orange, pointBorderColor: c.orange, data: [] },
-          { label: labC, borderColor: c.gray, backgroundColor: c.gray, pointBackgroundColor: c.gray, pointBorderColor: c.gray, data: [] }
-        ]
-      },
-      options: opts
-    });
-  }
-
-
   function bar2Series(canvasId, labA, labB, labC) {
     const ctx = $(canvasId);
     if (!ctx) return null;
