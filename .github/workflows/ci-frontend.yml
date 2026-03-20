@@ -2,9 +2,9 @@ name: CI - FrontendQuickpass (.NET 8)
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "dashboard" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "dashboard" ]
   workflow_dispatch:
 
 concurrency:
