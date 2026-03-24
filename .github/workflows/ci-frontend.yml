@@ -153,3 +153,39 @@ jobs:
           name: frontend_publish
           path: frontend_publish.zip
           retention-days: 14
+
+      - name: Diagnóstico de fallo
+        if: failure()
+        shell: pwsh
+        run: |
+          Write-Host "❌ El pipeline falló. Revisá el step que aparece en rojo arriba." -ForegroundColor Red
+          Write-Host ""
+          Write-Host "📋 Guía de causas y soluciones:" -ForegroundColor Cyan
+          Write-Host ""
+          Write-Host "  🔐 Validate appsettings policy" -ForegroundColor Yellow
+          Write-Host "     → Un archivo appsettings*.json está siendo trackeado en git."
+          Write-Host "     → Solución:"
+          Write-Host "          git rm --cached appsettings.json"
+          Write-Host "          Agregar 'appsettings*.json' al .gitignore"
+          Write-Host ""
+          Write-Host "  📁 Validate generated/runtime files" -ForegroundColor Yellow
+          Write-Host "     → Archivos generados (bin/, obj/, node_modules/, *.db) están en el repo."
+          Write-Host "     → Solución:"
+          Write-Host "          git rm -r --cached <carpeta>"
+          Write-Host "          Agregar la carpeta al .gitignore"
+          Write-Host ""
+          Write-Host "  📦 Restore dependencies" -ForegroundColor Yellow
+          Write-Host "     → Falló la restauración de paquetes NuGet."
+          Write-Host "     → Verificá versiones en el .csproj o conectividad con nuget.org"
+          Write-Host ""
+          Write-Host "  🟨 Lint JavaScript (ESLint)" -ForegroundColor Yellow
+          Write-Host "     → Errores de ESLint en wwwroot/js/"
+          Write-Host "     → Ejecutá localmente: npm run lint"
+          Write-Host ""
+          Write-Host "  🔨 Build (Release)" -ForegroundColor Yellow
+          Write-Host "     → Error de compilación en C# o Razor."
+          Write-Host "     → Ejecutá localmente: dotnet build -c Release"
+          Write-Host ""
+          Write-Host "  📤 Publish (Release)" -ForegroundColor Yellow
+          Write-Host "     → Falló la publicación del artefacto."
+          Write-Host "     → Ejecutá localmente: dotnet publish -c Release -o publish"
