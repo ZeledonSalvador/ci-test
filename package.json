@@ -4,7 +4,8 @@
     "lint": "eslint \"wwwroot/js/**/*.js\""
   },
   "dependencies": {
-    "chart.js": "^4.5.0"
+    "chart.js": "^4.5.0",
+    "lodash": "^4.17.21"
   },
   "devDependencies": {
     "eslint": "^9.0.0"
