@@ -55,14 +55,8 @@ namespace FrontendQuickpass.Controllers
             return client;
         }
 
-        public class Prueba
-        {
-            public void Metodo()
-            {
-                int x = ;
-            }
-        }
-
+    
+        
         // MÉTODO HELPER: Parsear errores del API
         private string ParseApiError(string errorContent, string defaultMessage = "Error en el servidor")
         {
