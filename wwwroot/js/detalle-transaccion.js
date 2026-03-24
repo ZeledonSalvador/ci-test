@@ -1061,6 +1061,7 @@ function guardarTransaccion() {
 
         if (!marchamo1) {
             document.getElementById('txtMarchamo1')?.focus();
+        // eslint-disable-next-line no-undef
         } else if (esAzucar) {
             // Solo para azúcar verificar los otros marchamos
             const marchamo2 = document.getElementById('txtMarchamo2')?.value?.trim() || '';

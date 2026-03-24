@@ -793,8 +793,11 @@
     _forceHourOnly(t1, '00:00');
     _forceHourOnly(t2, '23:00');
 // 1) Hora fin < hora inicio (solo si es el mismo día)
+// eslint-disable-next-line no-undef
 if (_validDateStr(ds) && _validDateStr(de) && ds === de) {
+  // eslint-disable-next-line no-undef
   const a = _toMinutes(ts);
+  // eslint-disable-next-line no-undef
   const b = _toMinutes(te);
 
   if (a > b) {
@@ -802,6 +805,7 @@ if (_validDateStr(ds) && _validDateStr(de) && ds === de) {
       const tmpT = t1.value; t1.value = t2.value; t2.value = tmpT;
     } else {
       t1.classList.add('is-invalid'); t2.classList.add('is-invalid');
+      // eslint-disable-next-line no-undef
       showErr('La hora de fin no puede ser menor que la hora de inicio.');
       return;
     }

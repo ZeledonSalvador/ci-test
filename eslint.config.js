@@ -42,7 +42,13 @@ export default [
         Dropzone: "readonly",  // Dropzone.js
         // Variables globales de tu app
         PERMISSION: "readonly",  // Tu objeto de permisos
-        Sys: "readonly"  // ASP.NET Ajax (si lo usas)
+        Sys: "readonly",  // ASP.NET Ajax (si lo usas)
+        DashCore: "readonly",  // window.DashCore (dash-core.js)
+        // Browser APIs
+        AbortController: "readonly",
+        // Globals de tiempos-melaza.js (cargado en las mismas vistas)
+        timerSyncMelaza: "readonly",
+        clearTimerState: "readonly"
       }
     },
     rules: {

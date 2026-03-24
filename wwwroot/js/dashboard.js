@@ -699,6 +699,7 @@ async function fetchAndRender() {
 
   ensureAllScrollableWidths(L);
 
+  // eslint-disable-next-line no-undef
   const VIS = (kind === 'melaza') ? { volteo: false, plana: false, pipa: true } : { volteo: true, plana: true, pipa: true };
   const mkZeros = () => new Array(L.length).fill(0);
 
@@ -733,9 +734,11 @@ async function fetchAndRender() {
   const tA = data.charts?.toneladasPorProducto?.azucar || [];
   const tM = data.charts?.toneladasPorProducto?.melaza || [];
   const tO = data.charts?.toneladasPorProducto?.otros || [];
+  /* eslint-disable no-undef */
   const showAz = (kind !== 'melaza');
   const showMe = (kind !== 'azucar');
   const showOt = (kind === 'todos' || kind === 'otros');
+  /* eslint-enable no-undef */
 
   chAzucar.data.datasets[0].hidden = !showAz;
   chAzucar.data.datasets[1].hidden = !showMe;

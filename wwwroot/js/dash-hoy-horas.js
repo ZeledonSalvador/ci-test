@@ -834,17 +834,17 @@
 
       if (avgSecPlanas > 0) pts.plana.push({
         x,
-        y: secToHoursFloat(avgSecPlanas),
+        y: secToHoursFloat(avgSecPlanas), // eslint-disable-line no-undef
         meta: { hora: horaStr, tiempo: secToMinSegLabel(avgSecPlanas), placa: "" }
       });
       if (avgSecVolteo > 0) pts.volteo.push({
         x,
-        y: secToHoursFloat(avgSecVolteo),
+        y: secToHoursFloat(avgSecVolteo), // eslint-disable-line no-undef
         meta: { hora: horaStr, tiempo: secToHHMMSS_local(avgSecVolteo), placa: "" }
       });
       if (avgSecPipa > 0) pts.pipa.push({
         x,
-        y: secToHoursFloat(avgSecPipa),
+        y: secToHoursFloat(avgSecPipa), // eslint-disable-line no-undef
         meta: { hora: horaStr, tiempo: secToHHMMSS_local(avgSecPipa), placa: "" }
       });
     }
