@@ -1,8 +1,11 @@
 # Build results
-/bin/
-/obj/
-/publish/
-/App_Data/
+node_modules/
+bin/
+obj/
+publish/
+App_Data/
+*.db
+*.sqlite
 # User-specific files
 *.user
 *.suo
@@ -38,10 +41,6 @@ Thumbs.db
  
 # Entity Framework Migrations (optional)
 /Migrations/
- 
-# Others
-*.db
-*.sqlite
  
 # Build results
 [Dd]ebug/
