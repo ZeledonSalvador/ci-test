@@ -1,8 +1,11 @@
 # Build results
-/bin/
-/obj/
-/publish/
-/App_Data/
+node_modules/
+bin/
+obj/
+publish/
+App_Data/
+*.db
+*.sqlite
 # User-specific files
 *.user
 *.suo
@@ -20,9 +23,9 @@
 *.log
  
 # Configuration
-appsettings.Development.json
-appsettings.Local.json
-secrets.json
+appsettings.json
+appsettings.*.json
+!appsettings.template.json
  
 # Rider
 .idea/
@@ -38,10 +41,6 @@ Thumbs.db
  
 # Entity Framework Migrations (optional)
 /Migrations/
- 
-# Others
-*.db
-*.sqlite
  
 # Build results
 [Dd]ebug/
@@ -94,3 +93,4 @@ nunit-*.xml
 **/obj/**/FrontendQuickpass.AssemblyInfoInputs.cache
  
 .claude/
+
