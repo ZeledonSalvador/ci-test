@@ -3,20 +3,33 @@ name: CI - FrontEnd (.NET 8)
 on:
   push:
     branches: [ "quickpass" ]
-  pull_request:
-    branches: [ "quickpass" ]
   workflow_dispatch:
 
 concurrency:
-  group: ci-frontend-${{ github.event.pull_request.number || github.ref }}
+  group: ci-frontend-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
+  secret_scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Secret scanning (Gitleaks)
+        uses: gitleaks/gitleaks-action@v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build:
     runs-on: windows-latest
+    needs: secret_scan
 
     env:
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
@@ -111,11 +124,6 @@ jobs:
             Write-Host "No se reportan vulnerabilidades por dotnet list package" -ForegroundColor Green
           }
 
-      - name: Secret scanning (Gitleaks)
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -144,4 +152,4 @@ jobs:
         with:
           name: frontend_publish
           path: frontend_publish.zip
-          retention-days: 14s
+          retention-days: 14
