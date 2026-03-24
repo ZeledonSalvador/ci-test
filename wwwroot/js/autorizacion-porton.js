@@ -26,6 +26,8 @@ var informacionEnvioMarchamosGlobal = {
     nombreMotorista: ''
 };
 
+console.log(variableQueNoExiste);
+
 // ===== NUEVO: Estado dinámico de marchamos =====
 let expectedSeals = 0; // N que devuelve el backend
 
